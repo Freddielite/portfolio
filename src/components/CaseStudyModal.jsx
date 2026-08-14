@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function CaseStudyModal({ project, onClose }) {
   useEffect(() => {
@@ -15,7 +16,7 @@ export default function CaseStudyModal({ project, onClose }) {
 
   if (!project) return null
 
-  return (
+  return createPortal(
     <div
       className="modal-overlay"
       onClick={(e) => {
@@ -46,7 +47,7 @@ export default function CaseStudyModal({ project, onClose }) {
           </div>
 
           <div className="project-tags">
-            {project.tags.map((tag) => (
+            {(project.tags || []).map((tag) => (
               <span className="tag" key={tag}>{tag}</span>
             ))}
           </div>
@@ -82,6 +83,7 @@ export default function CaseStudyModal({ project, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

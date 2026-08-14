@@ -9,8 +9,8 @@ and SEO tags — deployed on Vercel.
 - **Edit content without touching code** — projects, blog posts, skills,
   testimonials, and all the site copy (bio, links, contact info) live in a
   separate Studio dashboard once you connect it. See `studio/README.md` for
-  the 10-minute setup. Until then, everything falls back to the plain files
-  in `src/data/`, so the site works right out of the box either way.
+  the 10-minute setup, and `studio/HANDOVER.md` if anything acts up along
+  the way, it covers the real issues hit setting this up the first time.
 - **Blog** at `/blog` — write posts in the Studio, or edit `src/data/posts.js`
   directly if you're not using the Studio yet.
 - **Testimonials** section — edit `src/data/testimonials.js` or add them in
