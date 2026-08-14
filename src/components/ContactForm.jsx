@@ -35,7 +35,7 @@ export default function ContactForm() {
   if (status === 'sent') {
     return (
       <p className="contact-form-success">
-        Thanks — your message is in my inbox. I'll get back to you soon.
+        Thanks, your message is in my inbox. I'll get back to you soon.
       </p>
     )
   }
@@ -59,7 +59,7 @@ export default function ContactForm() {
       </button>
       {status === 'error' && (
         <p className="contact-form-error">
-          Something went wrong — try again, or email me directly below.
+          Something went wrong, try again, or email me directly below.
         </p>
       )}
     </form>

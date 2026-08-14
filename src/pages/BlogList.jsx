@@ -28,7 +28,7 @@ export default function BlogList() {
       </section>
 
       {!loading && posts.length === 0 && (
-        <p className="section-sub">No posts yet — check back soon.</p>
+        <p className="section-sub">No posts yet, check back soon.</p>
       )}
 
       <div className="blog-list">
