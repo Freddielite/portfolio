@@ -14,6 +14,7 @@
   --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
   --font-body: 'Inter', 'Segoe UI', sans-serif;
+  --header-bg: rgba(255, 255, 255, 0.82);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,7 +146,7 @@ main > section {
   margin: 0 auto;
   padding: 1.2rem 2rem;
   backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--border);
 }
 
@@ -223,6 +224,32 @@ main > section {
   background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
+  position: relative;
+}
+
+.header-menu-btn svg {
+  position: absolute;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.header-menu-btn .icon-menu {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.header-menu-btn .icon-close {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.4);
+}
+
+.header-menu-btn.is-open .icon-menu {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.4);
+}
+
+.header-menu-btn.is-open .icon-close {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
 }
 
 .header-mobile-panel {
@@ -1322,7 +1349,6 @@ main > section {
   .header {
     padding: 1rem 1.4rem;
     flex-wrap: nowrap;
-    position: relative;
   }
 
   .split-grid {
@@ -1357,15 +1383,13 @@ main > section {
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow);
-    transform: translateY(-8px);
-    opacity: 0;
+    clip-path: inset(0 0 100% 0);
     pointer-events: none;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    transition: clip-path 0.5s cubic-bezier(0.65, 0, 0.35, 1);
   }
 
   .header-mobile-panel.is-open {
-    transform: translateY(0);
-    opacity: 1;
+    clip-path: inset(0 0 0% 0);
     pointer-events: auto;
   }
 
@@ -1387,6 +1411,32 @@ main > section {
   .header-mobile-actions .btn,
   .header-mobile-actions .link-btn {
     justify-content: center;
+  }
+
+  /* Each item drops in with its own delay once the curtain opens, so the
+     menu reads as a cascade rather than one flat fade. */
+  .header-mobile-nav a,
+  .header-mobile-actions > * {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  .header-mobile-panel.is-open .header-mobile-nav a,
+  .header-mobile-panel.is-open .header-mobile-actions > * {
+    animation: mobile-item-drop 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .header-mobile-panel.is-open .header-mobile-nav a:nth-child(1) { animation-delay: 0.10s; }
+  .header-mobile-panel.is-open .header-mobile-nav a:nth-child(2) { animation-delay: 0.16s; }
+  .header-mobile-panel.is-open .header-mobile-nav a:nth-child(3) { animation-delay: 0.22s; }
+  .header-mobile-panel.is-open .header-mobile-nav a:nth-child(4) { animation-delay: 0.28s; }
+  .header-mobile-panel.is-open .header-mobile-nav a:nth-child(5) { animation-delay: 0.34s; }
+  .header-mobile-panel.is-open .header-mobile-actions > *:nth-child(1) { animation-delay: 0.40s; }
+  .header-mobile-panel.is-open .header-mobile-actions > *:nth-child(2) { animation-delay: 0.46s; }
+
+  @keyframes mobile-item-drop {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .project-watermark {
@@ -1506,6 +1556,7 @@ main > section {
   --accent: #6c8bff;
   --accent-2: #34d399;
   --shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
+  --header-bg: rgba(11, 15, 26, 0.82);
 }
 
 :root[data-theme='dark'] body {
@@ -1542,6 +1593,58 @@ main > section {
   border-color: var(--accent);
   color: var(--accent);
   transform: translateY(-2px);
+}
+
+.theme-toggle-icon {
+  position: relative;
+  display: inline-flex;
+  width: 17px;
+  height: 17px;
+}
+
+.theme-toggle-icon svg {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+}
+
+.theme-toggle-icon.is-light .theme-toggle-sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle-icon.is-light .theme-toggle-moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.4);
+}
+
+.theme-toggle-icon.is-dark .theme-toggle-sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.4);
+}
+
+.theme-toggle-icon.is-dark .theme-toggle-moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+/* ---------- Theme switch: circular reveal via View Transitions API ---------- */
+/* Falls back silently to an instant switch in browsers that don't support
+   startViewTransition (Firefox, older Safari) — handled in ThemeToggle.jsx. */
+
+::view-transition-old(root) {
+  animation: none;
+}
+
+::view-transition-new(root) {
+  animation: theme-circle-reveal 0.65s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  clip-path: circle(0px at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+}
+
+@keyframes theme-circle-reveal {
+  to {
+    clip-path: circle(var(--theme-toggle-radius, 150%) at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
+  }
 }
 
 /* ==========================================================================

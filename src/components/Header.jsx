@@ -55,12 +55,13 @@ export default function Header() {
         <ThemeToggle />
         <button
           type="button"
-          className="header-menu-btn"
+          className={`header-menu-btn ${menuOpen ? 'is-open' : ''}`}
           onClick={() => setMenuOpen((v) => !v)}
           aria-label={menuOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={menuOpen}
         >
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+          <Menu size={20} className="icon-menu" />
+          <X size={20} className="icon-close" />
         </button>
       </div>
 
