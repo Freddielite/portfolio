@@ -147,8 +147,17 @@ right thing:
 - Anything you removed from `src/data/` gets deleted from Sanity too
   (the script prints what it's removing before it does).
 
-The one thing to watch for: re-running the script will overwrite any edits
-you've since made *in the Studio* to an item that also exists in
-`src/data/`, since the file is treated as the source of truth on re-run.
-If you're managing something entirely from the Studio now, just leave it
-out of `src/data/` and it won't be touched.
+**"Site settings" is protected from re-runs.** It only gets created the
+first time (if it doesn't exist yet in Sanity). After that, re-running
+`npm run seed` never touches it again — so toggles like "Show testimonials
+section," or any bio/contact info you've since edited in the Studio, are
+safe no matter how many times you re-run the script. If you ever
+genuinely want to reset Site settings back to what's in
+`src/data/siteSettings.js`, delete the "Site settings" document in the
+Studio first, then re-run `npm run seed` to recreate it.
+
+For everything else (projects, skills, testimonials, posts), the file is
+treated as the source of truth on re-run — so re-running the script will
+overwrite any edits you've since made *in the Studio* to an item that also
+exists in `src/data/`. If you're managing something entirely from the
+Studio now, just leave it out of `src/data/` and it won't be touched.

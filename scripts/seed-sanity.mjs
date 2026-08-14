@@ -174,7 +174,8 @@ async function run() {
     Promise.resolve(seedSiteSettings()),
   ])
 
-  const allDocs = [...settingsDocs, ...projectDocs, ...skillDocs, ...testimonialDocs, ...postDocs]
+  const syncedDocs = [...projectDocs, ...skillDocs, ...testimonialDocs, ...postDocs]
+  const allDocs = [...settingsDocs, ...syncedDocs]
 
   console.log(`[seed] Prepared ${allDocs.length} documents:`)
   console.log(`  - 1 site settings`)
@@ -186,16 +187,31 @@ async function run() {
   if (DRY_RUN) {
     console.log('\n[seed] --dry-run: no writes made. Document IDs that would be created:')
     allDocs.forEach((d) => console.log(`  - ${d._id}`))
+    console.log(
+      '\n[seed] Note: "Site settings" only gets created if missing — it will never overwrite edits made in the Studio on future runs.'
+    )
     return
   }
 
+  // Site settings: only create it if it doesn't exist yet. Once it exists,
+  // the Studio is the source of truth for it — re-running this script
+  // should never silently reset a toggle (like "Show testimonials section")
+  // or bio text you've since edited there.
+  let settingsTx = client.transaction()
+  for (const doc of settingsDocs) {
+    settingsTx = settingsTx.createIfNotExists(doc)
+  }
+  await settingsTx.commit()
+
+  // Everything else: always sync from src/data/, since these are meant to
+  // be kept up to date by re-running this script.
   let tx = client.transaction()
-  for (const doc of allDocs) {
+  for (const doc of syncedDocs) {
     tx = tx.createOrReplace(doc)
   }
   await tx.commit()
 
-  await pruneRemoved(allDocs)
+  await pruneRemoved(syncedDocs)
 
   console.log('\n[seed] Done! Open your Studio — everything should be there now.')
 }
