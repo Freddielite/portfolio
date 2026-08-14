@@ -206,6 +206,29 @@ main > section {
   padding: 0.55rem 0.9rem;
 }
 
+/* ---------- Header: mobile menu (hidden on desktop by default) ---------- */
+
+.header-actions-mobile {
+  display: none;
+}
+
+.header-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.header-mobile-panel {
+  display: none;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {
@@ -1297,8 +1320,9 @@ main > section {
   }
 
   .header {
-    padding: 1.1rem 1.4rem;
-    flex-wrap: wrap;
+    padding: 1rem 1.4rem;
+    flex-wrap: nowrap;
+    position: relative;
   }
 
   .split-grid {
@@ -1310,18 +1334,59 @@ main > section {
     position: static;
   }
 
-  .header-actions {
-    order: 3;
-    width: 100%;
+  .header-nav-desktop,
+  .header-actions-desktop {
+    display: none;
   }
 
-  .header-cta {
-    flex: 1;
+  .header-actions-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .header-mobile-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem 1.4rem 2rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .header-mobile-panel.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .header-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+
+  .header-mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .header-mobile-actions .btn,
+  .header-mobile-actions .link-btn {
     justify-content: center;
-  }
-
-  .header-resume {
-    flex-shrink: 0;
   }
 
   .project-watermark {
