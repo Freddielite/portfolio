@@ -1556,7 +1556,7 @@ main > section {
   --accent: #6c8bff;
   --accent-2: #34d399;
   --shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.6);
-  --header-bg: rgba(11, 15, 26, 0.82);
+  --header-bg: rgba(9, 12, 20, 0.97);
 }
 
 :root[data-theme='dark'] body {
