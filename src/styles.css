@@ -39,9 +39,34 @@ body {
   font-family: var(--font-body);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  background: #f4f7ff;
+  position: relative;
+}
+
+/* The animated gradient lives on a small, fixed-size layer instead of the
+   (potentially very tall) body element. Animating background-position on
+   the full document repaints the whole page height on every frame, which
+   is expensive on mobile GPUs and was the cause of scroll stutter and
+   stale/flickered frames. A fixed, viewport-sized layer is cheap to
+   animate regardless of how long the page is. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background: linear-gradient(135deg, #eef2fd 0%, #f8faff 22%, #ffffff 46%, #eaf0fd 72%, #f4f7ff 100%);
   background-size: 320% 320%;
   animation: bg-drift 22s ease-in-out infinite;
+  will-change: background-position;
+}
+
+:root[data-theme='dark'] body {
+  background: #0b0f1a;
+}
+
+:root[data-theme='dark'] body::before {
+  background: linear-gradient(135deg, #0b0f1a 0%, #0d1220 22%, #10162a 46%, #0c1224 72%, #0b0f1a 100%);
+  background-size: 320% 320%;
 }
 
 @keyframes bg-drift {
@@ -60,10 +85,9 @@ body {
 
 .reveal {
   opacity: 0;
-  filter: blur(16px);
   translate: 0 26px;
-  transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1), filter 1s cubic-bezier(0.22, 1, 0.36, 1), translate 1s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, filter, translate;
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), translate 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, translate;
 }
 
 .reveal.in-view {
@@ -1562,11 +1586,6 @@ main > section {
 :root[data-theme='dark'] .header {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-}
-
-:root[data-theme='dark'] body {
-  background: linear-gradient(135deg, #0b0f1a 0%, #0d1220 22%, #10162a 46%, #0c1224 72%, #0b0f1a 100%);
-  background-size: 320% 320%;
 }
 
 :root[data-theme='dark'] .intro {
