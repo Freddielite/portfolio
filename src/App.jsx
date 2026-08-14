@@ -1,26 +1,24 @@
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Intro from './components/Intro.jsx'
 import Header from './components/Header.jsx'
-import Hero from './components/Hero.jsx'
-import About from './components/About.jsx'
-import Skills from './components/Skills.jsx'
-import Stack from './components/Stack.jsx'
-import Projects from './components/Projects.jsx'
-import Contact from './components/Contact.jsx'
 import WhatsAppButton from './components/WhatsAppButton.jsx'
+import Home from './pages/Home.jsx'
+import BlogList from './pages/BlogList.jsx'
+import BlogPost from './pages/BlogPost.jsx'
 
 export default function App() {
+  const location = useLocation()
+  const isHome = location.pathname === '/'
+
   return (
     <>
-      <Intro />
+      {isHome && <Intro />}
       <Header />
-      <main>
-        <Hero />
-        <About />
-        <Skills />
-        <Stack />
-        <Projects />
-        <Contact />
-      </main>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/blog" element={<BlogList />} />
+        <Route path="/blog/:slug" element={<BlogPost />} />
+      </Routes>
       <WhatsAppButton />
     </>
   )

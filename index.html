@@ -7,6 +7,23 @@
     <title>Wilfred Oseghale · Full-stack Developer</title>
     <meta name="description" content="Wilfred Oseghale, full-stack developer building web, backend and infrastructure for Wyntek Technologies and independent clients." />
 
+    <!-- Sets the theme before React mounts so there's no flash of the wrong theme -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme')
+          var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          document.documentElement.setAttribute('data-theme', theme)
+        } catch (e) {}
+      })()
+    </script>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Wilfred Oseghale · Full-stack Developer" />
+    <meta property="og:description" content="Wilfred Oseghale, full-stack developer building web, backend and infrastructure for Wyntek Technologies and independent clients." />
+    <meta property="og:image" content="/images/wilfred-photo.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />

@@ -1,21 +1,29 @@
+import { Link } from 'react-router-dom'
+import ThemeToggle from './ThemeToggle.jsx'
+import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
+
 export default function Header() {
+  const s = useSiteSettings()
+
   return (
     <header className="header">
-      <a href="#top" className="header-mark">
+      <Link to="/#top" className="header-mark">
         <span className="header-mark-dot" aria-hidden="true" />
-        WF
-      </a>
+        {s.initials}
+      </Link>
       <nav className="header-nav">
-        <a href="#about">About</a>
-        <a href="#skills">Skills</a>
-        <a href="#work">Work</a>
-        <a href="#contact">Contact</a>
+        <Link to="/#about">About</Link>
+        <Link to="/#skills">Skills</Link>
+        <Link to="/#work">Work</Link>
+        <Link to="/blog">Blog</Link>
+        <Link to="/#contact">Contact</Link>
       </nav>
       <div className="header-actions">
-        <a href="/cv.pdf" download className="link-btn link-btn-ghost header-resume">
+        <ThemeToggle />
+        <a href={s.resumeUrl} download className="link-btn link-btn-ghost header-resume">
           CV ↓
         </a>
-        <a href="#contact" className="btn btn-primary header-cta">Start a project</a>
+        <Link to="/#contact" className="btn btn-primary header-cta">Start a project</Link>
       </div>
     </header>
   )

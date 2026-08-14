@@ -1,6 +1,9 @@
+import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
+
 export default function WhatsAppButton() {
+  const s = useSiteSettings()
   const message = "Hi, I'd like to start a project"
-  const href = `https://wa.me/message/W54UOHNCLCOXJ1?text=${encodeURIComponent(message)}`
+  const href = `${s.whatsappUrl}?text=${encodeURIComponent(message)}`
 
   return (
     <a

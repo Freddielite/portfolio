@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import projects from '../data/projects.js'
 import useInView from '../hooks/useInView.js'
+import useContent from '../hooks/useContent.js'
+import { getProjects } from '../lib/content.js'
+import fallbackProjects from '../data/projects.js'
 import CaseStudyModal from './CaseStudyModal.jsx'
 
 export default function Projects() {
   const [ref, inView] = useInView({ threshold: 0.1 })
   const [activeProject, setActiveProject] = useState(null)
+  const [projects] = useContent(getProjects, fallbackProjects)
 
   return (
     <section id="work" className={`projects reveal ${inView ? 'in-view' : ''}`} ref={ref}>

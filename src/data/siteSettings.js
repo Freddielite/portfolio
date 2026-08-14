@@ -1,0 +1,55 @@
+// Fallback content for anything site-wide: name, bio, links, availability.
+// Once Sanity is connected, edit these fields from the "Site Settings"
+// singleton in the Studio instead of here.
+
+const siteSettings = {
+  name: 'Oseghale Wilfred',
+  shortName: 'Wilfred',
+  initials: 'WF',
+  tagline: 'Full-stack developer',
+  company: 'Wyntek Technologies',
+  location: 'Nigeria',
+  timezone: 'WAT (UTC+1), Nigeria',
+  availability: 'AVAILABLE FOR WORK',
+  isAvailable: true,
+  responseTime: 'Usually within 24 hours',
+  bestWayToReach: 'Email or WhatsApp',
+
+  heroGreetingName: 'Oseghale Wilfred',
+  heroHeadlineLine1: 'I build the systems',
+  heroHeadlineHighlight: 'the interface.',
+  heroSub:
+    'From responsive storefronts to authenticated APIs and the infrastructure that keeps them online, I design and ship complete web products for small businesses and growing teams.',
+
+  aboutParagraphs: [
+    "I run Wyntek Technologies, a Nigeria-based studio doing web design, networking and security work. I like taking a project from a rough idea to something real and working: a storefront that converts, an API that holds up, a server that stays online.",
+    "Most of my work sits at the intersection of the three things I'm best at: building the interface, building the backend behind it, and making sure the whole thing is secure and stays up. I take on both one-off client builds and longer retainer work for small businesses and larger teams.",
+  ],
+
+  focusAreas: 'Frontend, backend, security',
+  worksWith: 'Small businesses & larger teams',
+  engagement: 'One-off builds & retainers',
+
+  contactHeadline: "Let's build something.",
+  contactSub:
+    'Open to retainer-based and project-based work: web design, backend builds, and the infrastructure to run them.',
+  email: 'wynteknologies@gmail.com',
+  githubUrl: 'https://github.com/Freddielite',
+  whatsappUrl: 'https://wa.me/message/W54UOHNCLCOXJ1',
+  linkedinUrl: '',
+  twitterUrl: '',
+  resumeUrl: '/cv.pdf',
+  photo: '/images/wilfred-photo.jpg',
+
+  // Create a free form at https://formspree.io, then paste the form ID here
+  // (the part after "f/" in the endpoint they give you) to make the contact
+  // form actually deliver email — no backend code required.
+  formspreeId: '',
+
+  // Add your Plausible/Vercel Analytics setup notes here if useful later.
+  siteUrl: 'https://example.com',
+  metaDescription:
+    'Oseghale Wilfred, full-stack developer building web, backend and infrastructure for Wyntek Technologies and independent clients.',
+}
+
+export default siteSettings
