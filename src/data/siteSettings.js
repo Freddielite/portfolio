@@ -51,7 +51,7 @@ const siteSettings = {
   formspreeId: '',
 
   // Add your Plausible/Vercel Analytics setup notes here if useful later.
-  siteUrl: 'https://example.com',
+  siteUrl: 'https://oseghale-wilfred.vercel.app',
   metaDescription:
     'Oseghale Wilfred, full-stack developer building web, backend and infrastructure for Wyntek Technologies and independent clients.',
 }
