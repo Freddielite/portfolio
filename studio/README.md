@@ -32,12 +32,30 @@ itself and only you can access it.
    Testimonials, and Blog posts.
 
 4. **Deploy the Studio so you can edit content from anywhere** (not just
-   your laptop):
+   your laptop). Sanity's own hosted `*.sanity.studio` service currently has
+   a bug where it redirects into a broken "Dashboard" wrapper for some
+   accounts (a known issue on their end, not this project), so instead we
+   host the Studio the same simple way as the main site: as its own project
+   on Vercel.
+
    ```bash
-   npm run deploy
+   npm run build
    ```
-   This gives you a URL like `https://wilfred-portfolio.sanity.studio` —
-   bookmark it. That's your permanent "admin panel."
+   This produces a plain static site in `studio/dist` (this is the same
+   `sanity build` command as before, just without the `deploy` step that
+   hands it over to Sanity's hosting).
+
+   Then, on vercel.com:
+   - **Add New Project** → import the same GitHub repo again
+   - When asked for the **Root Directory**, set it to `studio`
+   - Framework preset: **Other**
+   - Build command: `npm run build`, Output directory: `dist`
+   - Deploy
+
+   This gives you a second, separate URL (e.g.
+   `wilfred-portfolio-studio.vercel.app`) that's entirely self-hosted and
+   never touches Sanity's own hosting or its Dashboard redirect. Bookmark
+   that URL, it's your permanent admin panel.
 
 5. **Connect the main site to this content.** In the project root (not this
    `studio` folder), copy `.env.example` to `.env` and set:
