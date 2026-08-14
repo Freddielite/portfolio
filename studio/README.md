@@ -99,7 +99,16 @@ bio/contact info) straight into Sanity as real, editable documents.
 From here, editing or deleting anything is just: open the item in the
 Studio, change it or hit the trash icon, click Publish.
 
-**Safe to run again:** the script uses fixed IDs, so re-running `npm run
-seed` later updates the same documents instead of creating duplicates — but
-it will overwrite any edits you've since made in the Studio to that specific
-item, so only re-run it if that's what you want.
+**Safe to run again:** each document gets a stable ID based on its name/slug
+(not its position in the list), so adding, removing, or reordering entries
+in `src/data/` and re-running `npm run seed` does the right thing:
+- Edited entries update in place.
+- New entries get added.
+- Anything you removed from `src/data/` gets deleted from Sanity too
+  (the script prints what it's removing before it does).
+
+The one thing to watch for: re-running the script will overwrite any edits
+you've since made *in the Studio* to an item that also exists in
+`src/data/`, since the file is treated as the source of truth on re-run.
+If you're managing something entirely from the Studio now, just leave it
+out of `src/data/` and it won't be touched.

@@ -9,24 +9,6 @@
 const projects = [
   {
     id: '01',
-    name: 'Shefitts.co',
-    description:
-      'Nigerian fashion e-commerce platform for African-inspired clothing. A mobile-first storefront with a checkout built around how Nigerian shoppers actually pay.',
-    tags: ['Frontend', 'E-commerce', 'CSS Grid', 'Payments'],
-    live: 'https://shefitts.co',
-    github: null,
-    image: '/images/projects/shefitts.jpg',
-    caseStudy: {
-      problem:
-        'Most e-commerce templates assume every shopper has a card ready to go. For a Nigerian audience, that assumption loses sales before checkout even loads.',
-      approach:
-        'Built a responsive collections grid with swipe carousels for mobile browsing, then a single-page checkout that treats card, bank transfer, Paystack and USSD as equally first-class options.',
-      outcome:
-        'A storefront that runs as smoothly on a low-end Android phone as on desktop, with a checkout that does not quietly lose shoppers who do not have a card on hand.',
-    },
-  },
-  {
-    id: '02',
     name: 'Wyntek',
     description:
       'The Wyntek Technologies site and its internal operations dashboard: leads, quotes, invoices, testimonials, and a templates shop selling white-label site templates through Paystack checkout, with dispute handling and a daily Telegram digest.',
@@ -44,7 +26,7 @@ const projects = [
     },
   },
   {
-    id: '03',
+    id: '02',
     name: 'Expenses Tracker',
     description:
       'A full-stack personal finance app for tracking income and expenses, with budgets, recurring transactions, savings goals, and CSV, Excel and PDF import/export. Backend hand-built in Go using only the standard library, paired with a React and Recharts frontend.',
@@ -62,7 +44,7 @@ const projects = [
     },
   },
   {
-    id: '04',
+    id: '03',
     name: 'Eaksline Courier',
     description:
       'Website for a logistics and courier company, built to turn visitors into inquiries with service listings clear enough that people do not need to call to understand what is on offer.',
@@ -80,7 +62,7 @@ const projects = [
     },
   },
   {
-    id: '05',
+    id: '04',
     name: 'FocusDial',
     description:
       'A focus-session tracker with a live timer and manual logging that turns real session history into insights: peak focus hours, a daily streak, and which kind of work you sustain focus on longest. Includes weekly time budgets, a deadline planner with feasibility tracking, and real push notifications.',
@@ -98,7 +80,7 @@ const projects = [
     },
   },
   {
-    id: '06',
+    id: '05',
     name: 'Pulse',
     description:
       'A personal uptime and keep-alive monitor built for the Render/Vercel free-tier reality: it pings your own apps often enough that they never spin down, while tracking SSL and domain expiry, running passive security scans, and alerting you the moment something goes down.',

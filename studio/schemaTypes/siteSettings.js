@@ -14,6 +14,13 @@ export default {
     { name: 'timezone', title: 'Timezone label', type: 'string' },
     { name: 'availability', title: 'Availability badge text', type: 'string' },
     { name: 'isAvailable', title: 'Currently available for work?', type: 'boolean' },
+    {
+      name: 'showTestimonials',
+      title: 'Show testimonials section',
+      type: 'boolean',
+      description: 'Turn off to hide the Testimonials section from the live site without deleting any testimonials.',
+      initialValue: true,
+    },
     { name: 'responseTime', title: 'Response time', type: 'string' },
     { name: 'bestWayToReach', title: 'Best way to reach you', type: 'string' },
 

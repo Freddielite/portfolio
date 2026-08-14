@@ -2,11 +2,14 @@ import useInView from '../hooks/useInView.js'
 import useContent from '../hooks/useContent.js'
 import { getTestimonials } from '../lib/content.js'
 import fallbackTestimonials from '../data/testimonials.js'
+import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
 export default function Testimonials() {
   const [ref, inView] = useInView({ threshold: 0.15 })
   const [testimonials] = useContent(getTestimonials, fallbackTestimonials)
+  const s = useSiteSettings()
 
+  if (s.showTestimonials === false) return null
   if (!testimonials.length) return null
 
   return (

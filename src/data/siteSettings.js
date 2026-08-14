@@ -30,6 +30,10 @@ const siteSettings = {
   worksWith: 'Small businesses & larger teams',
   engagement: 'One-off builds & retainers',
 
+  // Set to false to hide the Testimonials section from the live site
+  // entirely, without deleting any of the testimonials themselves.
+  showTestimonials: true,
+
   contactHeadline: "Let's build something.",
   contactSub:
     'Open to retainer-based and project-based work: web design, backend builds, and the infrastructure to run them.',

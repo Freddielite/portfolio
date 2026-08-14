@@ -1,14 +1,7 @@
 // TODO (Wilfred): swap these placeholders for real client quotes once you
-// have them — or add them straight from the Studio once Sanity is connected.
+// have them, or add them straight from the Studio once Sanity is connected.
 
 const testimonials = [
-  {
-    id: 't1',
-    quote:
-      'Wilfred took a vague brief and turned it into a storefront that actually converts. Communication was fast and the checkout has not given us a single problem since launch.',
-    author: 'Client name',
-    role: 'Founder, Shefitts.co',
-  },
   {
     id: 't2',
     quote:

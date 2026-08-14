@@ -62,6 +62,10 @@ function key() {
   return Math.random().toString(36).slice(2, 10)
 }
 
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48)
+}
+
 function toPortableText(body) {
   // Fallback posts are already shaped like Portable Text blocks, minus the
   // _key fields Sanity requires on every block/span. Add those here.
@@ -77,7 +81,7 @@ async function seedProjects() {
   for (const [i, p] of projects.entries()) {
     const image = await uploadImage(p.image)
     docs.push({
-      _id: `project-${p.id}`,
+      _id: `project-${slugify(p.name)}`,
       _type: 'project',
       order: i,
       id: p.id,
@@ -95,7 +99,7 @@ async function seedProjects() {
 
 function seedSkills() {
   return skills.map((s, i) => ({
-    _id: `skill-${i}-${s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}`,
+    _id: `skill-${slugify(s.name)}`,
     _type: 'skill',
     order: i,
     name: s.name,
@@ -136,6 +140,31 @@ function seedSiteSettings() {
   return [{ _id: 'siteSettings', _type: 'siteSettings', ...siteSettings }]
 }
 
+async function pruneRemoved(allDocs) {
+  // Deletes any project/post/testimonial/skill document in Sanity that is
+  // no longer present in src/data/*.js — e.g. a project you deleted here
+  // (like removing Shefitts) actually disappears from Sanity too, instead
+  // of lingering as an orphaned duplicate.
+  const keepIds = new Set(allDocs.map((d) => d._id))
+  const types = ['project', 'post', 'testimonial', 'skill']
+  const existing = await client.fetch(
+    `*[_type in $types]{ _id, _type, name, title, author }`,
+    { types }
+  )
+  const toDelete = existing.filter((doc) => !keepIds.has(doc._id))
+
+  if (toDelete.length === 0) return
+
+  console.log(`\n[seed] Removing ${toDelete.length} document(s) no longer in src/data/:`)
+  let tx = client.transaction()
+  for (const doc of toDelete) {
+    const label = doc.name || doc.title || doc.author || doc._id
+    console.log(`  - ${doc._type}: ${label} (${doc._id})`)
+    tx = tx.delete(doc._id)
+  }
+  await tx.commit()
+}
+
 async function run() {
   const [projectDocs, skillDocs, testimonialDocs, postDocs, settingsDocs] = await Promise.all([
     seedProjects(),
@@ -165,6 +194,8 @@ async function run() {
     tx = tx.createOrReplace(doc)
   }
   await tx.commit()
+
+  await pruneRemoved(allDocs)
 
   console.log('\n[seed] Done! Open your Studio — everything should be there now.')
 }

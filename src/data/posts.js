@@ -19,13 +19,13 @@ const posts = [
     excerpt:
       "Card-only checkouts quietly lose a lot of shoppers. Notes from wiring up Paystack, bank transfer and USSD side by side on a live storefront.",
     publishedAt: '2026-06-01',
-    coverImage: '/images/projects/shefitts.jpg',
+    coverImage: null,
     body: [
       block(
         "Most checkout tutorials assume everyone has a card ready to go. On a Nigerian storefront that assumption loses you customers before they ever see a confirmation page."
       ),
       block(
-        "For Shefitts.co I built a single-page checkout that treats card, bank transfer, Paystack and USSD as equally first-class options, instead of bolting the last three on as an afterthought."
+        "For a recent e-commerce storefront I built a single-page checkout that treats card, bank transfer, Paystack and USSD as equally first-class options, instead of bolting the last three on as an afterthought."
       ),
       block(
         "The main lesson: put the payment method choice up front, not buried after address and shipping. Shoppers who already know they're paying by transfer want to see that option immediately, not discover it three steps in."
