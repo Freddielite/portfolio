@@ -11,7 +11,7 @@ export default defineConfig({
 
   // Filled in for you the first time you run `npx sanity init` in this
   // folder — see README.md.
-  projectId: 'YOUR_PROJECT_ID',
+  projectId: '3b34374l',
   dataset: 'production',
 
   plugins: [
