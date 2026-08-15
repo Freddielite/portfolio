@@ -82,7 +82,7 @@ function PostForm({ post, onChange, onDelete }) {
 
       <div className="admin-field">
         <label className="admin-label">Excerpt</label>
-        <textarea rows={2} value={post.excerpt} onChange={(e) => set('excerpt', e.target.value)} />
+        <textarea rows={3} value={post.excerpt} onChange={(e) => set('excerpt', e.target.value)} />
       </div>
 
       <ImageUploader label="Cover image" value={post.coverImage} onChange={(v) => set('coverImage', v)} folder="blog" />

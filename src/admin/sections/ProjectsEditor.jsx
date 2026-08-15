@@ -48,7 +48,7 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
 
       <div className="admin-field">
         <label className="admin-label">Description</label>
-        <textarea rows={3} value={project.description} onChange={(e) => set('description', e.target.value)} />
+        <textarea rows={4} value={project.description} onChange={(e) => set('description', e.target.value)} />
       </div>
 
       <div className="admin-field">
@@ -77,15 +77,15 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
       <h4>Case study</h4>
       <div className="admin-field">
         <label className="admin-label">Problem</label>
-        <textarea rows={2} value={project.caseStudy?.problem || ''} onChange={(e) => setCaseStudy('problem', e.target.value)} />
+        <textarea rows={4} value={project.caseStudy?.problem || ''} onChange={(e) => setCaseStudy('problem', e.target.value)} />
       </div>
       <div className="admin-field">
         <label className="admin-label">Approach</label>
-        <textarea rows={2} value={project.caseStudy?.approach || ''} onChange={(e) => setCaseStudy('approach', e.target.value)} />
+        <textarea rows={4} value={project.caseStudy?.approach || ''} onChange={(e) => setCaseStudy('approach', e.target.value)} />
       </div>
       <div className="admin-field">
         <label className="admin-label">Outcome</label>
-        <textarea rows={2} value={project.caseStudy?.outcome || ''} onChange={(e) => setCaseStudy('outcome', e.target.value)} />
+        <textarea rows={4} value={project.caseStudy?.outcome || ''} onChange={(e) => setCaseStudy('outcome', e.target.value)} />
       </div>
     </div>
   )

@@ -214,40 +214,22 @@
     z-index: 20;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    padding: 10px 12px 8px;
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      'title footer'
-      'nav nav';
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
     column-gap: 10px;
+    row-gap: 8px;
   }
   .admin-sidebar-title {
-    grid-area: title;
+    order: 1;
+    flex: 1 1 auto;
     padding: 0;
   }
-  .admin-sidebar nav {
-    grid-area: nav;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 6px;
-    margin-top: 10px;
-    padding-bottom: 2px;
-    /* Without this, a grid item's default min-width:auto lets its intrinsic
-       (nowrap) content width force the whole grid — and with it the whole
-       page — wider than the viewport, instead of scrolling internally. */
-    min-width: 0;
-    max-width: 100%;
-  }
-  .admin-sidebar nav .admin-nav-item {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
   .admin-sidebar-footer {
-    grid-area: footer;
+    order: 2;
+    flex: 0 0 auto;
     flex-direction: row;
     gap: 12px;
     border-top: none;
@@ -255,6 +237,20 @@
   }
   .admin-sidebar-footer .admin-nav-item {
     padding: 6px 4px;
+    font-size: 13px;
+  }
+  .admin-sidebar nav {
+    order: 3;
+    /* Forces this onto its own line below title/footer, however wide the
+       screen is — never a horizontal scroller, so tabs simply wrap to a
+       second row instead of any content ever sliding off-screen. */
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .admin-nav-item {
+    padding: 7px 10px;
     font-size: 13px;
   }
 }
