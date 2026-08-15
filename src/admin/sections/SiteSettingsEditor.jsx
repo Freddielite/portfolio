@@ -111,6 +111,9 @@ export default function SiteSettingsEditor() {
         <Field label="LinkedIn URL"><input value={form.linkedinUrl} onChange={(e) => set('linkedinUrl', e.target.value)} /></Field>
         <Field label="Twitter/X URL"><input value={form.twitterUrl} onChange={(e) => set('twitterUrl', e.target.value)} /></Field>
         <Field label="Resume URL"><input value={form.resumeUrl} onChange={(e) => set('resumeUrl', e.target.value)} /></Field>
+        <Field label="Resume download filename" hint="Shown to visitors when they download the CV, without .pdf">
+          <input value={form.resumeFileName} onChange={(e) => set('resumeFileName', e.target.value)} />
+        </Field>
         <Field label="Formspree form ID" hint="From formspree.io, only the part after f/"><input value={form.formspreeId} onChange={(e) => set('formspreeId', e.target.value)} /></Field>
       </div>
       <FileUploader

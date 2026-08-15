@@ -45,7 +45,11 @@ export default function Header() {
 
       <div className="header-actions header-actions-desktop">
         <ThemeToggle />
-        <a href={s.resumeUrl} download="Oseghale Wilfred.pdf" className="link-btn link-btn-ghost header-resume">
+        <a
+          href={s.resumeUrl}
+          download={`${s.resumeFileName || s.name || 'CV'}.pdf`}
+          className="link-btn link-btn-ghost header-resume"
+        >
           CV ↓
         </a>
         <Link to="/#contact" className="btn btn-primary header-cta">Start a project</Link>
@@ -72,7 +76,11 @@ export default function Header() {
           ))}
         </nav>
         <div className="header-mobile-actions">
-          <a href={s.resumeUrl} download="Oseghale Wilfred.pdf" className="link-btn link-btn-ghost">
+          <a
+            href={s.resumeUrl}
+            download={`${s.resumeFileName || s.name || 'CV'}.pdf`}
+            className="link-btn link-btn-ghost"
+          >
             Download CV ↓
           </a>
           <Link to="/#contact" className="btn btn-primary">Start a project</Link>
