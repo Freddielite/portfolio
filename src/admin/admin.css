@@ -167,6 +167,8 @@
 
 .admin-field input,
 .admin-field textarea {
+  width: 100%;
+  box-sizing: border-box;
   padding: 9px 11px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -344,6 +346,9 @@
   border-radius: var(--radius);
   padding: 18px;
   margin-bottom: 16px;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .admin-card-header {
@@ -366,7 +371,8 @@
 }
 
 .admin-skill-name {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 7px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -389,11 +395,14 @@
   display: flex;
   gap: 14px;
   align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .admin-image-preview {
   width: 90px;
   height: 90px;
+  flex-shrink: 0;
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -414,6 +423,17 @@
   flex-direction: column;
   gap: 6px;
   align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
+}
+
+/* The native file input's default rendered width is unpredictable (varies
+   by browser/OS) and doesn't shrink on its own — without this, it was the
+   one element wide enough to force the whole card past the screen edge. */
+.admin-image-controls input[type='file'] {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* ---------- Blog posts layout ---------- */
