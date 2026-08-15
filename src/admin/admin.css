@@ -48,6 +48,8 @@
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
   font-size: 15px;
 }
 
@@ -169,7 +171,7 @@
   border: 1px solid var(--border);
   font-family: inherit;
   font-size: 14px;
-  background: #fff;
+  background: var(--surface-2);
   color: var(--text);
   resize: vertical;
 }
@@ -198,7 +200,7 @@
     grid-template-columns: 1fr;
   }
   .admin-main {
-    padding: 20px;
+    padding: 16px 16px 60px;
   }
   .admin-shell {
     flex-direction: column;
@@ -206,14 +208,48 @@
   .admin-sidebar {
     width: 100%;
     height: auto;
-    position: static;
-    flex-direction: row;
-    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'title footer'
+      'nav nav';
     align-items: center;
+    column-gap: 10px;
+  }
+  .admin-sidebar-title {
+    grid-area: title;
+    padding: 0;
   }
   .admin-sidebar nav {
+    grid-area: nav;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    margin-top: 10px;
+    padding-bottom: 2px;
+  }
+  .admin-sidebar nav .admin-nav-item {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .admin-sidebar-footer {
+    grid-area: footer;
+    flex-direction: row;
+    gap: 12px;
+    border-top: none;
+    padding-top: 0;
+  }
+  .admin-sidebar-footer .admin-nav-item {
+    padding: 6px 4px;
+    font-size: 13px;
   }
 }
 
@@ -332,6 +368,8 @@
   padding: 7px 10px;
   border-radius: 6px;
   border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .admin-skill-level {
@@ -339,6 +377,8 @@
   padding: 7px 8px;
   border-radius: 6px;
   border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 /* ---------- Images ---------- */
@@ -405,7 +445,7 @@
 
 .admin-post-list-item.is-active {
   border-color: var(--accent);
-  background: #eef1fd;
+  background: var(--surface);
 }
 
 @media (max-width: 780px) {
