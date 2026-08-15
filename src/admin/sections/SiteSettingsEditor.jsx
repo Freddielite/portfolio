@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
+import FileUploader from '../FileUploader.jsx'
 
 function Field({ label, hint, children }) {
   return (
@@ -112,6 +113,14 @@ export default function SiteSettingsEditor() {
         <Field label="Resume URL"><input value={form.resumeUrl} onChange={(e) => set('resumeUrl', e.target.value)} /></Field>
         <Field label="Formspree form ID" hint="From formspree.io, only the part after f/"><input value={form.formspreeId} onChange={(e) => set('formspreeId', e.target.value)} /></Field>
       </div>
+      <FileUploader
+        label="CV / resume file"
+        value={form.resumeUrl}
+        onChange={(v) => set('resumeUrl', v)}
+        folder="resume"
+        accept="application/pdf"
+        hint="Uploads and replaces public/cv.pdf directly — the URL above updates automatically."
+      />
 
       <h2>SEO</h2>
       <div className="admin-grid-2">
