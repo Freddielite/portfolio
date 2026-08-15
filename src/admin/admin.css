@@ -7,6 +7,7 @@
   background: var(--surface);
   font-family: var(--font-body);
   color: var(--text);
+  overflow-x: hidden;
 }
 
 .admin-loading-screen {
@@ -235,6 +236,11 @@
     gap: 6px;
     margin-top: 10px;
     padding-bottom: 2px;
+    /* Without this, a grid item's default min-width:auto lets its intrinsic
+       (nowrap) content width force the whole grid — and with it the whole
+       page — wider than the viewport, instead of scrolling internally. */
+    min-width: 0;
+    max-width: 100%;
   }
   .admin-sidebar nav .admin-nav-item {
     white-space: nowrap;
@@ -437,6 +443,7 @@
   text-align: left;
   border: 1px solid var(--border);
   background: var(--surface-2);
+  color: var(--text);
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
