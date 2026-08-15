@@ -1,81 +1,33 @@
-import { sanityClient, isSanityConfigured } from './sanity.js'
-
-import fallbackProjects from '../data/projects.js'
-import fallbackSkills from '../data/skills.js'
-import fallbackSettings from '../data/siteSettings.js'
-import fallbackTestimonials from '../data/testimonials.js'
-import fallbackPosts from '../data/posts.js'
-
-async function fetchOrFallback(query, fallback) {
-  if (!isSanityConfigured) return fallback
-  try {
-    const result = await sanityClient.fetch(query)
-    if (!result || (Array.isArray(result) && result.length === 0)) return fallback
-    return result
-  } catch (err) {
-    console.warn('Sanity fetch failed, using fallback content:', err.message)
-    return fallback
-  }
-}
+// Content lives directly in src/data/*.json now — no external CMS, no
+// network fetch, no CORS/env var configuration required. The admin panel at
+// /admin edits these same JSON files by committing straight to GitHub, which
+// triggers a normal Vercel redeploy so changes go live.
+import projects from '../data/projects.js'
+import skills from '../data/skills.js'
+import settings from '../data/siteSettings.js'
+import testimonials from '../data/testimonials.js'
+import posts from '../data/posts.js'
 
 export function getProjects() {
-  return fetchOrFallback(
-    `*[_type == "project"] | order(order asc){
-      "id": coalesce(id, _id), name, description, tags, live, github,
-      "image": image.asset->url, caseStudy
-    }`,
-    fallbackProjects
-  )
+  return projects
 }
 
 export function getSkills() {
-  return fetchOrFallback(
-    `*[_type == "skill"] | order(order asc){ name, level }`,
-    fallbackSkills
-  )
+  return skills
 }
 
-export async function getSiteSettings() {
-  const result = await fetchOrFallback(
-    `*[_type == "siteSettings"][0]`,
-    null
-  )
-  // Merge so a partially-filled Sanity document still gets sane defaults.
-  return { ...fallbackSettings, ...(result || {}) }
+export function getSiteSettings() {
+  return settings
 }
 
 export function getTestimonials() {
-  return fetchOrFallback(
-    `*[_type == "testimonial"] | order(order asc){ "id": _id, quote, author, role }`,
-    fallbackTestimonials
-  )
+  return testimonials
 }
 
-export async function getPosts() {
-  const result = await fetchOrFallback(
-    `*[_type == "post"] | order(publishedAt desc){
-      "_id": _id, title, "slug": slug.current, excerpt, publishedAt,
-      "coverImage": coverImage.asset->url, body
-    }`,
-    fallbackPosts
-  )
-  return [...result].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+export function getPosts() {
+  return [...posts].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
 }
 
-export async function getPostBySlug(slug) {
-  if (isSanityConfigured) {
-    try {
-      const post = await sanityClient.fetch(
-        `*[_type == "post" && slug.current == $slug][0]{
-          "_id": _id, title, "slug": slug.current, excerpt, publishedAt,
-          "coverImage": coverImage.asset->url, body
-        }`,
-        { slug }
-      )
-      if (post) return post
-    } catch (err) {
-      console.warn('Sanity fetch failed, using fallback content:', err.message)
-    }
-  }
-  return fallbackPosts.find((p) => p.slug === slug) || null
+export function getPostBySlug(slug) {
+  return posts.find((p) => p.slug === slug) || null
 }

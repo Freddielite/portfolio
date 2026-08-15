@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Frontend (React, responsive UI, CSS Grid)",
+    "level": 90
+  },
+  {
+    "name": "Web design (client sites & storefronts)",
+    "level": 88
+  },
+  {
+    "name": "Django REST Framework & APIs",
+    "level": 85
+  },
+  {
+    "name": "Authentication & payments (JWT, OTP, SSO)",
+    "level": 82
+  },
+  {
+    "name": "Networking & security",
+    "level": 78
+  },
+  {
+    "name": "Linux (system administration)",
+    "level": 80
+  },
+  {
+    "name": "Deployment & infrastructure",
+    "level": 75
+  }
+]

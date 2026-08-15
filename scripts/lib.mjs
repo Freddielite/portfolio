@@ -1,33 +1,17 @@
-// Shared helpers for the build scripts. Deliberately plain Node/ESM (no Vite
-// env handling) so these can run as plain "node scripts/x.mjs" steps.
-import fallbackProjects from '../src/data/projects.js'
-import fallbackPosts from '../src/data/posts.js'
-import fallbackSettings from '../src/data/siteSettings.js'
+// Shared helper for the build scripts. Deliberately plain Node/ESM (no Vite
+// env handling) so this can run as a plain "node scripts/x.mjs" step.
+// Content is local JSON, the same files the admin panel at /admin edits, so
+// a build always reflects exactly what was last saved there.
+//
+// Loaded via createRequire (not a plain `import './x.json'`) so this works
+// on any Node version without relying on the newer import-attribute syntax.
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
 
-const projectId = process.env.VITE_SANITY_PROJECT_ID
-const dataset = process.env.VITE_SANITY_DATASET || 'production'
+const posts = require('../src/data/posts.json')
+const projects = require('../src/data/projects.json')
+const settings = require('../src/data/siteSettings.json')
 
 export async function getBuildTimeContent() {
-  if (!projectId) {
-    return { posts: fallbackPosts, projects: fallbackProjects, settings: fallbackSettings }
-  }
-  try {
-    const { createClient } = await import('@sanity/client')
-    const client = createClient({ projectId, dataset, apiVersion: '2024-01-01', useCdn: true })
-    const [posts, projects, settings] = await Promise.all([
-      client.fetch(
-        `*[_type == "post"] | order(publishedAt desc){ "slug": slug.current, title, excerpt, publishedAt, "coverImage": coverImage.asset->url }`
-      ),
-      client.fetch(`*[_type == "project"]{ "id": coalesce(id, _id) }`),
-      client.fetch(`*[_type == "siteSettings"][0]{ siteUrl }`),
-    ])
-    return {
-      posts: posts?.length ? posts : fallbackPosts,
-      projects: projects?.length ? projects : fallbackProjects,
-      settings: { ...fallbackSettings, ...(settings || {}) },
-    }
-  } catch (err) {
-    console.warn('[build] Sanity fetch failed, using fallback content:', err.message)
-    return { posts: fallbackPosts, projects: fallbackProjects, settings: fallbackSettings }
-  }
+  return { posts, projects, settings }
 }

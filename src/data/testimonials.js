@@ -1,21 +1,5 @@
-// TODO (Wilfred): swap these placeholders for real client quotes once you
-// have them, or add them straight from the Studio once Sanity is connected.
-
-const testimonials = [
-  {
-    id: 't2',
-    quote:
-      'We needed a site that could list our services clearly and start generating inquiries. That is exactly what we got, and it is still our main channel for new clients.',
-    author: 'Client name',
-    role: 'Eaksline Courier',
-  },
-  {
-    id: 't3',
-    quote:
-      'Solid on frontend, backend and the infrastructure holding it together. Rare to find all three in one person.',
-    author: 'Client name',
-    role: 'Wyntek client',
-  },
-]
-
-export default testimonials
+// Source of truth is testimonials.json — this file is a thin re-export so existing
+// imports across the app keep working unchanged. The admin panel
+// (/admin) reads and writes testimonials.json directly via the GitHub API.
+import data from './testimonials.json' with { type: 'json' }
+export default data
