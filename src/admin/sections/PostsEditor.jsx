@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
+import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
 import { blocksToText, textToBlocks } from '../portableText.js'
@@ -112,6 +113,7 @@ export default function PostsEditor() {
   if (loading || !list) return <p className="admin-hint">Loading…</p>
 
   const dirty = JSON.stringify(list) !== JSON.stringify(data)
+  useUnsavedChangesWarning(dirty)
   const active = list.find((p) => p._id === activeId) || null
 
   function updateActive(post) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
+import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
 import FileUploader from '../FileUploader.jsx'
@@ -25,6 +26,7 @@ export default function SiteSettingsEditor() {
   if (loading || !form) return <p className="admin-hint">Loading…</p>
 
   const dirty = JSON.stringify(form) !== JSON.stringify(data)
+  useUnsavedChangesWarning(dirty)
 
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))

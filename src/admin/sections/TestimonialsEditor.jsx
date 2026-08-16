@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
+import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 
 function blank() {
@@ -17,6 +18,7 @@ export default function TestimonialsEditor() {
   if (loading || !list) return <p className="admin-hint">Loading…</p>
 
   const dirty = JSON.stringify(list) !== JSON.stringify(data)
+  useUnsavedChangesWarning(dirty)
 
   function update(i, key, value) {
     setList((l) => l.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)))

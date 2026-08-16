@@ -58,4 +58,4 @@ export function requireAuth(req, res) {
   return true
 }
 
-export { COOKIE_NAME }
+export { COOKIE_NAME, SESSION_HOURS }

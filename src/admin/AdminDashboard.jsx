@@ -15,7 +15,17 @@ const TABS = [
 
 export default function AdminDashboard({ onLogout }) {
   const [tab, setTab] = useState('settings')
-  const Active = TABS.find((t) => t.id === tab)?.Component
+  // Every tab a user has actually visited stays mounted (see below) so its
+  // useAdminContent() fetch only ever runs once per session instead of
+  // re-hitting the GitHub API every time they switch back to it. Tabs never
+  // visited yet aren't rendered at all, so a session that only touches one
+  // or two tabs still costs one or two fetches, not five upfront.
+  const [visited, setVisited] = useState(() => new Set(['settings']))
+
+  function selectTab(id) {
+    setTab(id)
+    setVisited((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+  }
 
   return (
     <div className="admin-shell">
@@ -27,7 +37,7 @@ export default function AdminDashboard({ onLogout }) {
               key={t.id}
               type="button"
               className={`admin-nav-item ${tab === t.id ? 'is-active' : ''}`}
-              onClick={() => setTab(t.id)}
+              onClick={() => selectTab(t.id)}
             >
               {t.label}
             </button>
@@ -40,7 +50,16 @@ export default function AdminDashboard({ onLogout }) {
           </button>
         </div>
       </aside>
-      <main className="admin-main">{Active && <Active />}</main>
+      <main className="admin-main">
+        {TABS.map(
+          ({ id, Component }) =>
+            visited.has(id) && (
+              <div key={id} style={{ display: tab === id ? 'block' : 'none' }}>
+                <Component />
+              </div>
+            )
+        )}
+      </main>
     </div>
   )
 }
