@@ -21,7 +21,7 @@
   "focusAreas": "Frontend, backend, security",
   "worksWith": "Small businesses & larger teams",
   "engagement": "One-off builds & retainers",
-  "showTestimonials": true,
+  "showTestimonials": false,
   "contactHeadline": "Let's build something.",
   "contactSub": "Open to retainer-based and project-based work: web design, backend builds, and the infrastructure to run them.",
   "email": "wynteknologies@gmail.com",
