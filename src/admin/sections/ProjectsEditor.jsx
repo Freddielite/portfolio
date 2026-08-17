@@ -100,10 +100,10 @@ export default function ProjectsEditor() {
     if (data) setList(data)
   }, [data])
 
-  if (loading || !list) return <p className="admin-hint">Loading…</p>
-
-  const dirty = JSON.stringify(list) !== JSON.stringify(data)
+  const dirty = !loading && list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+
+  if (loading || !list) return <p className="admin-hint">Loading…</p>
 
   function updateAt(i, project) {
     setList((l) => l.map((p, idx) => (idx === i ? project : p)))

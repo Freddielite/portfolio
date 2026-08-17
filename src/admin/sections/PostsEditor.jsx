@@ -110,10 +110,10 @@ export default function PostsEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
 
-  if (loading || !list) return <p className="admin-hint">Loading…</p>
-
-  const dirty = JSON.stringify(list) !== JSON.stringify(data)
+  const dirty = !loading && list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+
+  if (loading || !list) return <p className="admin-hint">Loading…</p>
   const active = list.find((p) => p._id === activeId) || null
 
   function updateActive(post) {

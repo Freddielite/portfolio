@@ -15,10 +15,10 @@ export default function TestimonialsEditor() {
     if (data) setList(data)
   }, [data])
 
-  if (loading || !list) return <p className="admin-hint">Loading…</p>
-
-  const dirty = JSON.stringify(list) !== JSON.stringify(data)
+  const dirty = !loading && list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+
+  if (loading || !list) return <p className="admin-hint">Loading…</p>
 
   function update(i, key, value) {
     setList((l) => l.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)))

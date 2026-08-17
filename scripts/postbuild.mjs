@@ -23,7 +23,7 @@ function escapeHtml(str = '') {
 
 async function writeSitemapAndRobots(posts, projects, siteUrl) {
   const base = siteUrl.replace(/\/$/, '')
-  const staticRoutes = ['/', '/blog']
+  const staticRoutes = ['/', '/blog', '/changelog']
   const urls = [
     ...staticRoutes.map((r) => `${base}${r}`),
     ...posts.map((p) => `${base}/blog/${p.slug}`),

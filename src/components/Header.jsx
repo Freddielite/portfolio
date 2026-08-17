@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Search } from 'lucide-react'
 import ThemeToggle from './ThemeToggle.jsx'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
@@ -9,8 +9,13 @@ const NAV_LINKS = [
   { to: '/#skills', label: 'Skills' },
   { to: '/#work', label: 'Work' },
   { to: '/blog', label: 'Blog' },
+  { to: '/changelog', label: 'Changelog' },
   { to: '/#contact', label: 'Contact' },
 ]
+
+function openCommandPalette() {
+  window.dispatchEvent(new CustomEvent('open-command-palette'))
+}
 
 export default function Header() {
   const s = useSiteSettings()
@@ -44,6 +49,10 @@ export default function Header() {
       </nav>
 
       <div className="header-actions header-actions-desktop">
+        <button type="button" className="header-search-btn" onClick={openCommandPalette} aria-label="Search (Cmd+K)">
+          <Search size={15} />
+          <kbd>⌘K</kbd>
+        </button>
         <ThemeToggle />
         <a
           href={s.resumeUrl}
@@ -56,6 +65,9 @@ export default function Header() {
       </div>
 
       <div className="header-actions-mobile">
+        <button type="button" className="header-search-btn header-search-btn-mobile" onClick={openCommandPalette} aria-label="Search">
+          <Search size={17} />
+        </button>
         <ThemeToggle />
         <button
           type="button"

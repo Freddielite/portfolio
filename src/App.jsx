@@ -3,9 +3,11 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import Intro from './components/Intro.jsx'
 import Header from './components/Header.jsx'
 import WhatsAppButton from './components/WhatsAppButton.jsx'
+import CommandPalette from './components/CommandPalette.jsx'
 import Home from './pages/Home.jsx'
 import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
+import Changelog from './pages/Changelog.jsx'
 
 // Lazy-loaded so the admin panel's code never ships in the bundle visitors
 // download for the public site — it's only fetched when someone actually
@@ -35,8 +37,10 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/changelog" element={<Changelog />} />
       </Routes>
       <WhatsAppButton />
+      <CommandPalette />
     </>
   )
 }
