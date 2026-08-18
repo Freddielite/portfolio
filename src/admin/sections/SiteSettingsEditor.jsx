@@ -135,20 +135,6 @@ export default function SiteSettingsEditor() {
         <textarea rows={2} value={form.metaDescription} onChange={(e) => set('metaDescription', e.target.value)} />
       </Field>
 
-      <h2>Changelog</h2>
-      <p className="admin-hint">
-        The /changelog page reads your repo's public commit history directly from GitHub — no
-        extra setup beyond pointing it at the right repo. Leave blank to hide the page's content.
-      </p>
-      <div className="admin-grid-2">
-        <Field label="GitHub owner/org" hint="e.g. for github.com/yourname/portfolio, this is 'yourname'">
-          <input value={form.changelogOwner || ''} onChange={(e) => set('changelogOwner', e.target.value)} />
-        </Field>
-        <Field label="Repo name" hint="e.g. 'portfolio'">
-          <input value={form.changelogRepo || ''} onChange={(e) => set('changelogRepo', e.target.value)} />
-        </Field>
-      </div>
-
       <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(form)} />
     </div>
   )
