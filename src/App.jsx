@@ -17,19 +17,12 @@ import BlogPost from './pages/BlogPost.jsx'
 // goes to /admin.
 const Admin = lazy(() => import('./pages/Admin.jsx'))
 
-function introSeen() {
-  try {
-    return sessionStorage.getItem('intro-seen') === '1'
-  } catch {
-    return false
-  }
-}
-
 export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
-  // The intro plays once per visit, and only when the visit starts on the home page.
-  const [showIntro, setShowIntro] = useState(() => location.pathname === '/' && !introSeen())
+  // The intro plays on every full page load or refresh that starts on the home
+  // page. Moving around inside the site never replays it.
+  const [showIntro, setShowIntro] = useState(() => location.pathname === '/')
 
   useEffect(() => {
     if (!showIntro) document.documentElement.classList.add('is-ready')
@@ -49,10 +42,7 @@ export default function App() {
     <CurtainProvider>
       {showIntro && (
         <Intro
-          onDone={() => {
-            try { sessionStorage.setItem('intro-seen', '1') } catch { /* private mode */ }
-            setShowIntro(false)
-          }}
+          onDone={() => setShowIntro(false)}
         />
       )}
       <PageEffects />

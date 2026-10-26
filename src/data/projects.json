@@ -50,7 +50,7 @@
       "PostgreSQL",
       "Email"
     ],
-    "live": null,
+    "live": "https://wynmail.vercel.app/",
     "github": "https://github.com/Freddielite/wynmail",
     "image": "/images/projects/wynmail.jpg",
     "caseStudy": {

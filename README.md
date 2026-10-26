@@ -6,7 +6,7 @@ React + Vite portfolio with a blog, a built-in admin panel, testimonials, dark m
 
 - **One scrolling page.** Hero, About, Skills, Work, Services and Process, blog teaser, testimonials and a contact brief builder. The blog is the only separate page (`/blog`, `/blog/:slug`).
 - **Page transition.** A curtain with the page name plays when you enter or leave the blog. Same-page links just scroll.
-- **First-visit intro.** Photo ring, name and counter, then the screen splits open. Plays once per browser session. Click to skip.
+- **First-visit intro.** Photo ring, name and counter, then the screen splits open. Plays on every full page load or refresh of the home page. Click to skip. To limit it to once per visit, store a flag in `sessionStorage` in `App.jsx`.
 - **Command palette.** Ctrl/Cmd + K jumps to any section, project or post. The header search button opens it too.
 - **Case studies** open as a popup over the page, with previous and next project, arrow keys and Esc.
 - **Projects have a type.** Set "Type" in `/admin` (Own product, Client work, Company). It drives the badge on each card and the Work filter.
