@@ -1,35 +1,26 @@
-import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import Hero from '../components/Hero.jsx'
+import Marquee from '../components/Marquee.jsx'
 import About from '../components/About.jsx'
 import Skills from '../components/Skills.jsx'
-import Stack from '../components/Stack.jsx'
 import Projects from '../components/Projects.jsx'
+import Services from '../components/Services.jsx'
+import BlogTeaser from '../components/BlogTeaser.jsx'
 import Testimonials from '../components/Testimonials.jsx'
 import Contact from '../components/Contact.jsx'
 import SEO from '../components/SEO.jsx'
 
 export default function Home() {
-  const location = useLocation()
-
-  useEffect(() => {
-    if (!location.hash) return
-    const el = document.querySelector(location.hash)
-    if (el) {
-      // Wait a tick so layout has settled before scrolling.
-      requestAnimationFrame(() => el.scrollIntoView({ behavior: 'smooth' }))
-    }
-  }, [location])
-
   return (
     <>
       <SEO />
       <main>
         <Hero />
+        <Marquee />
         <About />
         <Skills />
-        <Stack />
         <Projects />
+        <Services />
+        <BlogTeaser />
         <Testimonials />
         <Contact />
       </main>

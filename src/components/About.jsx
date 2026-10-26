@@ -1,53 +1,38 @@
-import useInView from '../hooks/useInView.js'
+import Reveal from './Reveal.jsx'
+import Terminal from './Terminal.jsx'
+import { glowMove } from '../hooks/usePointerFx.js'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
 export default function About() {
-  const [ref, inView] = useInView({ threshold: 0.2 })
   const s = useSiteSettings()
+  const facts = [
+    ['Focus', s.focusAreas],
+    ['Works with', s.worksWith],
+    ['Engagement', s.engagement],
+  ]
 
   return (
-    <section id="about" className={`about reveal ${inView ? 'in-view' : ''}`} ref={ref}>
-      <div className="split-grid">
-        <div className="split-main">
-          <p className="eyebrow">About me</p>
-          <h2>Who I am.</h2>
-          <div className="about-body">
-            {s.aboutParagraphs.map((para, i) => (
-              <p key={i}>{para}</p>
+    <section id="about" className="section about">
+      <Reveal as="p" className="eyebrow">About</Reveal>
+      <Reveal as="h2" className="hb">I take ideas to working products.</Reveal>
+
+      <div className="about-grid">
+        <div className="about-copy">
+          {s.aboutParagraphs.map((p, i) => (
+            <Reveal as="p" delay={i * 90} className="about-p" key={i}>{p}</Reveal>
+          ))}
+          <div className="fact-grid">
+            {facts.map(([label, value], i) => (
+              <Reveal className="card glow" delay={i * 90} key={label} onPointerMove={glowMove}>
+                <span className="mono-label">{label}</span>
+                <h3>{value}</h3>
+              </Reveal>
             ))}
           </div>
         </div>
-
-        <div className="network-card split-side">
-          <div className="network-card-header">
-            <span className="network-card-title">{s.shortName.toUpperCase()} / QUICK FACTS</span>
-            <span className="network-card-status">
-              <span className="status-dot" /> {s.availability}
-            </span>
-          </div>
-          <ul className="fact-list">
-            <li>
-              <span className="fact-label">Based in</span>
-              <span>{s.location}</span>
-            </li>
-            <li>
-              <span className="fact-label">Focus areas</span>
-              <span>{s.focusAreas}</span>
-            </li>
-            <li>
-              <span className="fact-label">Runs</span>
-              <span>{s.company}</span>
-            </li>
-            <li>
-              <span className="fact-label">Works with</span>
-              <span>{s.worksWith}</span>
-            </li>
-            <li>
-              <span className="fact-label">Engagement</span>
-              <span>{s.engagement}</span>
-            </li>
-          </ul>
-        </div>
+        <Reveal className="about-term" delay={120}>
+          <Terminal />
+        </Reveal>
       </div>
     </section>
   )

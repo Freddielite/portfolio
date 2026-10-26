@@ -1,4 +1,4 @@
-// Content lives directly in src/data/*.json now — no external CMS, no
+// Content lives directly in src/data/*.json now, no external CMS, no
 // network fetch, no CORS/env var configuration required. The admin panel at
 // /admin edits these same JSON files by committing straight to GitHub, which
 // triggers a normal Vercel redeploy so changes go live.

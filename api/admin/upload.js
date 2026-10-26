@@ -1,7 +1,7 @@
 import { requireAuth } from '../_lib/auth.js'
 import { getFile, putFile } from '../_lib/github.js'
 
-// Vercel's default body parser limit is 4mb — bump it a bit for image
+// Vercel's default body parser limit is 4mb, bump it a bit for image
 // (and CV/resume) uploads, which still shouldn't be sent much bigger than
 // this anyway.
 export const config = {
@@ -16,7 +16,7 @@ function safeFilename(name) {
 }
 
 // Allowlist of real image formats, checked against the actual decoded
-// bytes rather than the client-supplied MIME type or filename extension —
+// bytes rather than the client-supplied MIME type or filename extension -
 // both of those are just labels an attacker controls. This is what stops
 // someone from uploading e.g. an .svg or .html file that would get served
 // back from /images/... and execute in a browser (stored XSS). Resumes
@@ -26,7 +26,7 @@ const IMAGE_SIGNATURES = [
   { mime: 'image/png', bytes: [0x89, 0x50, 0x4e, 0x47] },
   { mime: 'image/jpeg', bytes: [0xff, 0xd8, 0xff] },
   { mime: 'image/gif', bytes: [0x47, 0x49, 0x46, 0x38] },
-  // WebP: 'RIFF'....'WEBP' — two non-contiguous markers, checked separately.
+  // WebP: 'RIFF'....'WEBP', two non-contiguous markers, checked separately.
 ]
 
 function detectImageType(buffer) {
@@ -51,7 +51,7 @@ function isPdf(buffer) {
 // Folders that always live at a single fixed path (e.g. the resume, which
 // the site always links to as /cv.pdf) instead of getting a fresh
 // timestamped filename per upload. Each new upload here overwrites the
-// previous file in place, so we need to look up its current sha first —
+// previous file in place, so we need to look up its current sha first -
 // GitHub's Contents API rejects an update without one.
 const FIXED_PATHS = {
   resume: 'public/cv.pdf',
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
 
   try {
     if (FIXED_PATHS[folder]) {
-      // Currently only 'resume', which must actually be a PDF — checked
+      // Currently only 'resume', which must actually be a PDF, checked
       // against real bytes, not the filename or client-supplied MIME type.
       if (!isPdf(decoded)) {
         return res.status(400).json({ error: 'That file is not a valid PDF.' })

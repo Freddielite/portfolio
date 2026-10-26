@@ -1,6 +1,6 @@
 // Thin wrapper around the GitHub Contents API. This is the entire "database"
 // for the admin panel: every save is a real git commit to the repo, which is
-// what triggers Vercel's normal auto-deploy — no separate CMS, no separate
+// what triggers Vercel's normal auto-deploy, no separate CMS, no separate
 // dataset, nothing else to keep in sync.
 
 const API = 'https://api.github.com'

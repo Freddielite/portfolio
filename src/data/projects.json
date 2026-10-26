@@ -1,6 +1,126 @@
 [
   {
     "id": "01",
+    "name": "Kall Konnect",
+    "kind": "Client work",
+    "description": "A call-reminder app that gets people to actually phone the people they care about. It suggests who to call each day, then opens a call, WhatsApp, Instagram or Snapchat in one tap. Built for a client as a mobile-first PWA with an Android build.",
+    "tags": [
+      "React",
+      "Express",
+      "PostgreSQL",
+      "PWA"
+    ],
+    "live": null,
+    "github": null,
+    "image": "/images/projects/kall-konnect.jpg",
+    "caseStudy": {
+      "problem": "Staying in touch slips because nothing prompts you to pick up the phone. The client wanted an app that turns good intentions into real calls instead of another messaging feed.",
+      "approach": "A mobile-first PWA on React with an Express and PostgreSQL backend. Each day it suggests who to call, and one tap opens a normal call or a WhatsApp, Instagram or Snapchat call. Scheduled web push reminders, an in-app notification history, a weekly planner and monthly call stats keep people consistent. Packaged for Android as a trusted web activity.",
+      "outcome": "Delivered to the client as a working app with its own backend and a full handover guide, and distributed to users through a dedicated download website."
+    }
+  },
+  {
+    "id": "02",
+    "name": "Kall Konnect Website",
+    "kind": "Client work",
+    "description": "The public download site for the Kall Konnect app, with a password-protected admin panel so the client can edit the page and publish new Android builds without a developer.",
+    "tags": [
+      "HTML & CSS",
+      "JavaScript",
+      "Vercel",
+      "SEO"
+    ],
+    "live": "https://kallkonnect.vercel.app/",
+    "github": null,
+    "image": "/images/projects/kall-konnect-site.jpg",
+    "caseStudy": {
+      "problem": "The app needed a public home where people could learn what it does and install it, and the client needed to change copy and ship new APK builds without waiting on a developer.",
+      "approach": "A fast static landing page with light and dark themes, Android and iPhone download buttons and proper social share previews. Behind it, an admin panel uploads new APKs to storage and commits copy changes to GitHub, so every edit redeploys the site automatically.",
+      "outcome": "The client now updates the page and releases new app builds on their own, and every change goes live through the normal deploy pipeline."
+    }
+  },
+  {
+    "id": "03",
+    "name": "Wynmail",
+    "kind": "Own product",
+    "description": "A multi-tenant email marketing platform built for Wyntek and its clients. One workspace per client, with contacts, lists, templates, a visual email builder, campaigns, automations, open and click tracking, and a public API.",
+    "tags": [
+      "React",
+      "Node.js",
+      "PostgreSQL",
+      "Email"
+    ],
+    "live": null,
+    "github": "https://github.com/Freddielite/wynmail",
+    "image": "/images/projects/wynmail.jpg",
+    "caseStudy": {
+      "problem": "Client email campaigns lived in scattered third-party tools. Wyntek wanted its own Brevo-style platform it controls, with one workspace per client, that could later run on its own SMTP engine.",
+      "approach": "An Express and PostgreSQL API with a sending queue, per-workspace rate limits and retries, open and click tracking, mandatory unsubscribe and consent records, a React visual email builder, automations, A/B subject tests and revocable workspace API keys. Sending sits behind a provider interface, so Resend can be swapped for an in-house SMTP engine.",
+      "outcome": "A working platform deployed across Vercel, Render and Supabase, with deliverability checks and a documented API, built so the sending provider can change without touching the rest."
+    }
+  },
+  {
+    "id": "04",
+    "name": "Pulse",
+    "description": "An uptime and security monitor for apps and APIs. HTTP, multi-step and TCP checks, SSL and domain expiry tracking, instant alerts by push, email, Telegram, Slack or Discord, plus public status pages and share links.",
+    "tags": [
+      "Node.js",
+      "React",
+      "PostgreSQL",
+      "Monitoring"
+    ],
+    "live": null,
+    "github": "https://github.com/Freddielite/pulse",
+    "image": "/images/projects/pulse.jpg",
+    "caseStudy": {
+      "problem": "Free-tier hosting is great until Render spins an app down after 15 minutes idle, or a certificate quietly expires with nobody watching.",
+      "approach": "Built a Node and Express backend on Postgres with a single cron-driven check cycle rather than a background job runner, covering uptime, SSL and domain expiry, content-diff monitoring for defacement, and a passive security scan (headers, exposed paths, HTTPS enforcement) for every monitored site.",
+      "outcome": "A monitoring tool that keeps my own and client sites awake and alerts me before a certificate or config problem becomes a client-facing outage, with shareable read-only status links for handing a client visibility without giving them a login."
+    },
+    "kind": "Own product"
+  },
+  {
+    "id": "05",
+    "name": "FocusDial",
+    "description": "A focus and time-tracking app that shows where the hours actually go. Live timer, tags, deadlines and budgets, a Do This Next recommendation, Google Calendar-aware open slots and a guided daily plan.",
+    "tags": [
+      "React",
+      "Node.js",
+      "PostgreSQL",
+      "PWA"
+    ],
+    "live": "https://focusdial.vercel.app/",
+    "github": null,
+    "image": "/images/projects/focusdial.jpg",
+    "caseStudy": {
+      "problem": "Most focus trackers are demo projects running on generated data. I wanted a tool for daily personal use that computes real insights, peak hours, sustained focus, streaks, from actual logged sessions, not sample data.",
+      "approach": "Built a Node and Express API on Postgres, paired with a React frontend that computes all analytics client-side, since \"today\" and \"this week\" are timezone-sensitive questions the server cannot answer reliably on its own. Added a deadline planner that compares required daily hours against real historical averages, and wired up real Web Push notifications through an external cron trigger so reminders reach you even with the app fully closed.",
+      "outcome": "A personal daily-use tool, installable as a desktop or Chrome app, that tracks real focus sessions and reports something true about your own habits instead of a generic dashboard."
+    },
+    "kind": "Own product"
+  },
+  {
+    "id": "06",
+    "name": "Ledger",
+    "description": "A full-stack personal finance app for tracking income and spending. Budgets, recurring transactions, savings goals with pacing alerts, reports, and CSV, Excel and PDF import and export, on a Go API with a React frontend.",
+    "tags": [
+      "Go",
+      "React",
+      "PostgreSQL",
+      "Personal Finance"
+    ],
+    "live": "https://expenses-tracker-ebon-seven.vercel.app/",
+    "github": "https://github.com/Freddielite/expenses-tracker",
+    "image": "/images/projects/expenses-tracker.jpg",
+    "caseStudy": {
+      "problem": "Wanted a lightweight way to log and categorize everyday spending without the bloat of a full budgeting app, and a real project for learning Go beyond tutorials.",
+      "approach": "Built the backend in Go 1.22 using only the standard library for routing and storage (no ORM, no framework), with an optional Postgres swap behind a storage interface. Added budgets, recurring transactions, savings goals, and three export formats: CSV, Excel, and a self-contained offline HTML dashboard, plus CSV, Excel and PDF import.",
+      "outcome": "A working personal finance tool in daily use, and a genuine reference for what an ORM and web framework are actually doing under the hood, since this app deliberately does without both."
+    },
+    "kind": "Own product"
+  },
+  {
+    "id": "07",
     "name": "Wyntek",
     "description": "The Wyntek Technologies site and its internal operations dashboard: leads, quotes, invoices, testimonials, and a templates shop selling white-label site templates through Paystack checkout, with dispute handling and a daily Telegram digest.",
     "tags": [
@@ -16,28 +136,11 @@
       "problem": "Wyntek needed more than a marketing site: a way to actually run the business behind it, leads, quotes, invoicing, and selling site templates, without stitching together separate SaaS tools for each.",
       "approach": "Built on Next.js with a password-protected admin dashboard covering leads, quotes, invoices, testimonials, and a scripts and templates shop with Paystack checkout. Disputes are a two-way reply thread with the buyer, not a one-shot form, and a daily Telegram digest flags overdue invoices, open disputes, and stale leads automatically.",
       "outcome": "A single site that both sells Wyntek’s services and runs the day-to-day operations behind them, used as the agency’s actual internal tool, not just a portfolio piece."
-    }
+    },
+    "kind": "Company"
   },
   {
-    "id": "02",
-    "name": "Expenses Tracker",
-    "description": "A full-stack personal finance app for tracking income and expenses, with budgets, recurring transactions, savings goals, and CSV, Excel and PDF import/export. Backend hand-built in Go using only the standard library, paired with a React and Recharts frontend.",
-    "tags": [
-      "Full-stack",
-      "Go",
-      "Personal Finance"
-    ],
-    "live": "https://expenses-tracker-ebon-seven.vercel.app/",
-    "github": "https://github.com/Freddielite/expenses-tracker",
-    "image": "/images/projects/expenses-tracker.jpg",
-    "caseStudy": {
-      "problem": "Wanted a lightweight way to log and categorize everyday spending without the bloat of a full budgeting app, and a real project for learning Go beyond tutorials.",
-      "approach": "Built the backend in Go 1.22 using only the standard library for routing and storage (no ORM, no framework), with an optional Postgres swap behind a storage interface. Added budgets, recurring transactions, savings goals, and three export formats: CSV, Excel, and a self-contained offline HTML dashboard, plus CSV, Excel and PDF import.",
-      "outcome": "A working personal finance tool in daily use, and a genuine reference for what an ORM and web framework are actually doing under the hood, since this app deliberately does without both."
-    }
-  },
-  {
-    "id": "03",
+    "id": "08",
     "name": "Eaksline Courier",
     "description": "Website for a logistics and courier company, built to turn visitors into inquiries with service listings clear enough that people do not need to call to understand what is on offer.",
     "tags": [
@@ -52,44 +155,7 @@
       "problem": "Eaksline needed a site that could list courier and logistics services clearly enough to convert cold visitors into inquiries, without a sales call being the first point of clarity.",
       "approach": "Designed and built a service-focused site with service listings front and center, structured so a first-time visitor understands pricing tiers and coverage areas without digging.",
       "outcome": "Now the company’s main channel for new client inquiries, doing the job a front desk used to do."
-    }
-  },
-  {
-    "id": "04",
-    "name": "FocusDial",
-    "description": "A focus-session tracker with a live timer and manual logging that turns real session history into insights: peak focus hours, a daily streak, and which kind of work you sustain focus on longest. Includes weekly time budgets, a deadline planner with feasibility tracking, and real push notifications.",
-    "tags": [
-      "Full-stack",
-      "React",
-      "Productivity",
-      "PWA"
-    ],
-    "live": "https://focusdial.vercel.app/",
-    "github": null,
-    "image": null,
-    "caseStudy": {
-      "problem": "Most focus trackers are demo projects running on generated data. I wanted a tool for daily personal use that computes real insights, peak hours, sustained focus, streaks, from actual logged sessions, not sample data.",
-      "approach": "Built a Node and Express API on Postgres, paired with a React frontend that computes all analytics client-side, since \"today\" and \"this week\" are timezone-sensitive questions the server cannot answer reliably on its own. Added a deadline planner that compares required daily hours against real historical averages, and wired up real Web Push notifications through an external cron trigger so reminders reach you even with the app fully closed.",
-      "outcome": "A personal daily-use tool, installable as a desktop or Chrome app, that tracks real focus sessions and reports something true about your own habits instead of a generic dashboard."
-    }
-  },
-  {
-    "id": "05",
-    "name": "Pulse",
-    "description": "A personal uptime and keep-alive monitor built for the Render/Vercel free-tier reality: it pings your own apps often enough that they never spin down, while tracking SSL and domain expiry, running passive security scans, and alerting you the moment something goes down.",
-    "tags": [
-      "Full-stack",
-      "Monitoring",
-      "Node.js",
-      "Security"
-    ],
-    "live": null,
-    "github": "https://github.com/Freddielite/pulse",
-    "image": null,
-    "caseStudy": {
-      "problem": "Free-tier hosting is great until Render spins an app down after 15 minutes idle, or a certificate quietly expires with nobody watching.",
-      "approach": "Built a Node and Express backend on Postgres with a single cron-driven check cycle rather than a background job runner, covering uptime, SSL and domain expiry, content-diff monitoring for defacement, and a passive security scan (headers, exposed paths, HTTPS enforcement) for every monitored site.",
-      "outcome": "A monitoring tool that keeps my own and client sites awake and alerts me before a certificate or config problem becomes a client-facing outage, with shareable read-only status links for handing a client visibility without giving them a login."
-    }
+    },
+    "kind": "Client work"
   }
 ]

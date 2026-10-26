@@ -1,33 +1,57 @@
-import NetworkMap from './NetworkMap.jsx'
-import ProfileCard from './ProfileCard.jsx'
+import HeroStage from './HeroStage.jsx'
+import { CurtainLink } from '../context/CurtainContext.jsx'
+import useTypewriter from '../hooks/useTypewriter.js'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
+
+const DEFAULT_ROLES = [
+  'storefronts that convert',
+  'APIs that hold up',
+  'servers that stay online',
+  'networks that stay secure',
+]
+
+function Word({ i, className = '', children }) {
+  return (
+    <span className="w">
+      <span className={className} style={{ '--i': i }}>{children}</span>
+    </span>
+  )
+}
 
 export default function Hero() {
   const s = useSiteSettings()
+  const roles = Array.isArray(s.heroRoles) && s.heroRoles.length ? s.heroRoles : DEFAULT_ROLES
+  const role = useTypewriter(roles)
+
+  const first = s.heroHeadlineLine1.split(' ')
+  const highlight = s.heroHeadlineHighlight.split(' ')
+  let n = 0
 
   return (
     <section id="top" className="hero">
-      <ProfileCard />
-
       <div className="hero-copy">
         <span className="hero-badge">
           <span className="status-dot" /> {s.location}-based · {s.tagline}
         </span>
-        <p className="hero-greeting">
-          Hi, I'm <strong className="name-strong">{s.heroGreetingName}</strong>. Welcome to my site.
-        </p>
         <h1>
-          {s.heroHeadlineLine1}<br />
-          behind <span className="text-glow">{s.heroHeadlineHighlight}</span>
+          <span className="hline">
+            {first.map((w) => <Word key={`a${n}`} i={n++}>{w}</Word>)}
+          </span>
+          <span className="hline">
+            <Word i={n++}>behind</Word>
+            {highlight.map((w) => <Word key={`b${n}`} i={n++} className="text-glow">{w}</Word>)}
+          </span>
         </h1>
+        <p className="hero-role">
+          Currently building <b>{role}</b><span className="caret" aria-hidden="true" />
+        </p>
         <p className="hero-sub">{s.heroSub}</p>
         <div className="hero-actions">
-          <a href="#work" className="btn btn-primary">Start a project →</a>
-          <a href={s.githubUrl} target="_blank" rel="noreferrer" className="btn btn-ghost">GitHub ↗</a>
+          <CurtainLink to="/#contact" className="btn btn-primary mag">Start a project →</CurtainLink>
+          <a href={s.githubUrl} target="_blank" rel="noreferrer" className="btn btn-ghost mag">GitHub ↗</a>
         </div>
       </div>
-
-      <NetworkMap />
+      <HeroStage />
     </section>
   )
 }

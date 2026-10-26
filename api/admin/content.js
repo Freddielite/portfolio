@@ -1,7 +1,7 @@
 import { requireAuth } from '../_lib/auth.js'
 import { getFile, putFile } from '../_lib/github.js'
 
-// Whitelist of editable content files — must match src/data/*.json exactly.
+// Whitelist of editable content files, must match src/data/*.json exactly.
 const ALLOWED_TYPES = ['projects', 'skills', 'testimonials', 'posts', 'siteSettings']
 
 export default async function handler(req, res) {

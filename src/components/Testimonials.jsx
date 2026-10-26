@@ -1,11 +1,12 @@
-import useInView from '../hooks/useInView.js'
+import Reveal from './Reveal.jsx'
 import useContent from '../hooks/useContent.js'
 import { getTestimonials } from '../lib/content.js'
 import fallbackTestimonials from '../data/testimonials.js'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
+const PLACEHOLDER = /^client name$/i
+
 export default function Testimonials() {
-  const [ref, inView] = useInView({ threshold: 0.15 })
   const [testimonials] = useContent(getTestimonials, fallbackTestimonials)
   const s = useSiteSettings()
 
@@ -13,24 +14,22 @@ export default function Testimonials() {
   if (!testimonials.length) return null
 
   return (
-    <section id="testimonials" className={`testimonials reveal ${inView ? 'in-view' : ''}`} ref={ref}>
-      <p className="eyebrow">What people say</p>
-      <h2>From the other side of the project.</h2>
-
-      <div className="testimonial-grid">
-        {testimonials.map((t, i) => (
-          <blockquote
-            className="testimonial-card"
-            key={t.id}
-            style={{ transitionDelay: inView ? `${i * 100}ms` : '0ms' }}
-          >
-            <p className="testimonial-quote">&ldquo;{t.quote}&rdquo;</p>
-            <footer>
-              <span className="testimonial-author">{t.author}</span>
-              {t.role && <span className="testimonial-role">{t.role}</span>}
-            </footer>
-          </blockquote>
-        ))}
+    <section id="testimonials" className="section">
+      <Reveal as="p" className="eyebrow">What people say</Reveal>
+      <Reveal as="h2" className="hb">From the other side of the project.</Reveal>
+      <div className="quote-grid">
+        {testimonials.map((t, i) => {
+          const author = t.author && !PLACEHOLDER.test(t.author.trim()) ? t.author : null
+          return (
+            <Reveal as="blockquote" className="card quote" delay={i * 90} key={t.id}>
+              <p>&ldquo;{t.quote}&rdquo;</p>
+              <footer>
+                {author && <span className="quote-author">{author}</span>}
+                {t.role && <span className="mono-label">{t.role}</span>}
+              </footer>
+            </Reveal>
+          )
+        })}
       </div>
     </section>
   )

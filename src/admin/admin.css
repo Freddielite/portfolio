@@ -244,7 +244,7 @@
   .admin-sidebar nav {
     order: 3;
     /* Forces this onto its own line below title/footer, however wide the
-       screen is — never a horizontal scroller, so tabs simply wrap to a
+       screen is, never a horizontal scroller, so tabs simply wrap to a
        second row instead of any content ever sliding off-screen. */
     flex: 1 1 100%;
     flex-direction: row;
@@ -429,7 +429,7 @@
 }
 
 /* The native file input's default rendered width is unpredictable (varies
-   by browser/OS) and doesn't shrink on its own — without this, it was the
+   by browser/OS) and doesn't shrink on its own, without this, it was the
    one element wide enough to force the whole card past the screen edge. */
 .admin-image-controls input[type='file'] {
   max-width: 100%;

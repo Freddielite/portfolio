@@ -1,7 +1,7 @@
 // The blog renderer (BlogPost.jsx) uses @portabletext/react, which expects
 // the body as an array of "block" objects. Authoring raw block JSON by hand
-// would be a terrible admin UX, so the admin just uses a plain textarea —
-// paragraphs separated by a blank line — and converts to/from blocks here.
+// would be a terrible admin UX, so the admin just uses a plain textarea -
+// paragraphs separated by a blank line, and converts to/from blocks here.
 
 export function blocksToText(blocks) {
   if (!Array.isArray(blocks)) return ''

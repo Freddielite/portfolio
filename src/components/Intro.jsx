@@ -1,88 +1,88 @@
-import { useEffect, useRef, useState } from 'react'
-import { Code2, User, Github } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
-const FULL_NAME = 'Oseghale Wilfred'
-const TYPE_SPEED = 65
-const TYPE_START = 900
-const FADE_START = 3400
-const REMOVE_AT = 4200
+const DURATION = 2800
 
-export default function Intro() {
-  const [visible, setVisible] = useState(true)
-  const [fading, setFading] = useState(false)
-  const [typed, setTyped] = useState('')
-  const [showCursor, setShowCursor] = useState(true)
-  const typingInterval = useRef(null)
+// Cinematic first-load intro: a photo ring draws itself, the name rises in
+// letter by letter, a counter runs to 100, then the screen splits open.
+export default function Intro({ onDone }) {
+  const s = useSiteSettings()
+  const root = useRef(null)
+  const count = useRef(null)
+  const finished = useRef(false)
 
   useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const el = root.current
     document.body.style.overflow = 'hidden'
+    let raf
+    let t1
+    let t2
+    const t0 = performance.now()
+    const total = reduce ? 200 : DURATION
 
-    const typeStartTimer = setTimeout(() => {
-      let i = 0
-      typingInterval.current = setInterval(() => {
-        i += 1
-        setTyped(FULL_NAME.slice(0, i))
-        if (i >= FULL_NAME.length) {
-          clearInterval(typingInterval.current)
-        }
-      }, TYPE_SPEED)
-    }, TYPE_START)
+    function finish() {
+      if (finished.current) return
+      finished.current = true
+      cancelAnimationFrame(raf)
+      el.classList.add('out')
+      t1 = setTimeout(() => document.documentElement.classList.add('is-ready'), reduce ? 0 : 500)
+      t2 = setTimeout(() => {
+        document.body.style.overflow = ''
+        onDone()
+      }, reduce ? 0 : 1200)
+    }
+    el._finish = finish
 
-    const typeDoneAt = TYPE_START + FULL_NAME.length * TYPE_SPEED
-    const cursorHideTimer = setTimeout(() => setShowCursor(false), typeDoneAt + 500)
-    const fadeTimer = setTimeout(() => setFading(true), FADE_START)
-    const removeTimer = setTimeout(() => {
-      setVisible(false)
-      document.body.style.overflow = ''
-    }, REMOVE_AT)
+    function frame(now) {
+      const p = Math.min(1, (now - t0) / total)
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+      el.style.setProperty('--p', e)
+      if (count.current) count.current.textContent = Math.round(e * 100)
+      if (p < 1) raf = requestAnimationFrame(frame)
+      else t1 = setTimeout(finish, 250)
+    }
+    raf = requestAnimationFrame(frame)
 
     return () => {
-      clearTimeout(typeStartTimer)
-      clearTimeout(cursorHideTimer)
-      clearTimeout(fadeTimer)
-      clearTimeout(removeTimer)
-      clearInterval(typingInterval.current)
+      cancelAnimationFrame(raf)
+      clearTimeout(t1)
+      clearTimeout(t2)
       document.body.style.overflow = ''
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (!visible) return null
-
   return (
-    <div className={`intro ${fading ? 'intro-fade' : ''}`} role="status" aria-label="Loading portfolio">
-      <span className="sr-only">Hello, I'm Oseghale Wilfred. Welcome to my site.</span>
-
-      <div className="intro-glow" aria-hidden="true" />
-
-      <div className="intro-icons" aria-hidden="true">
-        <a href="#work" className="intro-icon intro-icon-1" tabIndex={-1}>
-          <Code2 size={20} />
-        </a>
-        <a href="#about" className="intro-icon intro-icon-2" tabIndex={-1}>
-          <User size={20} />
-        </a>
-        <a
-          href="https://github.com/Freddielite"
-          target="_blank"
-          rel="noreferrer"
-          className="intro-icon intro-icon-3"
-          tabIndex={-1}
-        >
-          <Github size={20} />
-        </a>
+    <div
+      ref={root}
+      className="intro play"
+      role="status"
+      aria-label="Loading portfolio"
+      onClick={() => root.current?._finish?.()}
+    >
+      <div className="ip t" />
+      <div className="ip b" />
+      <div className="ic">
+        <div className="ia">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle className="c0" cx="100" cy="100" r="92" />
+            <circle className="c1" cx="100" cy="100" r="92" />
+          </svg>
+          <div className="pw">
+            <img src={s.photo} alt="" />
+          </div>
+        </div>
+        <div className="in" aria-hidden="true">
+          {s.name.split('').map((c, i) => (
+            <span key={i} style={{ '--i': i }}>{c === ' ' ? '\u00a0' : c}</span>
+          ))}
+        </div>
+        <div className="isub">{s.tagline} · {s.company}</div>
+        <div className="ibr"><i /></div>
+        <div className="cnt"><span ref={count}>0</span>%</div>
+        <span className="sr-only">Loading. Click to skip.</span>
       </div>
-
-      <p className="intro-eyebrow" aria-hidden="true">Hello, I'm</p>
-
-      <h1 className="intro-title" aria-hidden="true">
-        <span className="name-strong intro-typed">
-          {typed}
-          <span className={`intro-cursor ${showCursor ? '' : 'intro-cursor-hidden'}`} />
-        </span>
-      </h1>
-
-      <p className="intro-subtitle" aria-hidden="true">Welcome to my site.</p>
-      <span className="intro-pill" aria-hidden="true">Wyntek Technologies</span>
     </div>
   )
 }

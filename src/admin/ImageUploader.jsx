@@ -5,9 +5,9 @@ const JPEG_QUALITY = 0.82
 
 // Downscales + re-encodes an image file in the browser before it ever
 // leaves the device. Every upload here becomes a permanent blob in the
-// repo's git history via the GitHub Contents API — even after the file is
+// repo's git history via the GitHub Contents API, even after the file is
 // later replaced or removed from content.json, the old blob stays in
-// history — so keeping originals from a phone camera (often several MB) out
+// history, so keeping originals from a phone camera (often several MB) out
 // of the repo matters more here than in a normal upload flow.
 //
 // GIFs are passed through untouched: redrawing to a canvas would flatten
@@ -28,7 +28,7 @@ async function compressImage(file) {
   ctx.drawImage(bitmap, 0, 0, width, height)
   bitmap.close?.()
 
-  // PNGs often carry a real alpha channel (logos, icons) — keep transparency
+  // PNGs often carry a real alpha channel (logos, icons), keep transparency
   // by staying in PNG for those instead of flattening onto a JPEG.
   const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
   const blob = await new Promise((resolve) =>

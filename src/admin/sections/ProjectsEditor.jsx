@@ -48,6 +48,16 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
       </div>
 
       <div className="admin-field">
+        <label className="admin-label">Type</label>
+        <select value={project.kind || 'Own product'} onChange={(e) => set('kind', e.target.value)}>
+          <option value="Own product">Own product</option>
+          <option value="Client work">Client work</option>
+          <option value="Company">Company</option>
+        </select>
+        <p className="admin-hint">Shown as a badge on the project card and used by the Work filter.</p>
+      </div>
+
+      <div className="admin-field">
         <label className="admin-label">Description</label>
         <textarea rows={4} value={project.description} onChange={(e) => set('description', e.target.value)} />
       </div>

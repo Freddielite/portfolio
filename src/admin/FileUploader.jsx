@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 
 // Like ImageUploader, but for a single file that always lives at one fixed
-// path on the server (e.g. the resume at /cv.pdf) — every upload replaces
+// path on the server (e.g. the resume at /cv.pdf), every upload replaces
 // it in place rather than getting its own new URL, so `value` here is just
 // used to show/hide the "current file" link, not stored back into content.
 export default function FileUploader({ value, onChange, folder, label = 'File', accept, cacheBust = true, hint }) {

@@ -25,7 +25,7 @@ export function getClientIp(req) {
   return req.socket?.remoteAddress || 'unknown'
 }
 
-// Returns { blocked: boolean, retryAfterSeconds } — call before checking the
+// Returns { blocked: boolean, retryAfterSeconds }, call before checking the
 // password. Does not itself record an attempt.
 export function checkRateLimit(ip) {
   const now = Date.now()

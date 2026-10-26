@@ -124,7 +124,7 @@ export default function SiteSettingsEditor() {
         onChange={(v) => set('resumeUrl', v)}
         folder="resume"
         accept="application/pdf"
-        hint="Uploads and replaces public/cv.pdf directly — the URL above updates automatically."
+        hint="Uploads and replaces public/cv.pdf directly, the URL above updates automatically."
       />
 
       <h2>SEO</h2>

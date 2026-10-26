@@ -1,4 +1,4 @@
-// Minimal, dependency-free cookie handling — just enough for one signed
+// Minimal, dependency-free cookie handling, just enough for one signed
 // session cookie. No need to pull in a package for this.
 
 export function parseCookies(header = '') {

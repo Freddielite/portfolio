@@ -18,7 +18,7 @@ export function ThemeProvider({ children }) {
     window.localStorage.setItem('theme', theme)
   }, [theme])
 
-  // `originEvent` is optional — pass the click event to animate the toggle
+  // `originEvent` is optional, pass the click event to animate the toggle
   // as a circular reveal from the button that was clicked (see ThemeToggle).
   // Callers without a click event (e.g. the command palette) just get an
   // instant switch, same as the reduced-motion fallback below.
