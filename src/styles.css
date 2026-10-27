@@ -623,7 +623,8 @@ textarea.field { resize: vertical; min-height: 110px; }
 .blog-card-body h2 { font-size: 1.35rem; }
 .blog-card-body p { color: var(--text-muted); font-size: 0.95rem; flex: 1; }
 .blog-post { max-width: 700px; margin: 0 auto; }
-.blog-back { margin-bottom: 18px; display: inline-block; }
+.blog-back { margin-bottom: 18px; display: block; width: fit-content; }
+.blog-post > .mono-label { display: block; }
 .blog-post h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 10px 0 18px; }
 .blog-tools { margin-bottom: 20px; }
 .blog-post-image { border-radius: var(--radius); overflow: hidden; margin-bottom: 28px; border: 1px solid var(--border); }

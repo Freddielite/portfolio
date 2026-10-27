@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Relative base so the build works when hosted from a subpath
-// (e.g. GitHub Pages project sites: username.github.io/repo-name/).
-// If you deploy to Netlify/Vercel on a root domain, this still works fine.
+// Absolute base. The site is served from the root of its domain (Vercel), and
+// blog posts are pre-rendered to /blog/<slug>/index.html, so relative asset
+// paths would resolve to /blog/assets/... and a direct visit or refresh on a
+// post would load a blank page. If you ever host from a subpath (for example
+// a GitHub Pages project site), change this to that subpath, e.g. '/repo-name/'.
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/',
 })

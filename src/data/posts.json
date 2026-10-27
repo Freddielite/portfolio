@@ -228,5 +228,1391 @@
         ]
       }
     ]
+  },
+  {
+    "_id": "p6",
+    "slug": "keeping-free-tier-apps-awake-without-paying",
+    "title": "Keeping free-tier apps awake without paying",
+    "excerpt": "Render spins free services down after 15 minutes idle. Here is how I keep my own apps warm with a monitor that also tells me when something is actually broken.",
+    "publishedAt": "2026-09-02",
+    "coverImage": "/images/projects/pulse.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Free hosting is great until the first visitor of the day waits half a minute for your app to wake up. On Render, a free web service spins down after 15 minutes without traffic, and the next request pays for the cold start. For a demo that is annoying. For anything with scheduled jobs it is worse, because an app that is asleep cannot run its own cron."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Ping it, but ping it properly"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The obvious fix is a pinger. Hit the URL every few minutes and the app never gets the chance to sleep. The mistake is treating that as the whole job. A bare ping tells you nothing when the page is broken, so I built Pulse to do both: keep apps awake and tell me when they are actually down."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A monitor can be marked as a keep-alive target, and Pulse's own check cycle is what stops the app from sleeping."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Checks run on a schedule I set, and every response time is stored, so I can see slow days as well as outages."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A check can require specific text in the response. A page that returns 200 with an empty or broken body still counts as down."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A failed check gets one retry after a short delay before it counts as an outage, so a network blip does not wake me up."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "I can snooze a monitor during a planned redeploy, and it resumes by itself."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Why this matters for scheduled jobs"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Kall Konnect sends its daily reminders from a cron job inside its backend. That only fires if the backend is awake at the time, so a pinger keeps it alive every few minutes. The handover notes for that project say it plainly: the pinger and the reminders share a single point of failure. Knowing that in advance is half of handling it."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "What it does not fix"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Keeping a free service awake is a workaround, not a hosting plan. Free tiers have limits and can change their rules. For a client who is paying you, put the app on a paid instance and keep the monitor anyway, because uptime history, SSL expiry warnings and incident logs are useful on any plan."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "My rule of thumb"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Free tier plus a keep-alive monitor for my own tools and demos."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A paid instance for anything a client depends on."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Content checks, not just status codes."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Always retry once before alerting."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p7",
+    "slug": "building-wynmail-an-email-platform-for-my-clients",
+    "title": "How I built an email platform to replace Brevo for my clients",
+    "excerpt": "Wynmail is a multi-tenant email platform with one workspace per client, a proper sending queue and a swappable provider. Here is how it is put together.",
+    "publishedAt": "2026-09-09",
+    "coverImage": "/images/projects/wynmail.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Most of my clients need email: a welcome message, a newsletter, an order update. I could keep sending them through a third-party tool, but then every client lives in a different dashboard and I control none of it. So I built Wynmail, a Brevo-style platform with one workspace per client."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "One workspace per client"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A workspace is the unit of everything. Each one has its own sender identity, tracking domain, provider key and sending limits, so one client's mistakes cannot touch another client's sender reputation. Contacts, lists, templates and campaigns all live inside a workspace."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A queue that behaves"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Sending does not happen the moment you click the button. A queue worker picks messages up with per-workspace emails-per-minute and daily caps, and retries each message up to three times. That is the difference between a tool and a script."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The provider is a plug"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Sending goes through a single interface: one method that takes the recipient, sender, subject and body, and returns an id. Today that method calls Resend. Later it can call my own SMTP engine and nothing else changes. Tracking already runs on my own domain, so opens and clicks survive the swap. I have not made that swap yet, but the code is shaped for it."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Keeping the database private"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The data lives in Supabase Postgres, but the frontend never talks to Supabase directly. Every request goes through the Express server, row level security is on for every table, and the anon key never ships to the browser. One small thing that saved me a headache: use the pooler connection string, because the direct database host is IPv6 only on the free tier."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "What it can do now"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Contacts with CSV import, lists, tags and saved segments"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A drag and drop email builder with an HTML tab"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Campaigns with scheduling and per-recipient reports"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Automations that send a sequence after someone joins a list"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Signup forms with double opt-in"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A public API with revocable keys that are shown once"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "It is early, and I am the main user, which is exactly how I want to find the rough edges."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p8",
+    "slug": "why-emails-land-in-spam-and-the-checks-i-run",
+    "title": "Why your emails land in spam, and the checks I run before sending",
+    "excerpt": "Good copy does not save an email from the spam folder. These are the technical checks I built into Wynmail so a client campaign is set up properly before it goes out.",
+    "publishedAt": "2026-09-16",
+    "coverImage": "/images/projects/wynmail.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "When a client says their emails go to spam, the problem is rarely the wording. It is usually setup. Inbox providers look at whether you proved the mail is really yours, whether people can leave easily, and whether you keep mailing addresses that bounce or complain."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Prove the mail is yours"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Wynmail has a domain check in each workspace's settings. It looks up DKIM, SPF, the bounce MX, DMARC and the tracking domain, then tells you what to fix. The lookups run in parallel and never block for more than about four seconds, so it is something you actually use instead of a page you avoid."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Make leaving easy"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Every campaign has a mandatory unsubscribe link and a postal address in the footer."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Messages carry List-Unsubscribe headers, including one-click POST unsubscribe, so inboxes can show their own unsubscribe button."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Someone who unsubscribed can only come back by confirming again, never through an import."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Collect consent properly"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Signup forms use double opt-in by default. A signup stays pending until the person clicks the confirmation link. One detail I like: opening the link only shows a button. Mail scanners follow links automatically, and I did not want a scanner confirming someone who never signed up. Each confirmed contact keeps a consent record with the exact sentence they agreed to, the time and the form."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Stop mailing people who bounce"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Addresses that bounce or complain are blocked automatically. The workspace owner can unblock one, but people who reported spam need an extra confirmation, because mailing them again is the fastest way to damage a sender's reputation."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Protect the form"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Public forms attract bots. Mine use a hidden honeypot field, a signed timing token and rate limits per IP and per address. They also give the same answer whether or not the address is already known, so nobody can probe who is on a list."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A short pre-send checklist"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Domain check passes for DKIM, SPF and DMARC."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The footer has an unsubscribe link and an address."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The list is made of people who opted in."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "On a new domain, start with smaller sends and increase gradually."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "None of this is clever. It is the boring setup that keeps client email in the inbox."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p9",
+    "slug": "shipping-a-client-app-and-its-download-site",
+    "title": "A client app and its download site: how I shipped both",
+    "excerpt": "Kall Konnect needed an app and a public place to get it. Here is why I built them as two separate things.",
+    "publishedAt": "2026-09-23",
+    "coverImage": "/images/projects/kall-konnect.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Kall Konnect is a call-reminder app I built for a client. The idea is simple: every day it suggests who to call, and one tap opens a normal phone call or a WhatsApp, Instagram or Snapchat call. The harder question was how people would get it."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The app"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "It is a mobile-first PWA with a React frontend and an Express and PostgreSQL backend. It suggests a few people a day and rotates them so the same person is not suggested again for three days. It tracks calls in a monthly stats view and sends push reminders. For Android it is packaged as a trusted web activity, so it installs like a normal app."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Why a separate download site"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "I kept the download page apart from the app on purpose."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "It needs a public address anyone can open without an account, and a proper share preview so links look right in WhatsApp."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "It changes often: new copy, a new APK, a new version note. The app should not be redeployed every time."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "It can be plain static HTML with no build step, which makes it fast and very hard to break."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The result is a landing page with light and dark themes and Android and iPhone download options, hosted on Vercel."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "What I would tell another developer"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Ship the download page the moment there is something installable. A good app nobody can find is a private project. And give the client their own controls, which is what the next post is about."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The source for both is private because they are client work."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p10",
+    "slug": "letting-a-client-publish-new-apk-builds-without-code",
+    "title": "Letting a client publish new APK builds without touching code",
+    "excerpt": "A password-protected admin page that edits copy and uploads APKs, with GitHub as the only database.",
+    "publishedAt": "2026-09-30",
+    "coverImage": "/images/projects/kall-konnect-site.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A client app gets new builds often. If every build needs me to edit a link and redeploy, I become the bottleneck. So the Kall Konnect download site has its own admin page where the client can change the page text and publish a new APK."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "How it works"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The site is plain HTML served by Vercel, with no framework and no build step."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The admin is a single HTML and JavaScript page behind one password."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Every editable piece of text on the page has a stable id, and the admin shows them as labeled fields. The client never sees raw HTML."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Saving commits the change to GitHub through the Contents API. That commit triggers Vercel's normal deploy."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "There is no database. GitHub holds the page content and Vercel Blob holds the APK files."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The APK problem"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A real APK is bigger than 4.5 MB, and Vercel functions reject request bodies over that size. So the file does not pass through a function at all. The browser uploads it directly to Vercel Blob storage. When the upload finishes, the admin patches the download link and the version label in the page and commits that too."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Keeping it safe"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The GitHub token is scoped to one repository with Contents read and write permission, and nothing else."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "One admin password plus a session secret, both stored as environment variables."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "The \"allow installs from unknown sources\" note lives in its own element, so publishing never duplicates it."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "One lesson: environment variables only apply to new deployments, so redeploy after setting them or the admin will look broken."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The client now updates the page and ships builds on their own, and I get a normal Git history of every change."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p11",
+    "slug": "web-push-reminders-that-arrive-when-they-should",
+    "title": "Web push reminders that arrive when they should",
+    "excerpt": "VAPID keys, time zones and duplicate sends: what went wrong with daily reminders in Kall Konnect and how I handled it.",
+    "publishedAt": "2026-10-07",
+    "coverImage": "/images/projects/kall-konnect.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A reminder app lives or dies on one thing: the notification shows up when the person expects it. Kall Konnect sends a daily push suggesting who to call. Getting that right taught me more than building the screens did."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "VAPID keys, or nothing happens"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Web push needs a VAPID key pair. Without it, push is skipped silently and the app only shows the in-app bell. Two traps: the VAPID subject must be a real mailto or https address, and a bare email without the mailto prefix is rejected outright. Also, anyone who tried to enable notifications before the keys existed has no subscription saved, so they have to switch notifications on again."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Time zones"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Render runs on UTC, so a job scheduled for 6 am reached Nigerian users at 7 am. Setting the cron time zone to Africa/Lagos made it 6 am local. That fixes it for one country. Reminders at each person's own local time need a stored time zone per user and an hourly job, and that is the next step rather than something already done."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Two triggers, one job"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The reminder job can be started by the in-app cron, by an external trigger or by a redeploy. If it does not record that it already ran, it can send a second push minutes after the first. The job has to record that today's reminder was sent, and check that record before sending again."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Do not nag"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Rotate suggestions so the same person is not repeated for three days."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Keep an in-app history in the bell, so a missed push is not lost."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Push needs HTTPS, so test it on a deployed URL."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "What is still missing"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Tapping a reminder opens the dashboard rather than the specific contact, and there are no action buttons on the notification yet. Those are the next improvements, and they matter, because a reminder you can act on straight from the notification is worth far more than one that only opens the app."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p12",
+    "slug": "building-a-personal-finance-app-in-go-coming-from-django",
+    "title": "Building a personal finance app in Go, coming from Django",
+    "excerpt": "Ledger uses almost nothing but Go's standard library. Writing the storage layer by hand showed me what an ORM was doing all along.",
+    "publishedAt": "2026-10-14",
+    "coverImage": "/images/projects/expenses-tracker.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "I wrote Ledger, a personal expense tracker, mainly to learn Go. I come from Django, so the interesting question was what you give up and what you learn when you drop the framework."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "No framework on purpose"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The backend uses Go 1.22 and the standard library. Routing is the built-in http.ServeMux, which is plenty for a handful of routes, and you see exactly how a request reaches a handler. The frontend is React with Vite, and Recharts draws the charts."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The database is a map"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "By default the whole database is a map in memory, guarded by a read-write mutex and flushed to a JSON file on every write. Writing that by hand taught me what an ORM quietly handles: thread safety, persistence and lookups. If you come from Django, read your own store code next to how the ORM does the same job."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Swapping storage without touching handlers"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Handlers only talk to interfaces for transactions, categories, budgets and recurring rules. Set a DATABASE_URL and the app uses Postgres through the pgx driver instead, with plain create-table-if-not-exists statements and no ORM. Not a line of handler code changes."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A deliberate exception"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The PIN and session store stay in local JSON files even when Postgres is on. Auth is small and separate from the app's business data, and keeping it on the host matches the app's threat model of casual access on a local network. It is a decision, not an oversight."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "What it does today"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Income and expenses with categories and budgets"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Recurring transactions"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Savings goals with pacing alerts"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "CSV, Excel and PDF import and export"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "I would not call Ledger production banking software. It is a personal tool, and the point was the learning."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "_id": "p13",
+    "slug": "a-focus-tracker-that-checks-your-plans-against-real-hours",
+    "title": "A focus tracker that checks your plans against your real hours",
+    "excerpt": "FocusDial turns logged sessions into honest numbers, then tells you whether a deadline is realistic.",
+    "publishedAt": "2026-10-21",
+    "coverImage": "/images/projects/focusdial.jpg",
+    "body": [
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Most productivity apps ask how you feel about your week. FocusDial asks what you actually logged. Every session comes from a live timer or a manual backfill, and every insight is computed from that history."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Insights from real sessions"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "From your own sessions it works out your peak focus hours, a daily consistency streak, and which kind of work you sustain focus on longest. These are computed in the browser from raw session history, so there is no server-side aggregate to drift out of sync."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Budgets that group tags"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A budget is a weekly hour target. Tags can be assigned to a budget, so a Deep Work budget can cover both Study and Writing. Actual hours are the sum of logged time on those tags for the current week."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A deadline planner that does the maths"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Enter a task, a due date and the hours it needs. The planner works out the hours per day required and compares that with your real average daily focus over the last 30 days. You get a plain read: Ahead, On Track, Tight or Behind."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "A few details I care about:"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "Progress only counts sessions logged after the deadline was created, so old history cannot inflate it."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A running timer adds its live time to the card, but nothing is saved until the session stops."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "listItem": "bullet",
+        "level": 1,
+        "children": [
+          {
+            "_type": "span",
+            "text": "A deadline with no due time counts as due at the end of the day."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "h2",
+        "children": [
+          {
+            "_type": "span",
+            "text": "Installable"
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "It ships a manifest and a service worker, so it installs as a desktop app in Chrome. Behind it are React and Vite on the front and Node, Express and Postgres on the back."
+          }
+        ]
+      },
+      {
+        "_type": "block",
+        "style": "normal",
+        "children": [
+          {
+            "_type": "span",
+            "text": "The idea is simple: plans should be checked against reality. A deadline that needs five hours a day from someone who focuses for two is not a plan."
+          }
+        ]
+      }
+    ]
   }
 ]

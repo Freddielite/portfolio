@@ -91,7 +91,7 @@ function PostForm({ post, onChange, onDelete }) {
       <div className="admin-field">
         <label className="admin-label">Body</label>
         <textarea rows={12} value={bodyText} onChange={(e) => setBody(e.target.value)} />
-        <p className="admin-hint">Separate paragraphs with a blank line. No other formatting needed.</p>
+        <p className="admin-hint">Separate paragraphs with a blank line. Start a line with ## for a heading, or with - for a bullet point.</p>
       </div>
     </div>
   )
