@@ -5,13 +5,16 @@ import useContent from '../hooks/useContent.js'
 import { getProjects } from '../lib/content.js'
 import fallbackProjects from '../data/projects.js'
 import { cardMove, cardLeave } from '../hooks/usePointerFx.js'
+import { useCurtain } from '../context/CurtainContext.jsx'
+import { kindOf, sourceOnRequest } from '../lib/projectKind.js'
 
-const kindOf = (p) => p.kind || 'Own product'
+
 
 export default function Projects() {
   const [projects] = useContent(getProjects, fallbackProjects)
   const [filter, setFilter] = useState('All')
   const [activeId, setActiveId] = useState(null)
+  const { go } = useCurtain()
 
   useEffect(() => {
     function open(e) {
@@ -21,6 +24,14 @@ export default function Projects() {
     window.addEventListener('project:open', open)
     return () => window.removeEventListener('project:open', open)
   }, [])
+
+  function requestSource(p) {
+    window.dispatchEvent(
+      new CustomEvent('brief:prefill', { detail: { text: `I'd like to see the source code for ${p.name}.` } })
+    )
+    setActiveId(null)
+    go('/#contact')
+  }
 
   const kinds = useMemo(() => ['All', ...new Set(projects.map(kindOf))], [projects])
   const shown = projects.filter((p) => filter === 'All' || kindOf(p) === filter)
@@ -55,7 +66,7 @@ export default function Projects() {
               onPointerMove={cardMove}
               onPointerLeave={cardLeave}
               onClick={(e) => {
-                if (!e.target.closest('a')) setActiveId(p.id)
+                if (!e.target.closest('a, button')) setActiveId(p.id)
               }}
             >
               <div className="thumb">
@@ -81,6 +92,11 @@ export default function Projects() {
                 {p.github && (
                   <a href={p.github} target="_blank" rel="noreferrer" className="link-btn link-btn-ghost">GitHub ↗</a>
                 )}
+                {sourceOnRequest(p) && (
+                  <button type="button" className="link-btn link-btn-ghost" onClick={() => requestSource(p)}>
+                    Source on request
+                  </button>
+                )}
               </div>
             </article>
           </Reveal>
@@ -93,6 +109,7 @@ export default function Projects() {
           next={shown[(activeIndex + 1) % shown.length]}
           prev={shown[(activeIndex - 1 + shown.length) % shown.length]}
           onNavigate={(p) => setActiveId(p.id)}
+          onRequestSource={requestSource}
           onClose={() => setActiveId(null)}
         />
       )}
