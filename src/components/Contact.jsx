@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Reveal from './Reveal.jsx'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
@@ -37,14 +37,6 @@ export default function Contact() {
   const [details, setDetails] = useState('')
   const [copied, setCopied] = useState(false)
   const [status, setStatus] = useState('idle')
-
-  useEffect(() => {
-    function prefill(e) {
-      setDetails(e.detail?.text || '')
-    }
-    window.addEventListener('brief:prefill', prefill)
-    return () => window.removeEventListener('brief:prefill', prefill)
-  }, [])
 
   const brief = [
     `Hi ${s.shortName},`,

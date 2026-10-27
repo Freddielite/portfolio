@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { sourceOnRequest } from '../lib/projectKind.js'
 
-export default function CaseStudyModal({ project, next, prev, onNavigate, onClose, onRequestSource }) {
+export default function CaseStudyModal({ project, next, prev, onNavigate, onClose }) {
   const panel = useRef(null)
 
   useEffect(() => {
@@ -81,11 +80,6 @@ export default function CaseStudyModal({ project, next, prev, onNavigate, onClos
             )}
             {project.github && (
               <a href={project.github} target="_blank" rel="noreferrer" className="btn btn-ghost">GitHub ↗</a>
-            )}
-            {sourceOnRequest(project) && (
-              <button type="button" className="btn btn-ghost" onClick={() => onRequestSource(project)}>
-                Source on request
-              </button>
             )}
             {privateSource && <span className="modal-note">Built for a client, source is private.</span>}
           </div>
