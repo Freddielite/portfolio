@@ -2,6 +2,17 @@
 
 React + Vite portfolio with a blog, a built-in admin panel, testimonials, dark mode, analytics and SEO, deployed on Vercel.
 
+## Updating safely (keeps your /admin edits)
+
+The admin saves edits straight to GitHub (`src/data/*.json`, `public/cv.pdf`, `public/images/*`). If you unzip a new `portfolio.zip` over your folder, those files are replaced with older copies and your edits are lost. Use the update script instead:
+
+```
+./scripts/safe-update.sh ~/Downloads/portfolio.zip
+git add . && git commit -m "your message" && git push
+```
+
+It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
+
 ## Redesign (Oct 2026)
 
 - **One scrolling page.** Hero, About, Skills, Work, Services and Process, blog teaser, testimonials and a contact brief builder. The blog is the only separate page (`/blog`, `/blog/:slug`).
