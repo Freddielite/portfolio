@@ -334,8 +334,8 @@ textarea.field { resize: vertical; min-height: 110px; }
 .theme-toggle-icon.is-dark .theme-toggle-sun { opacity: 0; transform: rotate(90deg) scale(0.4); }
 .theme-toggle-icon.is-dark .theme-toggle-moon { opacity: 1; transform: none; }
 
-::view-transition-old(root) { animation: none; }
-::view-transition-new(root) {
+html.theme-vt::view-transition-old(root) { animation: none; }
+html.theme-vt::view-transition-new(root) {
   animation: theme-reveal 0.65s cubic-bezier(0.65, 0, 0.35, 1) forwards;
   clip-path: circle(0px at var(--theme-toggle-x, 50%) var(--theme-toggle-y, 50%));
 }
@@ -668,3 +668,35 @@ textarea.field { resize: vertical; min-height: 110px; }
   .in span, .isub, .pw { opacity: 1 !important; transform: none !important; }
   .orb { display: none; }
 }
+
+/* ==========================================================================
+   Card to popup morph, hero scroll handoff, live status chips
+   ========================================================================== */
+.modal-media { view-transition-name: cover; }
+::view-transition-group(cover) { animation-duration: 0.55s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1); }
+::view-transition-old(cover), ::view-transition-new(cover) { height: 100%; width: 100%; object-fit: cover; overflow: clip; }
+.modal-overlay.morph, .modal-panel.morph { animation: none; }
+
+.hero { --hp: 0; }
+.hero-copy { transform: translateY(calc(var(--hp) * -26px)); opacity: calc(1 - var(--hp) * 0.75); will-change: transform, opacity; }
+.hero-copy .hline:nth-of-type(2) { transform: translateY(calc(var(--hp) * -10px)); }
+.stage { transform: translateY(calc(var(--hp) * -48px)) scale(calc(1 - var(--hp) * 0.14)); opacity: calc(1 - var(--hp) * 0.55); will-change: transform, opacity; }
+.hero .photo { scale: calc(1 - var(--hp) * 0.08); }
+@media (max-width: 979px) {
+  .stage { transform: translateY(calc(var(--hp) * -24px)) scale(calc(1 - var(--hp) * 0.1)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-copy, .stage { transform: none; opacity: 1; }
+}
+
+.status-chip {
+  position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 99px; font: 500 0.66rem var(--font-mono); letter-spacing: 0.04em; color: #fff; backdrop-filter: blur(6px);
+  background: rgba(10, 14, 30, 0.72);
+}
+.status-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.6); animation: pulse-dot 2s infinite; }
+.status-chip.is-degraded .status-chip-dot { background: #f5b83d; animation: none; }
+.status-chip.is-down .status-chip-dot { background: #ff5d5d; animation: none; }
+.status-chip-ms { opacity: 0.8; }
+@keyframes pulse-dot { 0% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55); } 100% { box-shadow: 0 0 0 8px transparent; } }
+.tag-row .status-chip { position: static; background: var(--surface); color: var(--text); border: 1px solid var(--border); font-size: 0.72rem; padding: 2px 10px; backdrop-filter: none; }

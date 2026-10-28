@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import HeroStage from './HeroStage.jsx'
 import { CurtainLink } from '../context/CurtainContext.jsx'
 import useTypewriter from '../hooks/useTypewriter.js'
@@ -23,12 +24,39 @@ export default function Hero() {
   const roles = Array.isArray(s.heroRoles) && s.heroRoles.length ? s.heroRoles : DEFAULT_ROLES
   const role = useTypewriter(roles)
 
+  const sectionRef = useRef(null)
+
+  // Scroll handoff: --hp runs from 0 (top) to 1 (hero scrolled away). CSS uses
+  // it to drift the headline and shrink the photo stage as you leave the hero.
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let raf = 0
+    function update() {
+      raf = 0
+      const h = el.offsetHeight || 1
+      const p = Math.min(1, Math.max(0, window.scrollY / (h * 0.9)))
+      el.style.setProperty('--hp', p.toFixed(3))
+    }
+    function onScroll() {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [])
+
   const first = s.heroHeadlineLine1.split(' ')
   const highlight = s.heroHeadlineHighlight.split(' ')
   let n = 0
 
   return (
-    <section id="top" className="hero">
+    <section id="top" className="hero" ref={sectionRef}>
       <div className="hero-copy">
         <span className="hero-badge">
           <span className="status-dot" /> {s.location}-based · {s.tagline}

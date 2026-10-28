@@ -43,9 +43,13 @@ export function ThemeProvider({ children }) {
     document.documentElement.style.setProperty('--theme-toggle-y', `${y}px`)
     document.documentElement.style.setProperty('--theme-toggle-radius', `${endRadius}px`)
 
-    document.startViewTransition(() => {
+    // Scope the circular-reveal CSS to theme changes, so other view
+    // transitions (like the project card morph) are not affected.
+    document.documentElement.classList.add('theme-vt')
+    const t = document.startViewTransition(() => {
       flushSync(() => setTheme(next))
     })
+    t.finished.finally(() => document.documentElement.classList.remove('theme-vt'))
   }
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>

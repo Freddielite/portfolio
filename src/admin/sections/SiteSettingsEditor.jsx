@@ -118,6 +118,13 @@ export default function SiteSettingsEditor() {
         </Field>
         <Field label="Formspree form ID" hint="From formspree.io, only the part after f/"><input value={form.formspreeId} onChange={(e) => set('formspreeId', e.target.value)} /></Field>
       </div>
+
+      <h2>Live status (Pulse)</h2>
+      <p className="admin-hint">Shows an Online or Down chip on projects whose live URL matches a monitor on your Pulse public status page. Leave both empty to turn it off. Pulse must allow this site in its CORS_ORIGIN setting.</p>
+      <div className="admin-grid-2">
+        <Field label="Pulse API URL" hint="Your Pulse backend, for example https://pulse-api.onrender.com"><input value={form.pulseApiUrl || ''} onChange={(e) => set('pulseApiUrl', e.target.value)} /></Field>
+        <Field label="Status page token" hint="The share token of a Pulse status page that lists your project monitors"><input value={form.pulseStatusToken || ''} onChange={(e) => set('pulseStatusToken', e.target.value)} /></Field>
+      </div>
       <FileUploader
         label="CV / resume file"
         value={form.resumeUrl}

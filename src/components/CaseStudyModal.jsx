@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import StatusChip from './StatusChip.jsx'
 
-export default function CaseStudyModal({ project, next, prev, onNavigate, onClose }) {
+export default function CaseStudyModal({ project, next, prev, onNavigate, onClose, morph, status }) {
   const panel = useRef(null)
 
   useEffect(() => {
@@ -28,10 +29,10 @@ export default function CaseStudyModal({ project, next, prev, onNavigate, onClos
   const privateSource = kind === 'Client work' && !project.github
 
   return createPortal(
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div className={`modal-overlay ${morph ? 'morph' : ''}`} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div
         ref={panel}
-        className="modal-panel"
+        className={`modal-panel ${morph ? 'morph' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={`${project.name} case study`}
@@ -58,6 +59,7 @@ export default function CaseStudyModal({ project, next, prev, onNavigate, onClos
 
           <div className="tag-row">
             {(project.tags || []).map((t) => <span className="tag" key={t}>{t}</span>)}
+            <StatusChip status={status} detail />
           </div>
 
           {cs && (

@@ -10,6 +10,9 @@ React + Vite portfolio with a blog, a built-in admin panel, testimonials, dark m
 - **Command palette.** Ctrl/Cmd + K jumps to any section, project or post. The header search button opens it too.
 - **Case studies** open as a popup over the page, with previous and next project, arrow keys and Esc.
 - **Projects have a type.** Set "Type" in `/admin` (Own product, Client work, Company). It drives the badge on each card and the Work filter.
+- **Card to popup morph.** The project cover grows out of its card into the case study and shrinks back on close (View Transitions API, falls back to a plain open on unsupported browsers).
+- **Hero scroll handoff.** The headline and photo stage drift and shrink as you scroll out of the hero.
+- **Live status chips.** Set `pulseApiUrl` and `pulseStatusToken` in `/admin` (Site settings, Live status). Projects whose live URL matches a monitor on that Pulse public status page show Online, Slow or Down with response time. Pulse must list this site in its `CORS_ORIGIN` env var, or the browser will block the request and no chip shows.
 - **Client work:** Kall Konnect (the app) and Kall Konnect Website (its download site) are client projects. Source repos are private, so they have no GitHub link.
 - **Project covers** for Kall Konnect, Wynmail, Pulse and FocusDial are generated placeholders in `public/images/projects/`. Replace them with real screenshots from `/admin` (Projects, Screenshot).
 - **Contact brief builder.** Visitors pick what they need, timeline and engagement, and the message builds live. Send by email, WhatsApp, copy, or straight to Formspree when `formspreeId` is set.
