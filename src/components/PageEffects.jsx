@@ -1,11 +1,44 @@
 import { useEffect, useRef } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useMagnetic } from '../hooks/usePointerFx.js'
+
+// Which background tint each section gets as you scroll through the home page.
+const TINTS = {
+  about: 'about', skills: 'about', work: 'work', services: 'services', process: 'services',
+  journal: 'work', testimonials: 'about', contact: 'contact',
+}
 
 // Scroll progress bar, pointer-following glow and magnetic buttons.
 export default function PageEffects() {
   const bar = useRef(null)
   const orb = useRef(null)
   useMagnetic()
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (pathname !== '/') {
+      delete root.dataset.tint
+      return
+    }
+    const nodes = ['top', ...Object.keys(TINTS)].map((id) => document.getElementById(id)).filter(Boolean)
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return
+          const tint = TINTS[en.target.id]
+          if (tint) root.dataset.tint = tint
+          else delete root.dataset.tint
+        })
+      },
+      { rootMargin: '-45% 0px -50% 0px' }
+    )
+    nodes.forEach((n) => io.observe(n))
+    return () => {
+      io.disconnect()
+      delete root.dataset.tint
+    }
+  }, [pathname])
 
   useEffect(() => {
     let raf = 0
@@ -40,6 +73,7 @@ export default function PageEffects() {
   return (
     <>
       <div className="scroll-progress" ref={bar} aria-hidden="true" />
+      <div className="tint" aria-hidden="true" />
       <div className="orb" ref={orb} aria-hidden="true" />
     </>
   )

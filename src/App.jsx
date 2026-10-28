@@ -8,6 +8,7 @@ import CommandPalette from './components/CommandPalette.jsx'
 import CustomCursor from './components/CustomCursor.jsx'
 import PageEffects from './components/PageEffects.jsx'
 import { CurtainProvider } from './context/CurtainContext.jsx'
+import { ToastProvider } from './context/ToastContext.jsx'
 import Home from './pages/Home.jsx'
 import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
@@ -39,6 +40,7 @@ export default function App() {
   }
 
   return (
+    <ToastProvider>
     <CurtainProvider>
       {showIntro && (
         <Intro
@@ -57,5 +59,6 @@ export default function App() {
       <WhatsAppButton />
       <CommandPalette />
     </CurtainProvider>
+    </ToastProvider>
   )
 }

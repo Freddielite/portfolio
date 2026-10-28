@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import Reveal from './Reveal.jsx'
+import CheckIcon from './CheckIcon.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
 
 const TYPES = ['Business website', 'Online store', 'Web app or dashboard', 'Backend or API', 'Security or networking']
@@ -29,6 +31,7 @@ function Group({ label, items, value, onChange }) {
 
 export default function Contact() {
   const s = useSiteSettings()
+  const { toast } = useToast()
   const [type, setType] = useState(TYPES[0])
   const [time, setTime] = useState(TIMES[0])
   const [engage, setEngage] = useState(ENGAGE[0])
@@ -58,6 +61,7 @@ export default function Contact() {
     try {
       await navigator.clipboard.writeText(brief)
       setCopied(true)
+      toast('Brief copied to your clipboard')
       setTimeout(() => setCopied(false), 2000)
     } catch {
       /* clipboard blocked, the text is still selectable */
@@ -74,6 +78,7 @@ export default function Contact() {
         body: JSON.stringify({ name, email, message: brief, type, timeline: time, engagement: engage }),
       })
       setStatus(res.ok ? 'sent' : 'error')
+      if (res.ok) toast('Brief sent. I will reply soon.')
     } catch {
       setStatus('error')
     }
@@ -103,12 +108,12 @@ export default function Contact() {
           <div className="bld-actions">
             <a className="btn btn-primary" href={mailto}>Send by email</a>
             <a className="btn btn-ghost" href={whatsapp} target="_blank" rel="noreferrer">WhatsApp ↗</a>
-            <button type="button" className="btn btn-ghost" onClick={copy}>{copied ? 'Copied' : 'Copy brief'}</button>
+            <button type="button" className="btn btn-ghost" onClick={copy}>{copied ? <><CheckIcon size={18} /> Copied</> : 'Copy brief'}</button>
           </div>
           {s.formspreeId && (
             <div className="bld-send">
               {status === 'sent' ? (
-                <p className="form-ok">Thanks, your brief is in my inbox. I'll get back to you soon.</p>
+                <p className="form-ok sent-ok"><CheckIcon size={22} /> Thanks, your brief is in my inbox. I'll get back to you soon.</p>
               ) : (
                 <button type="button" className="link-btn" onClick={sendForm} disabled={status === 'sending' || !email.trim()}>
                   {status === 'sending' ? 'Sending…' : 'Or send it straight to my inbox →'}

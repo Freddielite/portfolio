@@ -10,6 +10,7 @@ import { kindOf } from '../lib/projectKind.js'
 import usePulseStatus from '../hooks/usePulseStatus.js'
 import useReveal from '../hooks/useReveal.js'
 import StatusChip from './StatusChip.jsx'
+import BlurImage from './BlurImage.jsx'
 
 const canMorph = () =>
   typeof document !== 'undefined' &&
@@ -54,7 +55,11 @@ export default function Projects() {
     })
   }
 
-  function closeProject() {
+  function closeProject(opts = {}) {
+    if (opts.instant) {
+      setActiveId(null)
+      return
+    }
     const thumb = morph && canMorph() ? document.querySelector(`[data-pid="${activeId}"] .thumb`) : null
     if (!thumb) {
       setActiveId(null)
@@ -108,7 +113,7 @@ export default function Projects() {
             >
               <div className="thumb">
                 {p.image ? (
-                  <img src={p.image} alt={`${p.name} preview`} loading="lazy" />
+                  <BlurImage src={p.image} alt={`${p.name} preview`} />
                 ) : (
                   <span className="thumb-initial">{p.name.charAt(0)}</span>
                 )}

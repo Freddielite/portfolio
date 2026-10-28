@@ -5,6 +5,7 @@ import useContent from '../hooks/useContent.js'
 import { getPosts } from '../lib/content.js'
 import fallbackPosts from '../data/posts.js'
 import SEO from '../components/SEO.jsx'
+import BlurImage from '../components/BlurImage.jsx'
 import { formatDate } from '../components/BlogTeaser.jsx'
 
 export default function BlogList() {
@@ -41,7 +42,7 @@ export default function BlogList() {
           <Reveal key={post._id || post.slug} delay={(i % 3) * 70}>
             <CurtainLink to={`/blog/${post.slug}`} label="Blog" className="blog-card" data-cursor="Read">
               {post.coverImage && (
-                <div className="blog-card-image"><img src={post.coverImage} alt="" loading="lazy" /></div>
+                <div className="blog-card-image"><BlurImage src={post.coverImage} alt="" /></div>
               )}
               <div className="blog-card-body">
                 <span className="mono-label">{formatDate(post.publishedAt)}</span>

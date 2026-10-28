@@ -6,6 +6,7 @@ import useContent from '../hooks/useContent.js'
 import { getPostBySlug, getPosts } from '../lib/content.js'
 import fallbackPosts from '../data/posts.js'
 import SEO from '../components/SEO.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 import { formatDate } from '../components/BlogTeaser.jsx'
 
 const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -28,6 +29,7 @@ export default function BlogPost() {
   const fallback = fallbackPosts.find((p) => p.slug === slug) || null
   const [post, loading] = useContent(() => getPostBySlug(slug), fallback, [slug])
   const [copied, setCopied] = useState(false)
+  const { toast } = useToast()
 
   const toc = useMemo(
     () => (post?.body || []).filter((b) => b._type === 'block' && /^h[23]$/.test(b.style)).map((b) => ({ text: blockText(b), id: slugify(blockText(b)) })),
@@ -55,6 +57,7 @@ export default function BlogPost() {
     try {
       await navigator.clipboard.writeText(window.location.href)
       setCopied(true)
+      toast('Link copied')
       setTimeout(() => setCopied(false), 2000)
     } catch { /* clipboard blocked */ }
   }
