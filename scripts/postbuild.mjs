@@ -47,7 +47,7 @@ async function writePostHtml(template, post, siteUrl) {
   const description = escapeHtml(post.excerpt || '')
   const image = post.coverImage
     ? (post.coverImage.startsWith('http') ? post.coverImage : `${base}${post.coverImage}`)
-    : `${base}/images/wilfred-photo.jpg`
+    : `${base}/images/og-card.jpg`
   const url = `${base}/blog/${post.slug}`
 
   let html = template
@@ -56,6 +56,10 @@ async function writePostHtml(template, post, siteUrl) {
   html = html.replace(/<meta property="og:title" content=".*?"\s*\/>/, `<meta property="og:title" content="${title}" />`)
   html = html.replace(/<meta property="og:description" content=".*?"\s*\/>/, `<meta property="og:description" content="${description}" />`)
   html = html.replace(/<meta property="og:image" content=".*?"\s*\/>/, `<meta property="og:image" content="${image}" />`)
+  html = html.replace(/<meta name="twitter:title" content=".*?"\s*\/>/, `<meta name="twitter:title" content="${title}" />`)
+  html = html.replace(/<meta name="twitter:description" content=".*?"\s*\/>/, `<meta name="twitter:description" content="${description}" />`)
+  html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${image}" />`)
+  html = html.replace('</head>', `  <meta property="og:url" content="${url}" />\n</head>`)
   html = html.replace(/<meta property="og:type" content=".*?"\s*\/>/, `<meta property="og:type" content="article" />`)
   html += `` // no-op, keeps structure readable
   html = html.replace('</head>', `  <link rel="canonical" href="${url}" />\n</head>`)
@@ -63,6 +67,18 @@ async function writePostHtml(template, post, siteUrl) {
   const outDir = path.join(DIST, 'blog', post.slug)
   await mkdir(outDir, { recursive: true })
   await writeFile(path.join(outDir, 'index.html'), html)
+}
+
+// The home page is served from the same index.html, so crawlers that do not run
+// JavaScript (WhatsApp, LinkedIn, X) need absolute image and canonical URLs in it.
+async function writeHomeHtml(template, siteUrl) {
+  const base = siteUrl.replace(/\/$/, '')
+  const image = `${base}/images/og-card.jpg`
+  let html = template
+  html = html.replace(/<meta property="og:image" content=".*?"\s*\/>/, `<meta property="og:image" content="${image}" />`)
+  html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${image}" />`)
+  html = html.replace('</head>', `  <link rel="canonical" href="${base}/" />\n  <meta property="og:url" content="${base}/" />\n</head>`)
+  await writeFile(path.join(DIST, 'index.html'), html)
 }
 
 async function run() {
@@ -74,7 +90,8 @@ async function run() {
   for (const post of posts) {
     await writePostHtml(template, post, settings.siteUrl)
   }
-  console.log(`[postbuild] pre-rendered SEO tags for ${posts.length} blog post(s)`)
+  await writeHomeHtml(template, settings.siteUrl)
+  console.log(`[postbuild] pre-rendered SEO tags for ${posts.length} blog post(s) and the home page`)
 }
 
 run().catch((err) => {

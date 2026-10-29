@@ -8,7 +8,7 @@ export default function SEO({ title, description, image, path = '', type = 'webs
   const url = `${s.siteUrl.replace(/\/$/, '')}${path}`
   const img = image
     ? (image.startsWith('http') ? image : `${s.siteUrl.replace(/\/$/, '')}${image}`)
-    : `${s.siteUrl.replace(/\/$/, '')}${s.photo}`
+    : `${s.siteUrl.replace(/\/$/, '')}/images/og-card.jpg`
 
   return (
     <Helmet>
