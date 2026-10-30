@@ -35,6 +35,10 @@ function useActiveLink() {
       setActive('blog')
       return
     }
+    if (pathname !== '/') {
+      setActive('')
+      return
+    }
     setActive('home')
     const nodes = Object.keys(SECTION_TO_NAV)
       .map((id) => document.getElementById(id))

@@ -5,7 +5,9 @@ import { CurtainLink } from '../context/CurtainContext.jsx'
 import useContent from '../hooks/useContent.js'
 import { getPostBySlug, getPosts } from '../lib/content.js'
 import fallbackPosts from '../data/posts.js'
+import { postTags, relatedPosts } from '../lib/tags.js'
 import SEO from '../components/SEO.jsx'
+import NotFound from './NotFound.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { formatDate } from '../components/BlogTeaser.jsx'
 
@@ -35,22 +37,9 @@ export default function BlogPost() {
     () => (post?.body || []).filter((b) => b._type === 'block' && /^h[23]$/.test(b.style)).map((b) => ({ text: blockText(b), id: slugify(blockText(b)) })),
     [post]
   )
-  const next = useMemo(() => {
-    const all = getPosts()
-    const i = all.findIndex((p) => p.slug === slug)
-    return all.length > 1 ? all[(i + 1) % all.length] : null
-  }, [slug])
+  const related = useMemo(() => (post ? relatedPosts(post, getPosts(), 3) : []), [post])
 
-  if (!loading && !post) {
-    return (
-      <main className="blog-page">
-        <SEO title="Post not found" path={`/blog/${slug}`} />
-        <p className="section-sub">
-          Couldn't find that post. <CurtainLink to="/blog" label="Blog" className="link-btn">Back to blog →</CurtainLink>
-        </p>
-      </main>
-    )
-  }
+  if (!loading && !post) return <NotFound />
   if (!post) return null
 
   async function copy() {
@@ -62,9 +51,17 @@ export default function BlogPost() {
     } catch { /* clipboard blocked */ }
   }
 
+  const tags = postTags(post)
+
   return (
     <main className="blog-page">
-      <SEO title={post.title} description={post.excerpt} image={post.coverImage} path={`/blog/${post.slug}`} type="article" />
+      <SEO
+        title={post.title}
+        description={post.excerpt}
+        image={`/og/${post.slug}.png`}
+        path={`/blog/${post.slug}`}
+        type="article"
+      />
 
       <article className="blog-post">
         <CurtainLink to="/blog" label="Blog" className="link-btn link-btn-ghost blog-back">← All posts</CurtainLink>
@@ -72,6 +69,9 @@ export default function BlogPost() {
         <h1>{post.title}</h1>
 
         <div className="blog-tools">
+          {tags.map((t) => (
+            <CurtainLink key={t} to={`/blog?tag=${encodeURIComponent(t)}`} label="Blog" className="chip">{t}</CurtainLink>
+          ))}
           <button type="button" className="chip" onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
         </div>
 
@@ -98,11 +98,21 @@ export default function BlogPost() {
           <PortableText value={post.body} components={components} />
         </div>
 
-        {next && next.slug !== post.slug && (
-          <CurtainLink to={`/blog/${next.slug}`} label="Blog" className="nx blog-next" data-cursor="Read">
-            <span className="mono-label">Next post</span>
-            <strong>{next.title} →</strong>
-          </CurtainLink>
+        {related.length > 0 && (
+          <section className="related" aria-label="Keep reading">
+            <p className="mono-label">Keep reading</p>
+            <div className="related-grid">
+              {related.map((r) => (
+                <CurtainLink key={r.slug} to={`/blog/${r.slug}`} label="Blog" className="rel-card" data-cursor="Read">
+                  <span className="mono-label">{formatDate(r.publishedAt)}</span>
+                  <strong>{r.title}</strong>
+                  <span className="tag-row">
+                    {postTags(r).slice(0, 2).map((t) => <span className="tag" key={t}>{t}</span>)}
+                  </span>
+                </CurtainLink>
+              ))}
+            </div>
+          </section>
         )}
       </article>
     </main>

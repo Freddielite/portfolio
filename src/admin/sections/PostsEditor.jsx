@@ -29,9 +29,11 @@ function blankPost() {
 function PostForm({ post, onChange, onDelete }) {
   const [bodyText, setBodyText] = useState(() => blocksToText(post.body))
   const [autoSlug, setAutoSlug] = useState(!post.slug)
+  const [tagText, setTagText] = useState(() => (post.tags || []).join(', '))
 
   useEffect(() => {
     setBodyText(blocksToText(post.body))
+    setTagText((post.tags || []).join(', '))
   }, [post._id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function set(key, value) {
@@ -44,6 +46,11 @@ function PostForm({ post, onChange, onDelete }) {
     } else {
       set('title', title)
     }
+  }
+
+  function setTags(text) {
+    setTagText(text)
+    set('tags', text.split(',').map((t) => t.trim()).filter(Boolean))
   }
 
   function setBody(text) {
@@ -79,6 +86,12 @@ function PostForm({ post, onChange, onDelete }) {
           <label className="admin-label">Published date</label>
           <input type="date" value={post.publishedAt?.slice(0, 10) || ''} onChange={(e) => set('publishedAt', e.target.value)} />
         </div>
+      </div>
+
+      <div className="admin-field">
+        <label className="admin-label">Tags (comma separated)</label>
+        <input value={tagText} placeholder="Email, Backend" onChange={(e) => setTags(e.target.value)} />
+        <p className="admin-hint">Used for the topic filter and "Keep reading". Leave empty and tags are chosen automatically from the title and excerpt.</p>
       </div>
 
       <div className="admin-field">

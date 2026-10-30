@@ -10,6 +10,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { getBuildTimeContent } from './lib.mjs'
+import { postTags } from '../src/lib/tags.js'
 
 const DIST = path.resolve('dist')
 
@@ -41,13 +42,17 @@ ${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   console.log(`[postbuild] wrote sitemap.xml with ${urls.length} URLs`)
 }
 
-async function writePostHtml(template, post, siteUrl) {
+async function writePostHtml(template, post, siteUrl, ogMade = new Set()) {
   const base = siteUrl.replace(/\/$/, '')
   const title = `${escapeHtml(post.title)} · ${escapeHtml('Oseghale Wilfred')}`
   const description = escapeHtml(post.excerpt || '')
-  const image = post.coverImage
-    ? (post.coverImage.startsWith('http') ? post.coverImage : `${base}${post.coverImage}`)
-    : `${base}/images/og-card.jpg`
+  // A generated title card per post (see makeOgImages). Falls back to the
+  // post's own cover image, then to the site-wide card.
+  const image = ogMade.has(post.slug)
+    ? `${base}/og/${post.slug}.png`
+    : post.coverImage
+      ? (post.coverImage.startsWith('http') ? post.coverImage : `${base}${post.coverImage}`)
+      : `${base}/images/og-card.jpg`
   const url = `${base}/blog/${post.slug}`
 
   let html = template
@@ -69,6 +74,79 @@ async function writePostHtml(template, post, siteUrl) {
   await writeFile(path.join(outDir, 'index.html'), html)
 }
 
+const el = (type, style, children) => ({ type, props: { style, children } })
+
+function ogCard(post, avatar, domain) {
+  const tags = postTags(post).slice(0, 2)
+  const title = post.title || ''
+  const size = title.length <= 38 ? 76 : title.length <= 62 ? 64 : 54
+  const date = post.publishedAt
+    ? new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : ''
+  return el(
+    'div',
+    {
+      display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: 1200, height: 630,
+      boxSizing: 'border-box', padding: '64px 72px', color: '#ffffff', fontFamily: 'Inter',
+      backgroundImage: 'linear-gradient(135deg, #0f1a4d, #223a8f 55%, #3b5fe0)',
+    },
+    [
+      el('div', { display: 'flex', alignItems: 'center', gap: 14 }, [
+        ...tags.map((t) => el('div', { display: 'flex', padding: '6px 18px', border: '2px solid rgba(255,255,255,0.55)', borderRadius: 99, fontSize: 24 }, t)),
+        el('div', { display: 'flex', fontSize: 24, opacity: 0.75, marginLeft: 6 }, date),
+      ]),
+      el('div', { display: 'flex', fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: size, lineHeight: 1.08, letterSpacing: -2, maxWidth: 1020 }, title),
+      el('div', { display: 'flex', alignItems: 'center', gap: 18 }, [
+        { type: 'img', props: { src: avatar, width: 72, height: 72, style: { width: 72, height: 72, borderRadius: 36 } } },
+        el('div', { display: 'flex', flexDirection: 'column' }, [
+          el('div', { display: 'flex', fontSize: 28, fontWeight: 500 }, 'Oseghale Wilfred'),
+          el('div', { display: 'flex', fontSize: 22, opacity: 0.75 }, domain),
+        ]),
+      ]),
+    ]
+  )
+}
+
+// One 1200x630 title card per blog post, written to dist/og/<slug>.png, so every
+// post shares with its own title on WhatsApp, LinkedIn and X. If the image tools
+// are missing or something fails, the build carries on and posts fall back to
+// their cover image or the site-wide card.
+async function makeOgImages(posts, siteUrl) {
+  const made = new Set()
+  let satori
+  let Resvg
+  try {
+    satori = (await import('satori')).default
+    ;({ Resvg } = await import('@resvg/resvg-js'))
+  } catch (err) {
+    console.warn('[postbuild] share images skipped:', err.message)
+    return made
+  }
+  try {
+    const font = (pkg, file) => readFile(path.resolve('node_modules', '@fontsource', pkg, 'files', file))
+    const fonts = [
+      { name: 'Space Grotesk', data: await font('space-grotesk', 'space-grotesk-latin-700-normal.woff'), weight: 700, style: 'normal' },
+      { name: 'Inter', data: await font('inter', 'inter-latin-500-normal.woff'), weight: 500, style: 'normal' },
+    ]
+    const avatar = `data:image/jpeg;base64,${(await readFile(path.resolve('public/images/avatar.jpg'))).toString('base64')}`
+    const domain = new URL(siteUrl).host
+    await mkdir(path.join(DIST, 'og'), { recursive: true })
+    for (const post of posts) {
+      try {
+        const svg = await satori(ogCard(post, avatar, domain), { width: 1200, height: 630, fonts })
+        const png = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } }).render().asPng()
+        await writeFile(path.join(DIST, 'og', `${post.slug}.png`), png)
+        made.add(post.slug)
+      } catch (err) {
+        console.warn(`[postbuild] share image failed for ${post.slug}:`, err.message)
+      }
+    }
+  } catch (err) {
+    console.warn('[postbuild] share images skipped:', err.message)
+  }
+  return made
+}
+
 // The home page is served from the same index.html, so crawlers that do not run
 // JavaScript (WhatsApp, LinkedIn, X) need absolute image and canonical URLs in it.
 async function writeHomeHtml(template, siteUrl) {
@@ -87,11 +165,12 @@ async function run() {
 
   await writeSitemapAndRobots(posts, projects, settings.siteUrl)
 
+  const ogMade = await makeOgImages(posts, settings.siteUrl)
   for (const post of posts) {
-    await writePostHtml(template, post, settings.siteUrl)
+    await writePostHtml(template, post, settings.siteUrl, ogMade)
   }
   await writeHomeHtml(template, settings.siteUrl)
-  console.log(`[postbuild] pre-rendered SEO tags for ${posts.length} blog post(s) and the home page`)
+  console.log(`[postbuild] pre-rendered SEO tags for ${posts.length} blog post(s) and the home page, ${ogMade.size} share image(s)`)
 }
 
 run().catch((err) => {
