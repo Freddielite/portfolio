@@ -13,6 +13,7 @@ import Home from './pages/Home.jsx'
 import BlogList from './pages/BlogList.jsx'
 import BlogPost from './pages/BlogPost.jsx'
 import NotFound from './pages/NotFound.jsx'
+import Cv from './pages/Cv.jsx'
 
 // Lazy-loaded so the admin panel's code never ships in the bundle visitors
 // download for the public site: it's only fetched when someone actually
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />
+        <Route path="/cv" element={<Cv />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />

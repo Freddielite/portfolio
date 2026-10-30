@@ -1,4 +1,4 @@
-const TOOLS = ['React', 'Node.js', 'Go', 'Django', 'PostgreSQL', 'Docker', 'Linux', 'Networking', 'Security']
+export const TOOLS = ['React', 'Node.js', 'Go', 'Django', 'PostgreSQL', 'Docker', 'Linux', 'Networking', 'Security']
 
 export default function Marquee() {
   const row = [...TOOLS, ...TOOLS]

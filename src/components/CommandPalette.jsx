@@ -27,6 +27,7 @@ export default function CommandPalette() {
       ['Services', '/#services', 'Section'],
       ['Contact', '/#contact', 'Section'],
       ['Blog', '/blog', 'Page'],
+      ['Web CV', '/cv', 'Page'],
     ].map(([label, to, kind]) => ({ label, kind, run: () => go(to) }))
 
     const projects = getProjects().map((p) => ({

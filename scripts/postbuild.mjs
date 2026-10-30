@@ -22,9 +22,103 @@ function escapeHtml(str = '') {
     .replace(/"/g, '&quot;')
 }
 
+// ---- Structured data (JSON-LD) -------------------------------------------
+// Written into the static HTML so search engines see it without running JS.
+const ldScript = (obj) =>
+  `  <script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>\n`
+
+const absolute = (base, p) => (!p ? '' : p.startsWith('http') ? p : `${base}${p.startsWith('/') ? '' : '/'}${p}`)
+
+function personNode(base, s, projects) {
+  const sameAs = [s.githubUrl, s.linkedinUrl, s.twitterUrl].filter(Boolean)
+  const knowsAbout = [...new Set(projects.flatMap((p) => p.tags || []))].slice(0, 20)
+  return {
+    '@type': 'Person',
+    '@id': `${base}/#person`,
+    name: s.name,
+    url: `${base}/`,
+    image: absolute(base, s.photo),
+    jobTitle: s.tagline,
+    description: s.metaDescription || undefined,
+    worksFor: s.company ? { '@type': 'Organization', name: s.company } : undefined,
+    address: s.location ? { '@type': 'PostalAddress', addressCountry: s.location } : undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
+    knowsAbout: knowsAbout.length ? knowsAbout : undefined,
+  }
+}
+
+function homeLd(base, s, projects) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      personNode(base, s, projects),
+      {
+        '@type': 'WebSite',
+        '@id': `${base}/#website`,
+        url: `${base}/`,
+        name: `${s.name}, ${s.tagline}`,
+        publisher: { '@id': `${base}/#person` },
+      },
+    ],
+  }
+}
+
+function postLd(base, s, post, image) {
+  const url = `${base}/blog/${post.slug}`
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        '@id': `${url}#article`,
+        headline: post.title,
+        description: post.excerpt || undefined,
+        image: [image],
+        datePublished: post.publishedAt,
+        dateModified: post.publishedAt,
+        mainEntityOfPage: url,
+        url,
+        author: { '@type': 'Person', '@id': `${base}/#person`, name: s.name, url: `${base}/` },
+        publisher: { '@type': 'Person', '@id': `${base}/#person`, name: s.name },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: `${base}/blog` },
+          { '@type': 'ListItem', position: 3, name: post.title, item: url },
+        ],
+      },
+    ],
+  }
+}
+
+// Static copy of the app shell for a page that is not a blog post (the web CV),
+// so it gets its own title, description and canonical URL.
+async function writePageHtml(template, siteUrl, { pathname, title, description }) {
+  const base = siteUrl.replace(/\/$/, '')
+  const url = `${base}${pathname}`
+  const image = `${base}/images/og-card.jpg`
+  const t = escapeHtml(title)
+  const d = escapeHtml(description)
+  let html = template
+  html = html.replace(/<title>.*?<\/title>/, `<title>${t}</title>`)
+  html = html.replace(/<meta name="description" content=".*?"\s*\/>/, `<meta name="description" content="${d}" />`)
+  html = html.replace(/<meta property="og:title" content=".*?"\s*\/>/, `<meta property="og:title" content="${t}" />`)
+  html = html.replace(/<meta property="og:description" content=".*?"\s*\/>/, `<meta property="og:description" content="${d}" />`)
+  html = html.replace(/<meta property="og:image" content=".*?"\s*\/>/, `<meta property="og:image" content="${image}" />`)
+  html = html.replace(/<meta name="twitter:title" content=".*?"\s*\/>/, `<meta name="twitter:title" content="${t}" />`)
+  html = html.replace(/<meta name="twitter:description" content=".*?"\s*\/>/, `<meta name="twitter:description" content="${d}" />`)
+  html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${image}" />`)
+  html = html.replace('</head>', `  <link rel="canonical" href="${url}" />\n  <meta property="og:url" content="${url}" />\n</head>`)
+  const outDir = path.join(DIST, ...pathname.split('/').filter(Boolean))
+  await mkdir(outDir, { recursive: true })
+  await writeFile(path.join(outDir, 'index.html'), html)
+}
+
 async function writeSitemapAndRobots(posts, projects, siteUrl) {
   const base = siteUrl.replace(/\/$/, '')
-  const staticRoutes = ['/', '/blog']
+  const staticRoutes = ['/', '/blog', '/cv']
   const urls = [
     ...staticRoutes.map((r) => `${base}${r}`),
     ...posts.map((p) => `${base}/blog/${p.slug}`),
@@ -42,7 +136,7 @@ ${urls.map((u) => `  <url><loc>${u}</loc></url>`).join('\n')}
   console.log(`[postbuild] wrote sitemap.xml with ${urls.length} URLs`)
 }
 
-async function writePostHtml(template, post, siteUrl, ogMade = new Set()) {
+async function writePostHtml(template, post, siteUrl, ogMade = new Set(), settings = {}) {
   const base = siteUrl.replace(/\/$/, '')
   const title = `${escapeHtml(post.title)} · ${escapeHtml('Oseghale Wilfred')}`
   const description = escapeHtml(post.excerpt || '')
@@ -67,7 +161,7 @@ async function writePostHtml(template, post, siteUrl, ogMade = new Set()) {
   html = html.replace('</head>', `  <meta property="og:url" content="${url}" />\n</head>`)
   html = html.replace(/<meta property="og:type" content=".*?"\s*\/>/, `<meta property="og:type" content="article" />`)
   html += `` // no-op, keeps structure readable
-  html = html.replace('</head>', `  <link rel="canonical" href="${url}" />\n</head>`)
+  html = html.replace('</head>', `  <link rel="canonical" href="${url}" />\n${ldScript(postLd(base, settings, post, image))}</head>`)
 
   const outDir = path.join(DIST, 'blog', post.slug)
   await mkdir(outDir, { recursive: true })
@@ -149,13 +243,13 @@ async function makeOgImages(posts, siteUrl) {
 
 // The home page is served from the same index.html, so crawlers that do not run
 // JavaScript (WhatsApp, LinkedIn, X) need absolute image and canonical URLs in it.
-async function writeHomeHtml(template, siteUrl) {
+async function writeHomeHtml(template, siteUrl, settings = {}, projects = []) {
   const base = siteUrl.replace(/\/$/, '')
   const image = `${base}/images/og-card.jpg`
   let html = template
   html = html.replace(/<meta property="og:image" content=".*?"\s*\/>/, `<meta property="og:image" content="${image}" />`)
   html = html.replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${image}" />`)
-  html = html.replace('</head>', `  <link rel="canonical" href="${base}/" />\n  <meta property="og:url" content="${base}/" />\n</head>`)
+  html = html.replace('</head>', `  <link rel="canonical" href="${base}/" />\n  <meta property="og:url" content="${base}/" />\n${ldScript(homeLd(base, settings, projects))}</head>`)
   await writeFile(path.join(DIST, 'index.html'), html)
 }
 
@@ -167,9 +261,14 @@ async function run() {
 
   const ogMade = await makeOgImages(posts, settings.siteUrl)
   for (const post of posts) {
-    await writePostHtml(template, post, settings.siteUrl, ogMade)
+    await writePostHtml(template, post, settings.siteUrl, ogMade, settings)
   }
-  await writeHomeHtml(template, settings.siteUrl)
+  await writeHomeHtml(template, settings.siteUrl, settings, projects)
+  await writePageHtml(template, settings.siteUrl, {
+    pathname: '/cv',
+    title: `CV · ${settings.name}`,
+    description: `${settings.name}, ${String(settings.tagline || '').toLowerCase()}. Skills, selected projects and writing.`,
+  })
   console.log(`[postbuild] pre-rendered SEO tags for ${posts.length} blog post(s) and the home page, ${ogMade.size} share image(s)`)
 }
 

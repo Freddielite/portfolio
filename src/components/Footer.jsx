@@ -13,6 +13,7 @@ export default function Footer() {
           <CurtainLink to="/">Home</CurtainLink>
           <CurtainLink to="/#work">Work</CurtainLink>
           <CurtainLink to="/blog">Blog</CurtainLink>
+          <CurtainLink to="/cv" label="CV">Web CV</CurtainLink>
           <CurtainLink to="/#contact">Contact</CurtainLink>
           <a href={s.githubUrl} target="_blank" rel="noreferrer">GitHub ↗</a>
         </nav>
