@@ -4,7 +4,7 @@ React + Vite portfolio with a blog, a built-in admin panel, testimonials, dark m
 
 ## Updating safely (keeps your /admin edits)
 
-The admin saves edits straight to GitHub (`src/data/*.json`, `public/cv.pdf`, `public/images/*`). If you unzip a new `portfolio.zip` over your folder, those files are replaced with older copies and your edits are lost. Use the update script instead:
+The admin saves edits straight to GitHub (`content/*.json`, `public/cv.pdf`, `public/images/*`). If you unzip a new `portfolio.zip` over your folder, those files are replaced with older copies and your edits are lost. Use the update script instead:
 
 ```
 ./scripts/safe-update.sh ~/Downloads/portfolio.zip
@@ -31,6 +31,14 @@ It pulls your latest edits first, copies only the code from the zip, and only ad
 - **Share image per post.** At build time each post gets its own 1200x630 title card at `/og/<slug>.png` (made with satori and resvg, fonts from `@fontsource`). Posts share on WhatsApp, LinkedIn and X with their own title. If image generation ever fails, the build continues and the post falls back to its cover image or the site-wide card.
 - **Web CV at `/cv`.** Built from the same data as the site (about text, skills, projects, latest posts, availability), so it never goes stale. On screen it is a clean page, and "Print or save as PDF" (or Ctrl+P) turns it into a tidy two-page A4 CV with the site chrome hidden. It sits next to your uploaded PDF CV, which keeps working at `/cv.pdf`. There are no employment or education sections yet because that data does not exist in the admin.
 - **Structured data (JSON-LD).** The build writes Person and WebSite data into the home page, and BlogPosting plus breadcrumb data into every post, so search engines understand who you are and what each post is. Check it after a deploy with Google's Rich Results Test.
+- **Content lives in `content/`, not in the code.** Everything you edit in `/admin` (settings, projects, skills, testimonials, posts, drafts) is saved to `content/*.json`. Code updates never include that folder, so a zip update cannot overwrite your edits. `scripts/safe-update.sh` also moves the old `src/data/*.json` files into `content/` the first time it runs.
+- **Admin overview.** The first admin tab shows a setup checklist (site URL, LinkedIn, Formspree, Pulse, meta description, testimonial names, screenshots, alt text, post summaries), post and project counts, a live health table from Pulse, and backup and restore.
+- **Change history and undo.** Every editor has a History button listing recent saves (each save is a git commit). "Load this version" puts an older version in the editor as an unsaved change, so you review it before saving.
+- **Safer saving.** Content is checked before it saves (required names, valid web addresses, unique slugs, valid dates). If the content changed somewhere else since you opened it, you get a clear message and a reload button instead of an overwrite. After a save the admin shows saving, rebuilding, live: the build writes its commit to `/build.json` and the admin waits for it.
+- **Blog builder.** Write posts with a formatting toolbar (bold, italic, links, headings, lists, quotes, code blocks, images, plus Ctrl+B/I/K and pasting images), a live preview that uses the real blog styles, and an SEO tab with a checklist, a Google snippet preview and a share-card preview. Posts can be Draft, Published or Scheduled. Drafts are stored in `content/drafts.json`, which the public site never imports, so draft text is not shipped. A published post dated in the future stays hidden until that date.
+- **Image tools.** Uploads are resized, converted to WebP, and a tiny blur placeholder is stored with the image so it fades in smoothly. Projects and post covers have an alt text field.
+- **Reorder, hide, feature.** Drag the handle (or use the arrows) to reorder projects, skills and testimonials. "Show on site" hides an item without deleting it, and "Featured" makes a project the large card.
+- **Backup and restore.** Download all text content as one JSON file. Restore can add only what is missing (safe) or replace everything.
 - **Client work:** Kall Konnect (the app) and Kall Konnect Website (its download site) are client projects. Source repos are private, so they have no GitHub link.
 - **Project covers** for Kall Konnect, Wynmail, Pulse and FocusDial are generated placeholders in `public/images/projects/`. Replace them with real screenshots from `/admin` (Projects, Screenshot).
 - **Contact brief builder.** Visitors pick what they need, timeline and engagement, and the message builds live. Send by email, WhatsApp, copy, or straight to Formspree when `formspreeId` is set.

@@ -8,9 +8,14 @@
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 
-const posts = require('../src/data/posts.json')
-const projects = require('../src/data/projects.json')
-const settings = require('../src/data/siteSettings.json')
+import { isLivePost } from '../src/lib/postStatus.js'
+
+const allPosts = require('../content/posts.json')
+const projects = require('../content/projects.json').filter((p) => !p.hidden)
+const settings = require('../content/siteSettings.json')
+
+// Same rule as the site: no drafts, nothing dated in the future.
+const posts = allPosts.filter((p) => isLivePost(p))
 
 export async function getBuildTimeContent() {
   return { posts, projects, settings }

@@ -508,8 +508,8 @@ html.theme-vt::view-transition-new(root) {
 .kind-client-work { background: rgba(255, 122, 80, 0.92); color: #20110b; }
 .project-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin-top: 14px; }
 @media (min-width: 1000px) {
-  .project-grid > .tl:first-child { grid-column: span 2; }
-  .project-grid > .tl:first-child .thumb { aspect-ratio: 16 / 7; }
+  .project-grid > .tl.is-wide { grid-column: span 2; }
+  .project-grid > .tl.is-wide .thumb { aspect-ratio: 16 / 7; }
 }
 
 .modal-overlay {
@@ -888,3 +888,17 @@ a.chip { display: inline-flex; align-items: center; text-decoration: none; }
   .cv-dots i.on { background: #1d3fbf; }
   * { animation: none !important; transition: none !important; }
 }
+
+/* Blog: rich content (code blocks, images, quotes, links) */
+.blog-post-body a { text-decoration: underline; text-underline-offset: 3px; }
+.blog-post-body blockquote { margin: 0 0 1.4rem; padding: 6px 0 6px 18px; border-left: 3px solid var(--accent); color: var(--text-muted); font-style: italic; white-space: pre-line; }
+.blog-post-body ol { margin: 0 0 1.4rem; padding-left: 1.5rem; }
+.code-block { margin: 0 0 1.6rem; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: #0d1326; }
+.code-block-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: rgba(255, 255, 255, 0.06); font: 500 0.72rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: #8ea2d9; }
+.code-block-bar button { background: none; border: 1px solid rgba(255, 255, 255, 0.2); color: #cfdcff; border-radius: 99px; padding: 3px 12px; font: 500 0.7rem var(--font-mono); cursor: pointer; }
+.code-block-bar button:hover { border-color: #8ea2d9; }
+.code-block pre { margin: 0; padding: 16px; overflow-x: auto; color: #d6e0ff; font: 0.86rem / 1.65 var(--font-mono); white-space: pre; }
+.code-block code { background: none; padding: 0; color: inherit; font: inherit; }
+.post-figure { margin: 0 0 1.6rem; }
+.post-figure img { width: 100%; border-radius: 14px; border: 1px solid var(--border); display: block; }
+.post-figure figcaption { margin-top: 8px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }

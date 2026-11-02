@@ -24,19 +24,20 @@ if [ -n "$(git status --porcelain)" ]; then
 fi
 
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-echo "1/4 Pulling your latest edits from GitHub (branch: $BRANCH)..."
+echo "1/5 Pulling your latest edits from GitHub (branch: $BRANCH)..."
 git pull --rebase origin "$BRANCH"
 
-echo "2/4 Unpacking the zip..."
+echo "2/5 Unpacking the zip..."
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 unzip -q "$ZIP" -d "$TMP"
 SRC="$(dirname "$(find "$TMP" -maxdepth 3 -name package.json -not -path '*/node_modules/*' | head -1)")"
 [ -f "$SRC/package.json" ] || { echo "Could not find the project inside the zip."; exit 1; }
 
-echo "3/4 Copying code, keeping your admin content..."
-# Code files are copied over. Content files (src/data, public/images, public/cv.pdf)
-# are only added when they do not exist yet, never overwritten.
+echo "3/5 Copying code, keeping your admin content..."
+# Code files are copied over. Content (the content/ folder, plus the older
+# src/data/*.json location, images and the CV) is only ever ADDED when missing,
+# never overwritten, so your /admin edits always win.
 copied=0
 kept=0
 while IFS= read -r -d '' file; do
@@ -47,7 +48,7 @@ while IFS= read -r -d '' file; do
   dest="$rel"
   mkdir -p "$(dirname "$dest")"
   case "$rel" in
-    src/data/*|public/images/*|public/cv.pdf)
+    content/*|src/data/*.json|public/images/*|public/cv.pdf)
       if [ -e "$dest" ]; then kept=$((kept + 1)); else cp "$SRC/$rel" "$dest"; copied=$((copied + 1)); fi ;;
     *)
       cp "$SRC/$rel" "$dest"; copied=$((copied + 1)) ;;
@@ -55,7 +56,24 @@ while IFS= read -r -d '' file; do
 done < <(cd "$SRC" && find . -type f -print0)
 echo "   copied $copied files, kept $kept of your content files untouched"
 
-echo "4/4 Done. What changed:"
+echo "4/5 Moving content to the content/ folder (one-time, safe to repeat)..."
+moved=0
+for t in siteSettings projects skills testimonials posts drafts; do
+  old="src/data/$t.json"
+  new="content/$t.json"
+  if [ -f "$old" ] && [ ! -f "$new" ]; then
+    mkdir -p content
+    if git ls-files --error-unmatch "$old" >/dev/null 2>&1; then git mv "$old" "$new"; else mv "$old" "$new"; fi
+    moved=$((moved + 1))
+  elif [ -f "$old" ] && [ -f "$new" ]; then
+    # The new location wins. Drop the stale old copy so it cannot confuse anyone.
+    if git ls-files --error-unmatch "$old" >/dev/null 2>&1; then git rm -q "$old"; else rm "$old"; fi
+  fi
+done
+echo "   moved $moved content file(s)"
+[ -f content/siteSettings.json ] || echo "WARNING: content/siteSettings.json is missing. Your site will not build until it exists."
+
+echo "5/5 Done. What changed:"
 git status --short
 echo
 echo "If package.json changed, run: npm install"

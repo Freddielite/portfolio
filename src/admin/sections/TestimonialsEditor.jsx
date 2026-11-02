@@ -2,23 +2,36 @@ import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
+import useDragReorder from '../useDragReorder.js'
+import { validateTestimonials } from '../validate.js'
 
 function blank() {
   return { id: `t${Date.now()}`, quote: '', author: '', role: '' }
 }
 
 export default function TestimonialsEditor() {
-  const { data, loading, saving, error, savedAt, save } = useAdminContent('testimonials')
+  const { data, loading, saving, error, conflict, savedAt, commit, save, reload } = useAdminContent('testimonials')
   const [list, setList] = useState(null)
+  const [restoredFrom, setRestoredFrom] = useState(null)
+  const { handleProps, dropProps, over } = useDragReorder(setList)
 
   useEffect(() => {
-    if (data) setList(data)
+    if (data) {
+      setList(data)
+      setRestoredFrom(null)
+    }
   }, [data])
 
   const dirty = !loading && list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
 
   if (loading || !list) return <p className="admin-hint">Loading…</p>
+
+  const bar = {
+    saving, error, savedAt, dirty, conflict, commit, restoredFrom, errors: validateTestimonials(list), onReload: reload, type: 'testimonials',
+    onRestore: (d, c) => { setList(d); setRestoredFrom(c) },
+    onSave: () => save(list),
+  }
 
   function update(i, key, value) {
     setList((l) => l.map((t, idx) => (idx === i ? { ...t, [key]: value } : t)))
@@ -32,17 +45,25 @@ export default function TestimonialsEditor() {
 
   return (
     <div className="admin-section">
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(list)} />
+      <SaveBar {...bar} />
       <p className="admin-hint">
         Toggle whether this section shows at all from the Site Settings tab.
       </p>
 
       {list.map((t, i) => (
-        <div className="admin-card" key={i}>
+        <div className={`admin-card ${over === i ? 'is-over' : ''} ${t.hidden ? 'is-hidden' : ''}`} key={i} {...dropProps(i)}>
           <div className="admin-card-header">
-            <strong>{t.author || 'New testimonial'}</strong>
+            <strong>
+              <span className="admin-drag" title="Drag to reorder" {...handleProps(i)}>⋮⋮</span>{' '}
+              {t.author || 'New testimonial'}
+              {t.hidden && <span className="admin-badge">Hidden</span>}
+            </strong>
             <button type="button" className="admin-btn-danger" onClick={() => removeAt(i)}>Delete</button>
           </div>
+          <label className="admin-checkbox">
+            <input type="checkbox" checked={!t.hidden} onChange={(e) => update(i, 'hidden', !e.target.checked)} />
+            Show on site
+          </label>
           <div className="admin-field">
             <label className="admin-label">Quote</label>
             <textarea rows={3} value={t.quote} onChange={(e) => update(i, 'quote', e.target.value)} />
@@ -64,7 +85,7 @@ export default function TestimonialsEditor() {
         + Add testimonial
       </button>
 
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(list)} />
+      <SaveBar {...bar} />
     </div>
   )
 }

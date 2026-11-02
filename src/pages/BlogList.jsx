@@ -71,7 +71,7 @@ export default function BlogList() {
           <Reveal key={post._id || post.slug} delay={(i % 3) * 70}>
             <CurtainLink to={`/blog/${post.slug}`} label="Blog" className="blog-card" data-cursor="Read">
               {post.coverImage && (
-                <div className="blog-card-image"><BlurImage src={post.coverImage} alt="" /></div>
+                <div className="blog-card-image"><BlurImage src={post.coverImage} alt={post.coverAlt || ''} placeholder={post.coverLqip} /></div>
               )}
               <div className="blog-card-body">
                 <span className="mono-label">{formatDate(post.publishedAt)}</span>

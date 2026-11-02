@@ -3,10 +3,10 @@ import lqip from '../lib/lqip.json'
 
 // Image that fades in from a tiny blurred placeholder. Images without a stored
 // placeholder (for example new uploads from /admin) fade in from a soft shimmer.
-export default function BlurImage({ src, alt = '', className = '' }) {
+export default function BlurImage({ src, alt = '', className = '', placeholder = null }) {
   const ref = useRef(null)
   const [loaded, setLoaded] = useState(false)
-  const ph = lqip[src]
+  const ph = lqip[src] || placeholder
 
   useEffect(() => {
     setLoaded(false)

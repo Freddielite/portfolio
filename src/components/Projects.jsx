@@ -75,6 +75,7 @@ export default function Projects() {
   }
 
   const kinds = useMemo(() => ['All', ...new Set(projects.map(kindOf))], [projects])
+  const hasFeatured = projects.some((p) => p.featured)
   const shown = projects.filter((p) => filter === 'All' || kindOf(p) === filter)
   const activeIndex = shown.findIndex((p) => p.id === activeId)
 
@@ -100,7 +101,7 @@ export default function Projects() {
 
       <div className="project-grid">
         {shown.map((p, i) => (
-          <Reveal className="tl" delay={(i % 3) * 80} key={p.id}>
+          <Reveal className={`tl ${(hasFeatured ? p.featured : i === 0) ? 'is-wide' : ''}`} delay={(i % 3) * 80} key={p.id}>
             <article
               className="card project-card"
               data-cursor="View"
@@ -113,7 +114,7 @@ export default function Projects() {
             >
               <div className="thumb">
                 {p.image ? (
-                  <BlurImage src={p.image} alt={`${p.name} preview`} />
+                  <BlurImage src={p.image} alt={p.imageAlt || `${p.name} preview`} placeholder={p.imageLqip} />
                 ) : (
                   <span className="thumb-initial">{p.name.charAt(0)}</span>
                 )}

@@ -137,7 +137,7 @@ export default function CaseStudyModal({ project, next, prev, onNavigate, onClos
 
         <div className="modal-media">
           {project.image ? (
-            <BlurImage key={project.id} src={project.image} alt={`${project.name} preview`} />
+            <BlurImage key={project.id} src={project.image} alt={project.imageAlt || `${project.name} preview`} placeholder={project.imageLqip} />
           ) : (
             <div className="modal-media-placeholder">
               <span className="mono-label">{project.id}</span>

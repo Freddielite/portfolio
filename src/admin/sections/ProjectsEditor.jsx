@@ -3,6 +3,8 @@ import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
+import useDragReorder from '../useDragReorder.js'
+import { validateProjects } from '../validate.js'
 
 function blankProject() {
   return {
@@ -17,7 +19,7 @@ function blankProject() {
   }
 }
 
-function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
+function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast, handleProps, dropProps, isOver }) {
   function set(key, value) {
     onChange({ ...project, [key]: value })
   }
@@ -26,14 +28,30 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
   }
 
   return (
-    <div className="admin-card">
+    <div className={`admin-card ${isOver ? 'is-over' : ''} ${project.hidden ? 'is-hidden' : ''}`} {...dropProps}>
       <div className="admin-card-header">
-        <strong>{project.name || 'Untitled project'}</strong>
+        <strong>
+          <span className="admin-drag" title="Drag to reorder" {...handleProps}>⋮⋮</span>{' '}
+          {project.name || 'Untitled project'}
+          {project.hidden && <span className="admin-badge">Hidden</span>}
+          {project.featured && <span className="admin-badge is-accent">Featured</span>}
+        </strong>
         <div className="admin-card-actions">
           <button type="button" className="admin-btn-ghost" onClick={onMove.bind(null, -1)} disabled={isFirst}>↑</button>
           <button type="button" className="admin-btn-ghost" onClick={onMove.bind(null, 1)} disabled={isLast}>↓</button>
           <button type="button" className="admin-btn-danger" onClick={onRemove}>Delete</button>
         </div>
+      </div>
+
+      <div className="admin-toggles">
+        <label className="admin-checkbox">
+          <input type="checkbox" checked={!project.hidden} onChange={(e) => set('hidden', !e.target.checked)} />
+          Show on site
+        </label>
+        <label className="admin-checkbox">
+          <input type="checkbox" checked={!!project.featured} onChange={(e) => set('featured', e.target.checked)} />
+          Featured (shown as the large card)
+        </label>
       </div>
 
       <div className="admin-grid-2">
@@ -83,7 +101,14 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
         </div>
       </div>
 
-      <ImageUploader label="Screenshot" value={project.image} onChange={(v) => set('image', v)} folder="projects" />
+      <ImageUploader
+        label="Screenshot"
+        value={project.image}
+        onChange={(v, meta) => onChange({ ...project, image: v, imageLqip: v ? meta?.lqip || null : null, imageAlt: v ? project.imageAlt : null })}
+        alt={project.imageAlt}
+        onAltChange={(v) => set('imageAlt', v)}
+        folder="projects"
+      />
 
       <h4>Case study</h4>
       <div className="admin-field">
@@ -103,17 +128,29 @@ function ProjectCard({ project, onChange, onRemove, onMove, isFirst, isLast }) {
 }
 
 export default function ProjectsEditor() {
-  const { data, loading, saving, error, savedAt, save } = useAdminContent('projects')
+  const { data, loading, saving, error, conflict, savedAt, commit, save, reload } = useAdminContent('projects')
   const [list, setList] = useState(null)
+  const [restoredFrom, setRestoredFrom] = useState(null)
+  const { handleProps, dropProps, over } = useDragReorder(setList)
 
   useEffect(() => {
-    if (data) setList(data)
+    if (data) {
+      setList(data)
+      setRestoredFrom(null)
+    }
   }, [data])
 
   const dirty = !loading && list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
 
   if (loading || !list) return <p className="admin-hint">Loading…</p>
+
+  const errors = validateProjects(list)
+  const bar = {
+    saving, error, savedAt, dirty, errors, conflict, commit, restoredFrom, onReload: reload, type: 'projects',
+    onRestore: (d, c) => { setList(d); setRestoredFrom(c) },
+    onSave: () => save(list),
+  }
 
   function updateAt(i, project) {
     setList((l) => l.map((p, idx) => (idx === i ? project : p)))
@@ -137,7 +174,8 @@ export default function ProjectsEditor() {
 
   return (
     <div className="admin-section">
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(list)} />
+      <SaveBar {...bar} />
+      <p className="admin-hint">Drag the ⋮⋮ handle (or use the arrows) to change the order. Hidden projects stay saved but do not show on the site.</p>
 
       {list.map((project, i) => (
         <ProjectCard
@@ -148,6 +186,9 @@ export default function ProjectsEditor() {
           onMove={(dir) => moveAt(i, dir)}
           isFirst={i === 0}
           isLast={i === list.length - 1}
+          handleProps={handleProps(i)}
+          dropProps={dropProps(i)}
+          isOver={over === i}
         />
       ))}
 
@@ -155,7 +196,7 @@ export default function ProjectsEditor() {
         + Add project
       </button>
 
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(list)} />
+      <SaveBar {...bar} />
     </div>
   )
 }

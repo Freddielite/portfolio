@@ -63,3 +63,36 @@ export async function putFile(path, content, sha, message, { isBase64 = false } 
   }
   return res.json()
 }
+
+// Recent commits that touched one file, newest first.
+export async function listCommits(path, limit = 15) {
+  const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = env()
+  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?sha=${encodeURIComponent(GITHUB_BRANCH)}&path=${encodeURIComponent(path)}&per_page=${limit}`
+  const res = await fetch(url, { headers: headers(GITHUB_TOKEN) })
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`GitHub commits for ${path} failed (${res.status}): ${body}`)
+  }
+  const list = await res.json()
+  return list.map((c) => ({
+    sha: c.sha,
+    message: String(c.commit?.message || '').split('\n')[0],
+    date: c.commit?.author?.date || c.commit?.committer?.date || null,
+    author: c.commit?.author?.name || null,
+    url: c.html_url,
+  }))
+}
+
+// The file's content as it was at one commit (read only).
+export async function getFileAt(path, ref) {
+  const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO } = env()
+  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`
+  const res = await fetch(url, { headers: headers(GITHUB_TOKEN) })
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`GitHub GET ${path}@${ref} failed (${res.status}): ${body}`)
+  }
+  const data = await res.json()
+  return Buffer.from(data.content, 'base64').toString('utf-8')
+}

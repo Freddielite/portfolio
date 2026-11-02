@@ -4,6 +4,7 @@ import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
 import FileUploader from '../FileUploader.jsx'
+import { validateSettings } from '../validate.js'
 
 function Field({ label, hint, children }) {
   return (
@@ -16,11 +17,15 @@ function Field({ label, hint, children }) {
 }
 
 export default function SiteSettingsEditor() {
-  const { data, loading, saving, error, savedAt, save } = useAdminContent('siteSettings')
+  const { data, loading, saving, error, conflict, savedAt, commit, save, reload } = useAdminContent('siteSettings')
   const [form, setForm] = useState(null)
+  const [restoredFrom, setRestoredFrom] = useState(null)
 
   useEffect(() => {
-    if (data) setForm(data)
+    if (data) {
+      setForm(data)
+      setRestoredFrom(null)
+    }
   }, [data])
 
   const dirty = !loading && form && JSON.stringify(form) !== JSON.stringify(data)
@@ -28,13 +33,19 @@ export default function SiteSettingsEditor() {
 
   if (loading || !form) return <p className="admin-hint">Loading…</p>
 
+  const bar = {
+    saving, error, savedAt, dirty, conflict, commit, restoredFrom, errors: validateSettings(form), onReload: reload, type: 'siteSettings',
+    onRestore: (d, c) => { setForm(d); setRestoredFrom(c) },
+    onSave: () => save(form),
+  }
+
   function set(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
   return (
     <div className="admin-section">
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(form)} />
+      <SaveBar {...bar} />
 
       <h2>Identity</h2>
       <div className="admin-grid-2">
@@ -142,7 +153,7 @@ export default function SiteSettingsEditor() {
         <textarea rows={2} value={form.metaDescription} onChange={(e) => set('metaDescription', e.target.value)} />
       </Field>
 
-      <SaveBar saving={saving} error={error} savedAt={savedAt} dirty={dirty} onSave={() => save(form)} />
+      <SaveBar {...bar} />
     </div>
   )
 }

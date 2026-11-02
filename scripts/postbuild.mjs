@@ -253,6 +253,14 @@ async function writeHomeHtml(template, siteUrl, settings = {}, projects = []) {
   await writeFile(path.join(DIST, 'index.html'), html)
 }
 
+// Lets the admin tell when a save has gone live: it polls /build.json until the
+// commit it just made shows up here. On Vercel the commit comes from the system
+// env var VERCEL_GIT_COMMIT_SHA.
+async function writeBuildInfo() {
+  const info = { commit: process.env.VERCEL_GIT_COMMIT_SHA || null, builtAt: new Date().toISOString() }
+  await writeFile(path.join(DIST, 'build.json'), JSON.stringify(info))
+}
+
 async function run() {
   const { posts, projects, settings } = await getBuildTimeContent()
   const template = await readFile(path.join(DIST, 'index.html'), 'utf-8')
@@ -263,6 +271,7 @@ async function run() {
   for (const post of posts) {
     await writePostHtml(template, post, settings.siteUrl, ogMade, settings)
   }
+  await writeBuildInfo()
   await writeHomeHtml(template, settings.siteUrl, settings, projects)
   await writePageHtml(template, settings.siteUrl, {
     pathname: '/cv',

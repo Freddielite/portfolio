@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Overview from './sections/Overview.jsx'
 import SiteSettingsEditor from './sections/SiteSettingsEditor.jsx'
 import ProjectsEditor from './sections/ProjectsEditor.jsx'
 import SkillsEditor from './sections/SkillsEditor.jsx'
@@ -6,6 +7,7 @@ import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 
 const TABS = [
+  { id: 'overview', label: 'Overview', Component: Overview },
   { id: 'settings', label: 'Site Settings', Component: SiteSettingsEditor },
   { id: 'projects', label: 'Projects', Component: ProjectsEditor },
   { id: 'skills', label: 'Skills', Component: SkillsEditor },
@@ -14,13 +16,13 @@ const TABS = [
 ]
 
 export default function AdminDashboard({ onLogout }) {
-  const [tab, setTab] = useState('settings')
+  const [tab, setTab] = useState('overview')
   // Every tab a user has actually visited stays mounted (see below) so its
   // useAdminContent() fetch only ever runs once per session instead of
   // re-hitting the GitHub API every time they switch back to it. Tabs never
   // visited yet aren't rendered at all, so a session that only touches one
   // or two tabs still costs one or two fetches, not five upfront.
-  const [visited, setVisited] = useState(() => new Set(['settings']))
+  const [visited, setVisited] = useState(() => new Set(['overview']))
 
   function selectTab(id) {
     setTab(id)
@@ -55,7 +57,7 @@ export default function AdminDashboard({ onLogout }) {
           ({ id, Component }) =>
             visited.has(id) && (
               <div key={id} style={{ display: tab === id ? 'block' : 'none' }}>
-                <Component />
+                <Component go={selectTab} />
               </div>
             )
         )}

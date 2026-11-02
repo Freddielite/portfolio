@@ -1,5 +1,6 @@
-// Source of truth is projects.json, this file is a thin re-export so existing
-// imports across the app keep working unchanged. The admin panel
-// (/admin) reads and writes projects.json directly via the GitHub API.
-import data from './projects.json' with { type: 'json' }
-export default data
+// Source of truth is content/projects.json (edited by the admin at /admin through the
+// GitHub API). This file re-exports it so imports across the app stay the same.
+import data from '../../content/projects.json' with { type: 'json' }
+
+// Items switched off in the admin ("Show on site" unticked) never reach the site.
+export default data.filter((p) => !p.hidden)

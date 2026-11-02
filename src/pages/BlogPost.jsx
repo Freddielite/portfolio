@@ -6,24 +6,17 @@ import useContent from '../hooks/useContent.js'
 import { getPostBySlug, getPosts } from '../lib/content.js'
 import fallbackPosts from '../data/posts.js'
 import { postTags, relatedPosts } from '../lib/tags.js'
+import { portableComponents, blockText } from '../lib/portableComponents.jsx'
 import SEO from '../components/SEO.jsx'
 import NotFound from './NotFound.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { formatDate } from '../components/BlogTeaser.jsx'
 
 const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-const blockText = (b) => (b.children || []).map((c) => c.text || '').join('')
 
 function readMinutes(body = []) {
   const words = body.reduce((n, b) => n + (b._type === 'block' ? blockText(b).split(/\s+/).filter(Boolean).length : 0), 0)
   return Math.max(1, Math.ceil(words / 200))
-}
-
-const components = {
-  block: {
-    h2: ({ children, value }) => <h2 id={slugify(blockText(value))}>{children}</h2>,
-    h3: ({ children, value }) => <h3 id={slugify(blockText(value))}>{children}</h3>,
-  },
 }
 
 export default function BlogPost() {
@@ -76,7 +69,7 @@ export default function BlogPost() {
         </div>
 
         {post.coverImage && (
-          <div className="blog-post-image"><img src={post.coverImage} alt="" /></div>
+          <div className="blog-post-image"><img src={post.coverImage} alt={post.coverAlt || ''} /></div>
         )}
 
         {toc.length > 1 && (
@@ -95,7 +88,7 @@ export default function BlogPost() {
         )}
 
         <div className="blog-post-body">
-          <PortableText value={post.body} components={components} />
+          <PortableText value={post.body} components={portableComponents} />
         </div>
 
         {related.length > 0 && (
