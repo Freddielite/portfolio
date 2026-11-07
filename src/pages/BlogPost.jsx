@@ -8,6 +8,7 @@ import fallbackPosts from '../data/posts.js'
 import { postTags, relatedPosts } from '../lib/tags.js'
 import { portableComponents, blockText } from '../lib/portableComponents.jsx'
 import SEO from '../components/SEO.jsx'
+import Subscribe from '../components/Subscribe.jsx'
 import NotFound from './NotFound.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import { formatDate } from '../components/BlogTeaser.jsx'
@@ -90,6 +91,8 @@ export default function BlogPost() {
         <div className="blog-post-body">
           <PortableText value={post.body} components={portableComponents} />
         </div>
+
+        <Subscribe variant="post" />
 
         {related.length > 0 && (
           <section className="related" aria-label="Keep reading">

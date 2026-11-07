@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import {
   LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine,
-  ExternalLink, LogOut, Download, ArrowDown, RefreshCw,
+  ExternalLink, LogOut, Download, ArrowDown, RefreshCw, Mail,
 } from 'lucide-react'
 import Overview from './sections/Overview.jsx'
 import SiteSettingsEditor from './sections/SiteSettingsEditor.jsx'
@@ -10,6 +10,7 @@ import ProjectsEditor from './sections/ProjectsEditor.jsx'
 import SkillsEditor from './sections/SkillsEditor.jsx'
 import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
+import Subscribers from './sections/Subscribers.jsx'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
@@ -18,6 +19,7 @@ import { useInstallPrompt } from './pwa.js'
 const TABS = [
   { id: 'overview', label: 'Overview', short: 'Overview', Icon: LayoutGrid, Component: Overview, blurb: 'How your site is doing and what is left to set up.' },
   { id: 'posts', label: 'Blog posts', short: 'Posts', Icon: PenLine, Component: PostsEditor, blurb: 'Write, schedule and publish posts.' },
+  { id: 'subscribers', label: 'Subscribers', short: 'Subscribers', Icon: Mail, Component: Subscribers, blurb: 'Newsletter signups and emailing your posts.' },
   { id: 'projects', label: 'Projects', short: 'Projects', Icon: FolderKanban, Component: ProjectsEditor, blurb: 'The work shown on your home page.' },
   { id: 'settings', label: 'Site settings', short: 'Settings', Icon: SlidersHorizontal, Component: SiteSettingsEditor, blurb: 'Your details, contact links and SEO.' },
   { id: 'skills', label: 'Skills', short: 'Skills', Icon: BarChart3, Component: SkillsEditor, blurb: 'The skill bars in your About section.' },

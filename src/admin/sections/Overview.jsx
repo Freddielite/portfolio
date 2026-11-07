@@ -55,6 +55,7 @@ function buildChecklist(d, origin) {
     { id: 'linkedin', ok: !!s.linkedinUrl, title: 'LinkedIn URL is set', detail: 'It is empty. Useful for remote job applications.', tab: 'settings', field: 'linkedinUrl' },
     { id: 'form', ok: !!s.formspreeId, title: 'Contact form sends to your inbox', detail: 'No Formspree ID yet, so briefs only go out by email, WhatsApp or copy.', tab: 'settings', field: 'formspreeId' },
     { id: 'pulse', ok: !!(s.pulseApiUrl && s.pulseStatusToken), title: 'Live status chips are connected', detail: 'Add your Pulse API URL and status page token.', tab: 'settings', field: s.pulseApiUrl ? 'pulseStatusToken' : 'pulseApiUrl' },
+    { id: 'newsletter', ok: !!(s.newsletterApiUrl && s.newsletterFormSlug), title: 'Newsletter signup is connected', detail: 'Add your Wynmail API URL and signup form slug so visitors can subscribe.', tab: 'settings', field: s.newsletterApiUrl ? 'newsletterFormSlug' : 'newsletterApiUrl' },
     { id: 'meta', ok: metaLen >= 70 && metaLen <= 160, title: 'Meta description is 70 to 160 characters', detail: `It is ${metaLen} characters.`, tab: 'settings', field: 'metaDescription' },
     { id: 'names', ok: placeholders.length === 0, title: 'Testimonials have real names', detail: `${placeholders.length} still say "Client name".`, tab: 'testimonials' },
     { id: 'shots', ok: noShot.length === 0, title: 'Every project has a screenshot', detail: `Missing: ${list(noShot, 'name')}.`, tab: 'projects' },

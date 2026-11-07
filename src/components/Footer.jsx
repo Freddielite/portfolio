@@ -1,10 +1,12 @@
 import { CurtainLink } from '../context/CurtainContext.jsx'
 import { useSiteSettings } from '../context/SiteSettingsContext.jsx'
+import Subscribe from './Subscribe.jsx'
 
 export default function Footer() {
   const s = useSiteSettings()
   return (
     <footer className="footer">
+      <Subscribe variant="footer" />
       <div className="footer-inner">
         <p>
           <strong className="name-strong">{s.name}</strong> · {s.company}

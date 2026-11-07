@@ -1,5 +1,13 @@
 {
   "rewrites": [
-    { "source": "/((?!.*\\.[a-zA-Z0-9]+$).*)", "destination": "/index.html" }
-  ]
+    {
+      "source": "/((?!.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/admin/newsletter.js": {
+      "maxDuration": 30
+    }
+  }
 }

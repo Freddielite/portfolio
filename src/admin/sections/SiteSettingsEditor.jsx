@@ -19,7 +19,7 @@ function Field({ label, hint, name, children }) {
 
 const JUMPS = [
   ['identity', 'Identity'], ['availability', 'Availability'], ['hero', 'Hero'], ['about', 'About'],
-  ['contact', 'Contact'], ['pulse', 'Live status'], ['seo', 'SEO'],
+  ['contact', 'Contact'], ['pulse', 'Live status'], ['newsletter', 'Newsletter'], ['seo', 'SEO'],
 ]
 
 export default function SiteSettingsEditor() {
@@ -148,6 +148,12 @@ export default function SiteSettingsEditor() {
       <div className="admin-grid-2">
         <Field label="Pulse API URL" hint="Your Pulse backend, for example https://pulse-api.onrender.com" name="pulseApiUrl"><input inputMode="url" autoCapitalize="off" spellCheck={false} value={form.pulseApiUrl || ''} onChange={(e) => set('pulseApiUrl', e.target.value)} /></Field>
         <Field label="Status page token" hint="The share token of a Pulse status page that lists your project monitors" name="pulseStatusToken"><input value={form.pulseStatusToken || ''} onChange={(e) => set('pulseStatusToken', e.target.value)} /></Field>
+      </div>
+      <h2 id="settings-newsletter">Newsletter (Wynmail)</h2>
+      <p className="admin-hint">Shows a signup box in the footer and under each post. Create a signup form in Wynmail (Forms page) that feeds your subscribers list, then enter its address here. Leave both empty to hide the box. The API key for sending posts is not stored here, it lives in Vercel.</p>
+      <div className="admin-grid-2">
+        <Field label="Wynmail API URL" hint="Your Wynmail backend, for example https://wynmail-api.onrender.com" name="newsletterApiUrl"><input inputMode="url" autoCapitalize="off" spellCheck={false} value={form.newsletterApiUrl || ''} onChange={(e) => set('newsletterApiUrl', e.target.value)} /></Field>
+        <Field label="Signup form slug" hint="The last part of the form's public link in Wynmail, after /f/" name="newsletterFormSlug"><input autoCapitalize="off" spellCheck={false} value={form.newsletterFormSlug || ''} onChange={(e) => set('newsletterFormSlug', e.target.value)} /></Field>
       </div>
       <FileUploader
         label="CV / resume file"

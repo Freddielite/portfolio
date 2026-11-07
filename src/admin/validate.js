@@ -68,11 +68,15 @@ export function validateSettings(form) {
     ['Twitter/X URL', form.twitterUrl],
     ['WhatsApp URL', form.whatsappUrl],
     ['Pulse API URL', form.pulseApiUrl],
+    ['Wynmail API URL', form.newsletterApiUrl],
   ].forEach(([label, v]) => urlProblem(label, v, out))
   if (!form.siteUrl) out.push('Site URL is required (for example https://portfolio.wyntek.xyz).')
   else if (!isUrl(form.siteUrl)) out.push('Site URL must start with https://')
   else if (/\/$/.test(form.siteUrl)) out.push('Site URL should not end with a slash.')
   if (form.pulseApiUrl && !String(form.pulseStatusToken || '').trim()) out.push('Pulse: add the status page token too, or clear the API URL.')
   if (!form.pulseApiUrl && String(form.pulseStatusToken || '').trim()) out.push('Pulse: add the API URL too, or clear the token.')
+  if (form.newsletterApiUrl && !String(form.newsletterFormSlug || '').trim()) out.push('Newsletter: add the signup form slug too, or clear the API URL.')
+  if (!form.newsletterApiUrl && String(form.newsletterFormSlug || '').trim()) out.push('Newsletter: add the Wynmail API URL too, or clear the slug.')
+  if (form.newsletterFormSlug && !/^[\w-]{1,80}$/.test(String(form.newsletterFormSlug).trim())) out.push('Newsletter: the form slug can only use letters, numbers, dashes and underscores.')
   return out
 }

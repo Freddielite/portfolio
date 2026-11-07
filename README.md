@@ -13,6 +13,14 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Newsletter with Wynmail (Nov 2026)
+
+- **Signup box** in the footer and under every post. It posts straight to a Wynmail signup form, so the key stays out of the browser. In `/admin` > Site settings > Newsletter set the Wynmail API URL and the form slug. Leave them empty to hide the box.
+- **Subscribers tab** in `/admin`: subscribed, joined this week and month, unsubscribed and bounced counts, the 10 newest signups, CSV export, and an **Email a post** list. Sending creates a Wynmail campaign named `post:<slug>`, which is also how the tab knows a post was already sent.
+- **Vercel env vars** (then redeploy once): `WYNMAIL_API_URL`, `WYNMAIL_API_KEY` (a workspace key from Wynmail's API page), `WYNMAIL_LIST_ID` (the subscribers list number).
+- **In Wynmail**: make a signup form for that list (Forms page), approve a sending domain in Settings (the confirmation email and the post emails need one), and set a footer postal address.
+- Sending needs a live post, so wait for the deploy to finish after publishing.
+
 ## Redesign (Oct 2026)
 
 - **One scrolling page.** Hero, About, Skills, Work, Services and Process, blog teaser, testimonials and a contact brief builder. The blog is the only separate page (`/blog`, `/blog/:slug`).
