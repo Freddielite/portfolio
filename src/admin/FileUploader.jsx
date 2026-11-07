@@ -1,3 +1,4 @@
+import { adminFetch } from './http.js'
 import { useRef, useState } from 'react'
 
 // Like ImageUploader, but for a single file that always lives at one fixed
@@ -21,7 +22,7 @@ export default function FileUploader({ value, onChange, folder, label = 'File', 
         reader.onerror = () => reject(new Error('Could not read that file.'))
         reader.readAsDataURL(file)
       })
-      const res = await fetch('/api/admin/upload', {
+      const res = await adminFetch('/api/admin/upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filename: file.name, dataUrl, folder }),

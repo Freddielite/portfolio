@@ -26,10 +26,31 @@ function headers(token) {
 // Returns { content, sha } with content decoded as utf-8 text, or throws.
 // If the file doesn't exist, returns { content: null, sha: null } instead of
 // throwing, so callers can tell "file missing" apart from "request failed".
+//
+// GitHub can answer `contents?ref=<branch>` from a cache for a while after a
+// commit, which made the admin's Re-check show old data. Reading the file at
+// the branch's exact head commit avoids that; if the head lookup fails we fall
+// back to the branch name.
+async function headSha() {
+  const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = env()
+  try {
+    const res = await fetch(
+      `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${encodeURIComponent(GITHUB_BRANCH)}`,
+      { headers: headers(GITHUB_TOKEN), cache: 'no-store' }
+    )
+    if (!res.ok) return null
+    const body = await res.json()
+    return body?.object?.sha || null
+  } catch {
+    return null
+  }
+}
+
 export async function getFile(path) {
   const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = env()
-  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}?ref=${GITHUB_BRANCH}`
-  const res = await fetch(url, { headers: headers(GITHUB_TOKEN) })
+  const ref = (await headSha()) || GITHUB_BRANCH
+  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}?ref=${encodeURIComponent(ref)}`
+  const res = await fetch(url, { headers: headers(GITHUB_TOKEN), cache: 'no-store' })
   if (res.status === 404) return { content: null, sha: null }
   if (!res.ok) {
     const body = await res.text()

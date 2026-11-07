@@ -1,97 +1,228 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Check, ChevronRight, ChevronDown, RefreshCw, Download, Upload } from 'lucide-react'
 import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '../api.js'
+import { onContent } from '../contentBus.js'
+import { useAdmin } from '../AdminContext.jsx'
 import { postState } from '../../lib/postStatus.js'
 
 const PLACEHOLDER_AUTHOR = /^client name$/i
 const LABELS = { siteSettings: 'Site settings', projects: 'Projects', skills: 'Skills', testimonials: 'Testimonials', posts: 'Published posts', drafts: 'Draft posts' }
 
 function useAllContent() {
-  const [state, setState] = useState({ loading: true, data: null, error: null })
+  const [state, setState] = useState({ loading: true, data: null, error: null, checkedAt: null })
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
       const entries = await Promise.all(CONTENT_TYPES.map(async (t) => [t, (await getContent(t, { optional: t === 'drafts' })).data]))
-      setState({ loading: false, data: Object.fromEntries(entries), error: null })
+      const data = Object.fromEntries(entries)
+      setState({ loading: false, data, error: null, checkedAt: Date.now() })
+      return data
     } catch (err) {
-      setState({ loading: false, data: null, error: err.message })
+      setState((s) => ({ ...s, loading: false, error: err.message }))
+      return null
     }
   }, [])
+
   useEffect(() => {
     load()
   }, [load])
+
+  // Follow edits made in the other tabs as soon as they load or save.
+  useEffect(
+    () =>
+      onContent((type, value) =>
+        setState((s) => (s.data && type in s.data ? { ...s, data: { ...s.data, [type]: value } } : s))
+      ),
+    []
+  )
+
   return { ...state, reload: load }
 }
 
 function buildChecklist(d, origin) {
-  const s = d.siteSettings
-  const projects = d.projects.filter((p) => !p.hidden)
+  const s = d.siteSettings || {}
+  const projects = (d.projects || []).filter((p) => !p.hidden)
   const noShot = projects.filter((p) => !p.image)
   const noAlt = projects.filter((p) => p.image && !p.imageAlt)
-  const placeholders = d.testimonials.filter((t) => PLACEHOLDER_AUTHOR.test(String(t.author || '').trim()))
-  const thin = d.posts.filter((p) => String(p.excerpt || '').length < 70)
+  const placeholders = (d.testimonials || []).filter((t) => PLACEHOLDER_AUTHOR.test(String(t.author || '').trim()))
+  const thin = (d.posts || []).filter((p) => String(p.excerpt || '').length < 70)
   const metaLen = String(s.metaDescription || '').length
   const list = (items, key) => items.map((x) => x[key]).join(', ')
   return [
-    { ok: String(s.siteUrl || '').replace(/\/$/, '') === origin, title: 'Site URL matches this address', detail: `Settings say ${s.siteUrl || 'nothing'}, you are on ${origin}. This feeds Google and link previews.`, tab: 'settings' },
-    { ok: !!s.linkedinUrl, title: 'LinkedIn URL is set', detail: 'It is empty. Useful for remote job applications.', tab: 'settings' },
-    { ok: !!s.formspreeId, title: 'Contact form sends to your inbox', detail: 'No Formspree ID yet, so briefs only go out by email, WhatsApp or copy.', tab: 'settings' },
-    { ok: !!(s.pulseApiUrl && s.pulseStatusToken), title: 'Live status chips are connected', detail: 'Add your Pulse API URL and status page token.', tab: 'settings' },
-    { ok: metaLen >= 70 && metaLen <= 160, title: 'Meta description is 70 to 160 characters', detail: `It is ${metaLen} characters.`, tab: 'settings' },
-    { ok: placeholders.length === 0, title: 'Testimonials have real names', detail: `${placeholders.length} still say "Client name".`, tab: 'testimonials' },
-    { ok: noShot.length === 0, title: 'Every project has a screenshot', detail: `Missing: ${list(noShot, 'name')}.`, tab: 'projects' },
-    { ok: noAlt.length === 0, title: 'Screenshots have alt text', detail: `Missing on: ${list(noAlt, 'name')}.`, tab: 'projects' },
-    { ok: thin.length === 0, title: 'Every post has a good summary', detail: `Too short on: ${list(thin, 'title')}.`, tab: 'posts' },
+    { id: 'url', ok: String(s.siteUrl || '').replace(/\/$/, '') === origin, title: 'Site URL matches this address', detail: `Settings say ${s.siteUrl || 'nothing'}, you are on ${origin}. This feeds Google and link previews.`, tab: 'settings', field: 'siteUrl' },
+    { id: 'linkedin', ok: !!s.linkedinUrl, title: 'LinkedIn URL is set', detail: 'It is empty. Useful for remote job applications.', tab: 'settings', field: 'linkedinUrl' },
+    { id: 'form', ok: !!s.formspreeId, title: 'Contact form sends to your inbox', detail: 'No Formspree ID yet, so briefs only go out by email, WhatsApp or copy.', tab: 'settings', field: 'formspreeId' },
+    { id: 'pulse', ok: !!(s.pulseApiUrl && s.pulseStatusToken), title: 'Live status chips are connected', detail: 'Add your Pulse API URL and status page token.', tab: 'settings', field: s.pulseApiUrl ? 'pulseStatusToken' : 'pulseApiUrl' },
+    { id: 'meta', ok: metaLen >= 70 && metaLen <= 160, title: 'Meta description is 70 to 160 characters', detail: `It is ${metaLen} characters.`, tab: 'settings', field: 'metaDescription' },
+    { id: 'names', ok: placeholders.length === 0, title: 'Testimonials have real names', detail: `${placeholders.length} still say "Client name".`, tab: 'testimonials' },
+    { id: 'shots', ok: noShot.length === 0, title: 'Every project has a screenshot', detail: `Missing: ${list(noShot, 'name')}.`, tab: 'projects' },
+    { id: 'alt', ok: noAlt.length === 0, title: 'Screenshots have alt text', detail: `Missing on: ${list(noAlt, 'name')}.`, tab: 'projects' },
+    { id: 'summary', ok: thin.length === 0, title: 'Every post has a good summary', detail: `Too short on: ${list(thin, 'title')}.`, tab: 'posts' },
   ]
+}
+
+function ago(ts, now) {
+  if (!ts) return ''
+  const s = Math.round((now - ts) / 1000)
+  if (s < 10) return 'just now'
+  if (s < 60) return `${s} seconds ago`
+  const m = Math.round(s / 60)
+  return m === 1 ? 'a minute ago' : m < 60 ? `${m} minutes ago` : 'over an hour ago'
+}
+
+function useNow(every = 15000) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), every)
+    return () => clearInterval(t)
+  }, [every])
+  return now
+}
+
+function Checklist({ data, loading, checkedAt, onRecheck, go }) {
+  const now = useNow()
+  const [showDone, setShowDone] = useState(false)
+  const items = buildChecklist(data, window.location.origin)
+  const todo = items.filter((i) => !i.ok)
+  const done = items.filter((i) => i.ok)
+  const pct = Math.round((done.length / items.length) * 100)
+
+  return (
+    <section className="admin-card admin-checklist-card" aria-busy={loading}>
+      <div className="admin-card-header">
+        <div>
+          <h2 className="admin-card-title">Setup checklist</h2>
+          <p className="admin-hint">
+            {done.length} of {items.length} done{checkedAt ? `, checked ${ago(checkedAt, now)}` : ''}
+          </p>
+        </div>
+        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={onRecheck} disabled={loading}>
+          <RefreshCw size={15} className={loading ? 'admin-spin' : ''} aria-hidden="true" />
+          {loading ? 'Checking…' : 'Re-check'}
+        </button>
+      </div>
+      <div className="admin-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Setup progress">
+        <i style={{ width: `${pct}%` }} />
+      </div>
+
+      {todo.length === 0 && <p className="admin-ok admin-all-done"><Check size={16} aria-hidden="true" /> Everything is set up.</p>}
+
+      <ul className="admin-checklist">
+        {todo.map((i) => (
+          <li key={i.id}>
+            <button type="button" className="admin-check-row" onClick={() => go(i.tab, i.field)}>
+              <span className="admin-check-ring" aria-hidden="true" />
+              <span className="admin-check-text">
+                <strong>{i.title}</strong>
+                <span className="admin-hint">{i.detail}</span>
+              </span>
+              <span className="admin-check-fix">Fix <ChevronRight size={15} aria-hidden="true" /></span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {done.length > 0 && (
+        <>
+          <button type="button" className="admin-disclosure" onClick={() => setShowDone((v) => !v)} aria-expanded={showDone}>
+            <ChevronDown size={15} aria-hidden="true" className={showDone ? 'is-open' : ''} />
+            {showDone ? 'Hide' : 'Show'} {done.length} done
+          </button>
+          {showDone && (
+            <ul className="admin-checklist is-done">
+              {done.map((i) => (
+                <li key={i.id} className="admin-check-done">
+                  <Check size={16} aria-hidden="true" />
+                  <span>{i.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
+  )
 }
 
 function PulsePanel({ settings }) {
   const [state, setState] = useState({ loading: true, monitors: [], error: null })
+  const [nonce, setNonce] = useState(0)
   const api = String(settings.pulseApiUrl || '').replace(/\/$/, '')
   const token = String(settings.pulseStatusToken || '').trim()
+
   useEffect(() => {
     if (!api || !token) return
     let off = false
     const ctl = new AbortController()
-    const timer = setTimeout(() => ctl.abort(), 12000)
-    fetch(`${api}/api/public/status-pages/${encodeURIComponent(token)}`, { signal: ctl.signal })
+    const timer = setTimeout(() => ctl.abort(), 15000)
+    setState((s) => ({ ...s, loading: true, error: null }))
+    fetch(`${api}/api/public/status-pages/${encodeURIComponent(token)}`, { signal: ctl.signal, cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Pulse answered ${r.status}`))))
       .then((b) => !off && setState({ loading: false, monitors: b.monitors || [], error: null }))
-      .catch((e) => !off && setState({ loading: false, monitors: [], error: e.name === 'AbortError' ? 'Pulse took too long to answer (it may be asleep, try again).' : `${e.message}. Check the Pulse API URL, the token and Pulse's CORS_ORIGIN.` }))
+      .catch((e) => !off && setState({ loading: false, monitors: [], error: e.name === 'AbortError' ? 'Pulse took too long to answer. It may be waking up, so try again in a moment.' : `${e.message}. Check the Pulse API URL, the token and Pulse's CORS_ORIGIN.` }))
       .finally(() => clearTimeout(timer))
     return () => {
       off = true
       ctl.abort()
     }
-  }, [api, token])
+  }, [api, token, nonce])
 
-  if (!api || !token) {
-    return <p className="admin-hint">Not connected. Add the Pulse API URL and token in Site Settings to see your sites here.</p>
-  }
-  if (state.loading) return <p className="admin-hint">Asking Pulse…</p>
-  if (state.error) return <p className="admin-error">{state.error}</p>
-  if (!state.monitors.length) return <p className="admin-hint">The status page has no monitors yet.</p>
+  const up = state.monitors.filter((m) => m.current_status === 'up').length
+  const host = (u) => String(u || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
+
   return (
-    <table className="admin-table">
-      <thead><tr><th>Monitor</th><th>Status</th><th>Response</th><th>Uptime 30d</th></tr></thead>
-      <tbody>
-        {state.monitors.map((m) => (
-          <tr key={m.id || m.url}>
-            <td>{m.name || m.url}<br /><span className="admin-hint">{m.url}</span></td>
-            <td><span className={`admin-pill is-${m.current_status}`}>{m.current_status}</span></td>
-            <td>{m.last_response_ms != null ? `${m.last_response_ms} ms` : 'n/a'}</td>
-            <td>{m.uptime?.['30d'] != null ? `${m.uptime['30d']}%` : 'n/a'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <section className="admin-card">
+      <div className="admin-card-header">
+        <div>
+          <h2 className="admin-card-title">Site health</h2>
+          <p className="admin-hint">
+            {!api || !token ? 'From Pulse' : state.loading ? 'Asking Pulse…' : state.error ? 'From Pulse' : `${up} of ${state.monitors.length} up, from Pulse`}
+          </p>
+        </div>
+        {api && token && (
+          <button type="button" className="admin-icon-btn" onClick={() => setNonce((n) => n + 1)} disabled={state.loading} aria-label="Refresh site health">
+            <RefreshCw size={16} className={state.loading ? 'admin-spin' : ''} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+      {!api || !token ? (
+        <p className="admin-hint">Not connected. Add the Pulse API URL and token in Site settings to see your sites here.</p>
+      ) : state.error ? (
+        <p className="admin-error">{state.error}</p>
+      ) : state.loading && !state.monitors.length ? (
+        <ul className="admin-monitors" aria-hidden="true">
+          {[0, 1, 2].map((i) => <li key={i} className="admin-skeleton" />)}
+        </ul>
+      ) : !state.monitors.length ? (
+        <p className="admin-hint">The status page has no monitors yet.</p>
+      ) : (
+        <ul className="admin-monitors">
+          {state.monitors.map((m) => (
+            <li key={m.id || m.url}>
+              <span className={`admin-status-dot is-${m.current_status}`} title={m.current_status} aria-label={m.current_status} />
+              <span className="admin-monitor-name">
+                <strong>{m.name || host(m.url)}</strong>
+                <a href={m.url} target="_blank" rel="noreferrer" className="admin-hint">{host(m.url)}</a>
+              </span>
+              <span className="admin-monitor-stats">
+                <span>{m.last_response_ms != null ? `${m.last_response_ms} ms` : 'n/a'}</span>
+                <span className="admin-hint">{m.uptime?.['30d'] != null ? `${m.uptime['30d']}% · 30d` : ''}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }
 
 function Backup({ data, onChanged }) {
+  const { toast } = useAdmin()
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
   const [error, setError] = useState(null)
+  const fileRef = useRef(null)
 
   function download() {
     const blob = new Blob([JSON.stringify({ app: 'portfolio-admin-backup', version: 1, exportedAt: new Date().toISOString(), content: data }, null, 2)], { type: 'application/json' })
@@ -99,7 +230,8 @@ function Backup({ data, onChanged }) {
     a.href = URL.createObjectURL(blob)
     a.download = `portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
-    URL.revokeObjectURL(a.href)
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+    toast('Backup downloaded')
   }
 
   async function pick(e) {
@@ -145,26 +277,35 @@ function Backup({ data, onChanged }) {
   }
 
   return (
-    <div>
-      <div className="admin-row">
-        <button type="button" className="admin-btn" onClick={download}>Download backup</button>
-        <label className="admin-btn-ghost admin-file">
-          Restore from a backup file…
-          <input type="file" accept="application/json,.json" onChange={pick} hidden />
-        </label>
+    <section className="admin-card">
+      <div className="admin-card-header">
+        <div>
+          <h2 className="admin-card-title">Backup and restore</h2>
+          <p className="admin-hint">All your text content. Images and your CV stay in GitHub.</p>
+        </div>
       </div>
-      <p className="admin-hint">A backup holds all your text content (settings, projects, skills, testimonials, posts, drafts). Images and your CV file stay in GitHub.</p>
+      <div className="admin-row">
+        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={download}>
+          <Download size={15} aria-hidden="true" /> Download backup
+        </button>
+        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={() => fileRef.current?.click()}>
+          <Upload size={15} aria-hidden="true" /> Restore from file
+        </button>
+        <input ref={fileRef} type="file" accept="application/json,.json" onChange={pick} hidden />
+      </div>
       {error && <p className="admin-error">{error}</p>}
       {message && (
         <p className="admin-ok">{message} <button type="button" className="admin-btn-ghost" onClick={() => window.location.reload()}>Reload admin</button></p>
       )}
       {plan && (
-        <div className="admin-card">
+        <div className="admin-subcard">
           <strong>This backup contains</strong>
-          <table className="admin-table">
-            <thead><tr><th>Content</th><th>Now</th><th>In backup</th><th>After adding what is missing</th></tr></thead>
-            <tbody>{plan.rows.map((r) => <tr key={r.type}><td>{LABELS[r.type]}</td><td>{r.now}</td><td>{r.incoming}</td><td>{r.merged}</td></tr>)}</tbody>
-          </table>
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead><tr><th>Content</th><th>Now</th><th>In backup</th><th>After merge</th></tr></thead>
+              <tbody>{plan.rows.map((r) => <tr key={r.type}><td>{LABELS[r.type]}</td><td>{r.now}</td><td>{r.incoming}</td><td>{r.merged}</td></tr>)}</tbody>
+            </table>
+          </div>
           <div className="admin-row">
             <button type="button" className="admin-btn" disabled={busy} onClick={() => apply('merge')}>{busy ? 'Working…' : 'Add what is missing (safe)'}</button>
             <button type="button" className="admin-btn-danger" disabled={busy} onClick={() => apply('replace')}>Replace everything</button>
@@ -172,64 +313,75 @@ function Backup({ data, onChanged }) {
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
 export default function Overview({ go }) {
-  const { loading, data, error, reload } = useAllContent()
-  if (loading && !data) return <p className="admin-hint">Loading your site…</p>
-  if (error) return <p className="admin-error">{error}</p>
+  const { toast } = useAdmin()
+  const { loading, data, error, checkedAt, reload } = useAllContent()
 
-  const origin = window.location.origin
-  const items = buildChecklist(data, origin)
-  const done = items.filter((i) => i.ok).length
+  async function recheck() {
+    const before = data ? buildChecklist(data, window.location.origin).filter((i) => i.ok).length : null
+    const fresh = await reload()
+    if (!fresh) {
+      toast('Could not reach GitHub. Try again in a moment.', { tone: 'error' })
+      return
+    }
+    const items = buildChecklist(fresh, window.location.origin)
+    const after = items.filter((i) => i.ok).length
+    if (before === null || after === before) toast(`Checked. ${after} of ${items.length} done`)
+    else if (after > before) toast(`Nice, ${after - before} more done. ${after} of ${items.length}`)
+    else toast(`${after} of ${items.length} done. Something needs another look`)
+  }
+
+  if (loading && !data) {
+    return (
+      <div className="admin-section">
+        <div className="admin-stats" aria-hidden="true">{[0, 1, 2, 3].map((i) => <div key={i} className="admin-stat admin-skeleton" />)}</div>
+        <div className="admin-card admin-skeleton admin-skeleton-tall" />
+        <p className="admin-hint">Loading your site…</p>
+      </div>
+    )
+  }
+  if (error && !data) {
+    return (
+      <div className="admin-empty">
+        <p className="admin-error">{error}</p>
+        <button type="button" className="admin-btn" onClick={reload}>Try again</button>
+      </div>
+    )
+  }
+
   const states = [...data.posts, ...data.drafts.map((d) => ({ ...d, status: 'draft' }))].map((p) => postState(p))
-  const stat = (n, label) => (
-    <div className="admin-stat"><strong>{n}</strong><span>{label}</span></div>
+  const live = states.filter((s) => s === 'published').length
+  const draftN = states.filter((s) => s === 'draft').length
+  const sched = states.filter((s) => s === 'scheduled').length
+  const hiddenProjects = data.projects.filter((p) => p.hidden).length
+  const shownTestimonials = data.testimonials.filter((t) => !t.hidden).length
+  const postSub = [draftN && `${draftN} draft${draftN > 1 ? 's' : ''}`, sched && `${sched} scheduled`].filter(Boolean).join(', ')
+
+  const stat = (n, label, sub, tab) => (
+    <button type="button" className="admin-stat" onClick={() => go(tab)}>
+      <strong>{n}</strong>
+      <span>{label}</span>
+      <em>{sub || '\u00a0'}</em>
+    </button>
   )
 
   return (
     <div className="admin-section">
-      <h2>Overview</h2>
-
       <div className="admin-stats">
-        {stat(states.filter((s) => s === 'published').length, 'Live posts')}
-        {stat(states.filter((s) => s === 'draft').length, 'Drafts')}
-        {stat(states.filter((s) => s === 'scheduled').length, 'Scheduled')}
-        {stat(data.projects.filter((p) => !p.hidden).length, `Projects shown${data.projects.some((p) => p.hidden) ? ` (${data.projects.filter((p) => p.hidden).length} hidden)` : ''}`)}
-        {stat(data.skills.filter((s) => !s.hidden).length, 'Skills')}
+        {stat(live, live === 1 ? 'Live post' : 'Live posts', postSub || 'No drafts waiting', 'posts')}
+        {stat(data.projects.length - hiddenProjects, 'Projects shown', hiddenProjects ? `${hiddenProjects} hidden` : 'None hidden', 'projects')}
+        {stat(data.skills.filter((s) => !s.hidden).length, 'Skills', null, 'skills')}
+        {stat(shownTestimonials, 'Testimonials', data.siteSettings.showTestimonials ? 'Section on' : 'Section off', 'testimonials')}
       </div>
 
-      <div className="admin-card">
-        <div className="admin-card-header">
-          <strong>Setup checklist: {done} of {items.length} done</strong>
-          <button type="button" className="admin-btn-ghost" onClick={reload}>Re-check</button>
-        </div>
-        <div className="admin-progress"><i style={{ width: `${(done / items.length) * 100}%` }} /></div>
-        <ul className="admin-checklist">
-          {items.map((i) => (
-            <li key={i.title} className={i.ok ? 'ok' : 'todo'}>
-              <span className="admin-check" aria-hidden="true">{i.ok ? '✓' : '○'}</span>
-              <div>
-                <strong>{i.title}</strong>
-                {!i.ok && <span className="admin-hint">{i.detail}</span>}
-              </div>
-              {!i.ok && <button type="button" className="admin-btn-ghost" onClick={() => go(i.tab)}>Fix</button>}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-header"><strong>Site health (from Pulse)</strong></div>
-        <PulsePanel settings={data.siteSettings} />
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-header"><strong>Backup and restore</strong></div>
-        <Backup data={data} onChanged={reload} />
-      </div>
+      {error && <p className="admin-error">{error}</p>}
+      <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
+      <PulsePanel settings={data.siteSettings} />
+      <Backup data={data} onChanged={reload} />
     </div>
   )
 }

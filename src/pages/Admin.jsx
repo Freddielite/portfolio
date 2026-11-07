@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import AdminLogin from '../admin/AdminLogin.jsx'
 import AdminDashboard from '../admin/AdminDashboard.jsx'
+import ReauthPrompt from '../admin/ReauthPrompt.jsx'
+import { useAdminApp } from '../admin/pwa.js'
 import SEO from '../components/SEO.jsx'
 import '../admin/admin.css'
 
 export default function Admin() {
   const [status, setStatus] = useState('checking') // checking | out | in
+  useAdminApp()
 
   useEffect(() => {
-    fetch('/api/admin/me')
+    fetch('/api/admin/me', { cache: 'no-store' })
       .then((res) => setStatus(res.ok ? 'in' : 'out'))
       .catch(() => setStatus('out'))
   }, [])
@@ -26,7 +29,12 @@ export default function Admin() {
       <SEO title="Admin" path="/admin" noIndex />
       {status === 'checking' && <p className="admin-hint admin-loading-screen">Loading…</p>}
       {status === 'out' && <AdminLogin onLogin={() => setStatus('in')} />}
-      {status === 'in' && <AdminDashboard onLogout={handleLogout} />}
+      {status === 'in' && (
+        <>
+          <AdminDashboard onLogout={handleLogout} />
+          <ReauthPrompt onLogout={handleLogout} />
+        </>
+      )}
     </div>
   )
 }

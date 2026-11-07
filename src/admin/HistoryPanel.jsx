@@ -1,3 +1,4 @@
+import { adminFetch } from './http.js'
 import { useEffect, useState } from 'react'
 
 const when = (iso) =>
@@ -13,7 +14,7 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
 
   useEffect(() => {
     let off = false
-    fetch(`/api/admin/history?type=${type}`)
+    adminFetch(`/api/admin/history?type=${type}`)
       .then((r) => r.json().then((b) => ({ ok: r.ok, b })))
       .then(({ ok, b }) => {
         if (off) return
@@ -30,7 +31,7 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
     setBusy(c.sha)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/history?type=${type}&ref=${c.sha}`)
+      const res = await adminFetch(`/api/admin/history?type=${type}&ref=${c.sha}`)
       const body = await res.json()
       if (!res.ok) throw new Error(body.error || 'Could not load that version.')
       onRestore(body.data, c)

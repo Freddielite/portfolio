@@ -1,3 +1,4 @@
+import { adminFetch } from './http.js'
 // Browser-side image handling for the admin. Every upload becomes a permanent
 // blob in the repo's git history, so images are shrunk and re-encoded before they
 // leave the device. WebP is used when the browser can encode it (smaller than
@@ -71,7 +72,7 @@ export async function prepareImage(file) {
 export async function uploadImage(file, folder = 'uploads') {
   const prepared = await prepareImage(file).catch(() => ({ file, originalSize: file.size, size: file.size, lqip: null }))
   const dataUrl = await readAsDataUrl(prepared.file)
-  const res = await fetch('/api/admin/upload', {
+  const res = await adminFetch('/api/admin/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename: prepared.file.name, dataUrl, folder }),

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, Plus, RotateCcw } from 'lucide-react'
+import usePostBackup, { applyBackup } from '../usePostBackup.js'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
@@ -28,6 +30,8 @@ export default function PostsEditor() {
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('all')
   const [restoredFrom, setRestoredFrom] = useState(null)
+  // On phones the list and the editor are two screens; this says which one.
+  const [editing, setEditing] = useState(false)
 
   useEffect(() => {
     if (pub.data && drafts.data) {
@@ -38,11 +42,16 @@ export default function PostsEditor() {
     }
   }, [pub.data, drafts.data])
 
+  const base = useMemo(() => (pub.data && drafts.data ? merge(pub.data, drafts.data) : null), [pub.data, drafts.data])
+  const backup = usePostBackup(list, base)
+  // Bumped when a backup is restored, so the open editor reloads its text.
+  const [restoreCount, setRestoreCount] = useState(0)
+
   const parts = useMemo(() => (list ? split(list) : null), [list])
   const dirty = !!parts && (JSON.stringify(parts.published) !== JSON.stringify(pub.data) || JSON.stringify(parts.drafts) !== JSON.stringify(drafts.data))
   useUnsavedChangesWarning(dirty)
 
-  if (pub.loading || drafts.loading || !list) return <p className="admin-hint">Loading…</p>
+  if (pub.loading || drafts.loading || !list) return <p className="admin-hint admin-loading">Loading posts…</p>
   const loadError = (!pub.data && pub.error) || (!drafts.data && drafts.error)
   if (loadError) return <p className="admin-error">{loadError}</p>
 
@@ -57,12 +66,19 @@ export default function PostsEditor() {
     setList((l) => [post, ...l])
     setActiveId(post._id)
     setTab('all')
+    openPost(post._id)
+  }
+  function openPost(id) {
+    setActiveId(id)
+    setEditing(true)
+    if (window.matchMedia('(max-width: 899px)').matches) window.scrollTo(0, 0)
   }
   function remove(id) {
     const p = list.find((x) => x._id === id)
     if (!confirm(`Delete "${p?.title || 'this post'}"? You can bring it back from History until you do other saves.`)) return
     setList((l) => l.filter((x) => x._id !== id))
     setActiveId(null)
+    setEditing(false)
   }
 
   async function saveAll() {
@@ -89,16 +105,62 @@ export default function PostsEditor() {
       setRestoredFrom(c)
     },
     onSave: saveAll,
+    onDiscard: () => {
+      const merged = merge(pub.data, drafts.data)
+      setList(merged)
+      setRestoredFrom(null)
+      if (!merged.some((p) => p._id === activeId)) {
+        setActiveId(merged[0]?._id || null)
+        setEditing(false)
+      }
+    },
   }
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
   return (
-    <div className="admin-section builder">
+    <div className={`admin-section builder ${editing ? 'is-editing' : ''}`}>
       <SaveBar {...bar} />
+
+      {backup.offer && (
+        <div className="admin-banner" role="status">
+          <RotateCcw size={18} aria-hidden="true" />
+          <div>
+            <strong>You have unsaved writing on this device</strong>
+            <p className="admin-hint">
+              From {new Date(backup.offer.at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              {backup.offer.changed.length > 0 && <>: {backup.offer.changed.map((p) => `“${p.title || 'Untitled post'}”`).join(', ')}</>}
+              {backup.offer.deleted.length > 0 && <>{backup.offer.changed.length ? ', plus ' : ': '}{backup.offer.deleted.length} deleted</>}
+              . It is not on your site yet.
+            </p>
+          </div>
+          <div className="admin-banner-actions">
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={() => {
+                const next = applyBackup(list, backup.offer)
+                setList(next)
+                const first = backup.offer.changed[0]?._id
+                if (first) {
+                  setActiveId(first)
+                  setEditing(true)
+                }
+                setRestoreCount((n) => n + 1)
+                backup.accept()
+              }}
+            >
+              Restore it
+            </button>
+            <button type="button" className="admin-btn-ghost" onClick={() => confirm('Throw away the unsaved writing from this device?') && backup.dismiss()}>
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="builder-layout">
         <aside className="builder-list">
-          <button type="button" className="admin-btn" onClick={addPost}>+ New post</button>
+          <button type="button" className="admin-btn admin-btn-icon-text" onClick={addPost}><Plus size={16} aria-hidden="true" /> New post</button>
           <div className="admin-viewtabs" role="tablist" aria-label="Filter posts">
             {TABS.map(([id, name]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
@@ -109,7 +171,7 @@ export default function PostsEditor() {
           <ul>
             {shown.map((p) => (
               <li key={p._id}>
-                <button type="button" className={p._id === activeId ? 'on' : ''} onClick={() => setActiveId(p._id)}>
+                <button type="button" className={p._id === activeId ? 'on' : ''} onClick={() => openPost(p._id)}>
                   <strong>{p.title || 'Untitled post'}</strong>
                   <span><i className={`admin-dot is-${postState(p)}`} />{label[postState(p)]} · {String(p.publishedAt).slice(0, 10)}</span>
                 </button>
@@ -120,9 +182,12 @@ export default function PostsEditor() {
         </aside>
 
         <div className="builder-main">
+          <button type="button" className="admin-back" onClick={() => setEditing(false)}>
+            <ArrowLeft size={17} aria-hidden="true" /> All posts
+          </button>
           {active ? (
             <PostForm
-              key={active._id}
+              key={`${active._id}:${restoreCount}`}
               post={active}
               origin={origin}
               savedLive={(pub.data || []).some((p) => p._id === active._id)}
@@ -135,7 +200,6 @@ export default function PostsEditor() {
         </div>
       </div>
 
-      <SaveBar {...bar} />
     </div>
   )
 }

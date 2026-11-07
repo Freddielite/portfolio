@@ -1,4 +1,6 @@
+import { adminFetch } from './http.js'
 import { useCallback, useEffect, useState } from 'react'
+import { publishContent } from './contentBus.js'
 
 // Loads content/<type>.json through the API and knows how to save it back.
 // Tracks the file's git `sha` so the API can detect if the file changed
@@ -20,16 +22,18 @@ export default function useAdminContent(type, { optional = false } = {}) {
     setError(null)
     setConflict(false)
     try {
-      const res = await fetch(`/api/admin/content?type=${type}`)
-      const body = await res.json()
+      const res = await adminFetch(`/api/admin/content?type=${type}`, { cache: 'no-store' })
+      const body = await res.json().catch(() => ({}))
       if (res.status === 404 && optional) {
         setData([])
         setSha(null)
+        publishContent(type, [])
         return
       }
       if (!res.ok) throw new Error(body.error || 'Failed to load content.')
       setData(body.data)
       setSha(body.sha)
+      publishContent(type, body.data)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -47,15 +51,16 @@ export default function useAdminContent(type, { optional = false } = {}) {
       setError(null)
       setConflict(false)
       try {
-        const res = await fetch(`/api/admin/content?type=${type}`, {
+        const res = await adminFetch(`/api/admin/content?type=${type}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: newData, sha }),
         })
-        const body = await res.json()
+        const body = await res.json().catch(() => ({}))
         if (!res.ok) throw new Error(body.error || 'Failed to save.')
         setData(newData)
         setSha(body.sha || sha)
+        publishContent(type, newData)
         setCommit(body.commit || null)
         setSavedAt(Date.now())
         return true

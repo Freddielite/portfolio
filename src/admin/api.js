@@ -1,7 +1,8 @@
+import { adminFetch } from './http.js'
 // Small helpers for talking to the admin content API outside the editors
 // (the overview page, backup and restore).
 export async function getContent(type, { optional = false } = {}) {
-  const res = await fetch(`/api/admin/content?type=${type}`)
+  const res = await adminFetch(`/api/admin/content?type=${type}`, { cache: 'no-store' })
   const body = await res.json().catch(() => ({}))
   if (res.status === 404 && optional) return { data: [], sha: null }
   if (!res.ok) throw new Error(body.error || `Could not load ${type}.`)
@@ -9,7 +10,7 @@ export async function getContent(type, { optional = false } = {}) {
 }
 
 export async function putContent(type, data, sha) {
-  const res = await fetch(`/api/admin/content?type=${type}`, {
+  const res = await adminFetch(`/api/admin/content?type=${type}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ data, sha }),

@@ -14,6 +14,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Unknown content type "${type}".` })
   }
   const path = `content/${type}.json`
+  // Admin content must always be fresh: never let a browser or CDN keep a copy.
+  res.setHeader('Cache-Control', 'no-store, max-age=0')
 
   if (req.method === 'GET') {
     try {
