@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, History, Loader2, AlertTriangle, RotateCcw } from 'lucide-react'
 import HistoryPanel from './HistoryPanel.jsx'
 import useDeployStatus from './useDeployStatus.js'
-import { usePanel } from './AdminContext.jsx'
+import { useAdmin, usePanel } from './AdminContext.jsx'
 
 // Each editor renders one SaveBar. It has two parts:
 // - a slim toolbar at the top: History, and where the last save has got to
@@ -20,6 +20,7 @@ export default function SaveBar({
   const [showProblems, setShowProblems] = useState(false)
   const deploy = useDeployStatus(savedAt ? commit : null)
   const { active } = usePanel()
+  const { confirm } = useAdmin()
   const blocked = errors.length > 0
   const canSave = dirty && !saving && !blocked
 
@@ -92,7 +93,15 @@ export default function SaveBar({
                 type="button"
                 className="admin-btn-ghost"
                 tabIndex={showDock ? 0 : -1}
-                onClick={() => confirm('Load the latest version? Your unsaved edits on this tab will be lost.') && onReload()}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: 'Load the latest version?',
+                    body: 'Your unsaved edits on this tab are replaced with what is saved on GitHub now.',
+                    confirmLabel: 'Load latest',
+                    tone: 'danger',
+                  })
+                  if (ok) onReload()
+                }}
               >
                 <RotateCcw size={14} aria-hidden="true" /> Load latest
               </button>
@@ -102,7 +111,16 @@ export default function SaveBar({
                 type="button"
                 className="admin-btn-ghost"
                 tabIndex={showDock ? 0 : -1}
-                onClick={() => confirm('Discard your unsaved changes on this tab?') && onDiscard()}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: 'Discard your changes?',
+                    body: 'Everything you changed on this tab since the last save goes back to how it was.',
+                    confirmLabel: 'Discard changes',
+                    cancelLabel: 'Keep editing',
+                    tone: 'danger',
+                  })
+                  if (ok) onDiscard()
+                }}
               >
                 Discard
               </button>

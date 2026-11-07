@@ -6,6 +6,7 @@ import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import PostForm from '../builder/PostForm.jsx'
 import { validatePosts } from '../validate.js'
+import { useAdmin } from '../AdminContext.jsx'
 import { postState, todayString } from '../../lib/postStatus.js'
 
 // Published posts live in content/posts.json, drafts in content/drafts.json (which
@@ -26,6 +27,7 @@ const label = { draft: 'Draft', published: 'Live', scheduled: 'Scheduled' }
 export default function PostsEditor() {
   const pub = useAdminContent('posts')
   const drafts = useAdminContent('drafts', { optional: true })
+  const { confirm } = useAdmin()
   const [list, setList] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('all')
@@ -73,9 +75,15 @@ export default function PostsEditor() {
     setEditing(true)
     if (window.matchMedia('(max-width: 899px)').matches) window.scrollTo(0, 0)
   }
-  function remove(id) {
+  async function remove(id) {
     const p = list.find((x) => x._id === id)
-    if (!confirm(`Delete "${p?.title || 'this post'}"? You can bring it back from History until you do other saves.`)) return
+    const ok = await confirm({
+      title: `Delete “${p?.title || 'Untitled post'}”?`,
+      body: 'It leaves the list now and your site when you save. History can bring it back.',
+      confirmLabel: 'Delete post',
+      tone: 'danger',
+    })
+    if (!ok) return
     setList((l) => l.filter((x) => x._id !== id))
     setActiveId(null)
     setEditing(false)
@@ -151,7 +159,15 @@ export default function PostsEditor() {
             >
               Restore it
             </button>
-            <button type="button" className="admin-btn-ghost" onClick={() => confirm('Throw away the unsaved writing from this device?') && backup.dismiss()}>
+            <button type="button" className="admin-btn-ghost" onClick={async () => {
+              const ok = await confirm({
+                title: 'Throw away the unsaved writing?',
+                body: 'The copy kept on this device is deleted. It was never saved to your site, so it cannot be brought back.',
+                confirmLabel: 'Throw it away',
+                tone: 'danger',
+              })
+              if (ok) backup.dismiss()
+            }}>
               Discard
             </button>
           </div>

@@ -91,7 +91,7 @@ export default function AdminDashboard({ onLogout }) {
 }
 
 function Shell({ tab, go, visited, onLogout }) {
-  const { dirty } = useAdmin()
+  const { dirty, confirm } = useAdmin()
   const install = useInstallPrompt()
   const current = byId[tab]
   const navRef = useRef(null)
@@ -124,8 +124,19 @@ function Shell({ tab, go, visited, onLogout }) {
     n.scrollTo({ left: active.offsetLeft - (n.clientWidth - active.offsetWidth) / 2, behavior: reduce ? 'auto' : 'smooth' })
   }, [tab])
 
-  function logout() {
-    if (dirty.size && !confirm('You have unsaved changes. Log out anyway?')) return
+  async function logout() {
+    if (dirty.size) {
+      const where = TABS.filter((t) => dirty.has(t.id)).map((t) => t.label)
+      const list = where.length > 1 ? `${where.slice(0, -1).join(', ')} and ${where[where.length - 1]}` : where[0]
+      const ok = await confirm({
+        title: 'Log out with unsaved changes?',
+        body: `Your unsaved changes in ${list} will be lost.`,
+        confirmLabel: 'Log out',
+        cancelLabel: 'Keep editing',
+        tone: 'danger',
+      })
+      if (!ok) return
+    }
     onLogout()
   }
 

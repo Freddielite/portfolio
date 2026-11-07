@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, AlertTriangle } from 'lucide-react'
+import ConfirmDialog from './ConfirmDialog.jsx'
 
 // Shared state for the whole admin: which tabs have unsaved edits (for the dots
 // in the navigation and the log-out warning), a small toast with an optional
@@ -35,11 +36,31 @@ export function AdminProvider({ go, children }) {
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const value = useMemo(() => ({ dirty, reportDirty, toast, go }), [dirty, reportDirty, toast, go])
+  // confirm({ title, body, confirmLabel, cancelLabel, tone }) -> Promise<boolean>
+  // One dialog at a time: a new request answers the open one with "no".
+  const [dialog, setDialog] = useState(null)
+  const dialogRef = useRef(null)
+  const confirm = useCallback((request) => {
+    return new Promise((resolve) => {
+      dialogRef.current?.resolve(false)
+      const next = { ...request, resolve, id: Date.now(), returnTo: document.activeElement }
+      dialogRef.current = next
+      setDialog(next)
+    })
+  }, [])
+  const closeDialog = useCallback((result) => {
+    const d = dialogRef.current
+    dialogRef.current = null
+    setDialog(null)
+    d?.resolve(result)
+  }, [])
+
+  const value = useMemo(() => ({ dirty, reportDirty, toast, go, confirm }), [dirty, reportDirty, toast, go, confirm])
 
   return (
     <AdminContext.Provider value={value}>
       {children}
+      {dialog && <ConfirmDialog key={dialog.id} request={dialog} onClose={closeDialog} />}
       <div className="admin-toast-wrap" role="status" aria-live="polite">
         {toastItem && (
           <div className={`admin-toast is-${toastItem.tone}`} key={toastItem.id}>

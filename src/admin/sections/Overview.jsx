@@ -217,7 +217,7 @@ function PulsePanel({ settings }) {
 }
 
 function Backup({ data, onChanged }) {
-  const { toast } = useAdmin()
+  const { toast, confirm } = useAdmin()
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState(null)
@@ -256,7 +256,15 @@ function Backup({ data, onChanged }) {
   }
 
   async function apply(mode) {
-    if (mode === 'replace' && !confirm('Replace your current content with the backup? Anything newer than the backup is lost (History can still bring it back).')) return
+    if (mode === 'replace') {
+      const ok = await confirm({
+        title: 'Replace everything with the backup?',
+        body: 'Anything newer than the backup is overwritten. History can still bring it back.',
+        confirmLabel: 'Replace everything',
+        tone: 'danger',
+      })
+      if (!ok) return
+    }
     setBusy(true)
     setError(null)
     try {
