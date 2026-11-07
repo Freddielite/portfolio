@@ -8,7 +8,7 @@ import SaveBar from '../SaveBar.jsx'
 import PostForm from '../builder/PostForm.jsx'
 import { validatePosts } from '../validate.js'
 import { useAdmin, usePanel, useRefresh } from '../AdminContext.jsx'
-import { IS_APP, readLastPlace, saveLastPlace, slide, useEdgeSwipeBack } from '../app.js'
+import { IS_APP, slide, useEdgeSwipeBack } from '../app.js'
 import { takeShared } from '../share.js'
 import { uploadImage } from '../imageUpload.js'
 import { textToBlocks } from '../portableText.js'
@@ -51,6 +51,7 @@ export default function PostsEditor() {
   const mainRef = useRef(null)
   const skipSlide = useRef(false)
   const started = useRef(false)
+  const autoRestored = useRef(false)
 
   const isPhone = () => window.matchMedia('(max-width: 899px)').matches
   // In the app, an open post is a real step in the back history, so Android's
@@ -87,9 +88,18 @@ export default function PostsEditor() {
   // iPhone has no system back gesture, so the app adds one: swipe from the left edge.
   useEdgeSwipeBack(mainRef, IS_APP && editing && panelActive, () => closeEditor({ animate: false }))
 
+  // Reset the editor when the saved posts actually change (first load, a
+  // save, or a "load latest" you asked for). A refetch that brings back the
+  // same content must not wipe edits you are making, or writing just restored.
+  const lastLoaded = useRef(null)
+  const forceReset = useRef(false)
   useEffect(() => {
     if (pub.data && drafts.data) {
       const merged = merge(pub.data, drafts.data)
+      const json = JSON.stringify(merged)
+      if (json === lastLoaded.current && !forceReset.current) return
+      lastLoaded.current = json
+      forceReset.current = false
       setList(merged)
       setRestoredFrom(null)
       setActiveId((id) => (id && merged.some((p) => p._id === id) ? id : merged[0]?._id || null))
@@ -116,6 +126,7 @@ export default function PostsEditor() {
       })
       if (!ok) return false
     }
+    forceReset.current = true
     await Promise.all([pub.reload(), drafts.reload()])
   })
 
@@ -136,16 +147,17 @@ export default function PostsEditor() {
     }
     if (action === 'new-post') return addPost()
     if (shared) return void startFromShare()
-    const last = readLastPlace()
-    if (last.post && list.some((p) => p._id === last.post)) {
-      if (last.editing && isPhone()) openPost(last.post)
-      else setActiveId(last.post)
-    }
   }, [list]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // In the app, unsaved writing left on this device is put straight back and
+  // its post reopened, so you carry on where you stopped. (In a browser tab
+  // the banner asks first.)
   useEffect(() => {
-    if (started.current) saveLastPlace({ post: activeId, editing })
-  }, [activeId, editing])
+    if (!IS_APP || autoRestored.current || !list || !backup.offer) return
+    autoRestored.current = true
+    restoreBackup()
+    toast('Picked up where you left off. Not saved yet.')
+  }, [backup.offer, list]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!list) return <p className="admin-hint admin-loading">Loading posts…</p>
   const loadError = (!pub.data && pub.error) || (!drafts.data && drafts.error)
@@ -196,6 +208,15 @@ export default function PostsEditor() {
     toast('New draft started from what you shared')
   }
 
+  function restoreBackup() {
+    const offer = backup.offer
+    setList((l) => applyBackup(l, offer))
+    setRestoreCount((n) => n + 1)
+    backup.accept()
+    const first = offer.changed.find((p) => !offer.deleted.includes(p._id))?._id
+    if (first) openPost(first)
+  }
+
   function openPost(id) {
     if (appStack() && !editingRef.current) {
       window.history.pushState({ adminPost: true }, '', window.location.href)
@@ -243,7 +264,7 @@ export default function PostsEditor() {
     dirty,
     restoredFrom,
     errors: validatePosts(list),
-    onReload: () => { pub.reload(); drafts.reload() },
+    onReload: () => { forceReset.current = true; pub.reload(); drafts.reload() },
     type: 'posts',
     onRestore: (d, c) => {
       setList((l) => [...d, ...l.filter((p) => p.status === 'draft')])
@@ -279,21 +300,7 @@ export default function PostsEditor() {
             </p>
           </div>
           <div className="admin-banner-actions">
-            <button
-              type="button"
-              className="admin-btn"
-              onClick={() => {
-                const next = applyBackup(list, backup.offer)
-                setList(next)
-                const first = backup.offer.changed[0]?._id
-                if (first) {
-                  setActiveId(first)
-                  setEditing(true)
-                }
-                setRestoreCount((n) => n + 1)
-                backup.accept()
-              }}
-            >
+            <button type="button" className="admin-btn" onClick={restoreBackup}>
               Restore it
             </button>
             <button type="button" className="admin-btn-ghost" onClick={async () => {

@@ -41,31 +41,14 @@ export function slide(dir, update) {
   // would put the History window underneath the header.
   root.classList.add('admin-sliding')
   const t = document.startViewTransition(() => flushSync(update))
+  // If another slide starts before this one finishes, the browser skips this
+  // one (the screen still updates). That is expected, not an error.
+  t.ready.catch(() => {})
+  t.updateCallbackDone.catch(() => {})
   t.finished.finally(() => {
     delete root.dataset.navDir
     root.classList.remove('admin-sliding')
   })
-}
-
-// ---------- 9. Opening where you left off ----------
-const LAST = 'admin:last-place'
-
-export function readLastPlace() {
-  if (!IS_APP) return {}
-  try {
-    return JSON.parse(localStorage.getItem(LAST) || '{}') || {}
-  } catch {
-    return {}
-  }
-}
-
-export function saveLastPlace(patch) {
-  if (!IS_APP) return
-  try {
-    localStorage.setItem(LAST, JSON.stringify({ ...readLastPlace(), ...patch }))
-  } catch {
-    /* ignore */
-  }
 }
 
 // ---------- 1. Header that tucks away ----------

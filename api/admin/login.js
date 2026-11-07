@@ -1,5 +1,5 @@
-import { createToken, passwordsMatch, SESSION_HOURS } from '../_lib/auth.js'
-import { serializeCookie } from '../_lib/cookies.js'
+import { passwordsMatch, sessionCookie, unlockCookie } from '../_lib/auth.js'
+import { readPasskeys } from '../_lib/passkeys.js'
 import { checkRateLimit, getClientIp, recordFailure, recordSuccess } from '../_lib/rateLimit.js'
 
 export default async function handler(req, res) {
@@ -40,10 +40,14 @@ export default async function handler(req, res) {
   }
   recordSuccess(ip)
 
-  const token = createToken()
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie('admin_session', token, { maxAge: SESSION_HOURS * 60 * 60 })
-  )
+  // With fingerprint unlock set up, the session locks after time away; the
+  // password itself counts as unlocking it now.
+  let lock = false
+  try {
+    lock = (await readPasskeys()).list.length > 0
+  } catch {
+    lock = false
+  }
+  res.setHeader('Set-Cookie', [sessionCookie(lock), unlockCookie()])
   return res.status(200).json({ ok: true })
 }

@@ -36,6 +36,12 @@ function diff(list, base) {
   return { changed, deleted }
 }
 
+// True when writing from an earlier visit is waiting on this device.
+export function hasUnsavedPostWriting() {
+  const b = read()
+  return !!b && ((b.changed && b.changed.length > 0) || (b.deleted && b.deleted.length > 0))
+}
+
 export function applyBackup(list, backup) {
   const gone = new Set(backup.deleted)
   const incoming = new Map(backup.changed.map((p) => [p._id, p]))

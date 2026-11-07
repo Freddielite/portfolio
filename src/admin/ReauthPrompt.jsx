@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { onReauthChange, reauthCancelled, reauthDone } from './http.js'
+import LockScreen from './LockScreen.jsx'
 
-// Shown over the admin when the session expires mid-edit. Signing in here keeps
-// everything on screen as it was and finishes the request that was waiting.
+// Shown over the admin when a request is turned away. 'locked': the lock
+// screen (fingerprint, face or password). 'expired': the 7-day sign-in ran
+// out, so the password is needed. Either way everything on screen stays as it
+// was and the request that was waiting is sent once you are back in.
 export default function ReauthPrompt({ onLogout }) {
-  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState(null)
+  const open = !!reason
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const input = useRef(null)
 
-  useEffect(() => onReauthChange(setOpen), [])
+  useEffect(() => onReauthChange(setReason), [])
   useEffect(() => {
     if (open) {
       setPassword('')
@@ -21,6 +25,17 @@ export default function ReauthPrompt({ onLogout }) {
   }, [open])
 
   if (!open) return null
+  if (reason === 'locked') {
+    return (
+      <LockScreen
+        onUnlocked={reauthDone}
+        onLogout={() => {
+          reauthCancelled()
+          onLogout()
+        }}
+      />
+    )
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -46,9 +61,9 @@ export default function ReauthPrompt({ onLogout }) {
     <div className="admin-modal-overlay admin-reauth" role="presentation">
       <form className="admin-modal" role="alertdialog" aria-modal="true" aria-labelledby="reauth-title" onSubmit={submit}>
         <div className="admin-reauth-icon" aria-hidden="true"><Lock size={20} /></div>
-        <h2 id="reauth-title" className="admin-card-title">Your session expired</h2>
+        <h2 id="reauth-title" className="admin-card-title">Sign in again</h2>
         <p className="admin-hint">
-          Sign in again to carry on. Nothing on screen is lost, and the change you were making is sent as soon as you are back in.
+          Your sign-in lasts 7 days and has run out. Nothing on screen is lost, and the change you were making is sent as soon as you are back in.
         </p>
         <input
           ref={input}

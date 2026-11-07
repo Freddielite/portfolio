@@ -1,9 +1,10 @@
-import { verifyToken } from '../_lib/auth.js'
-import { parseCookies } from '../_lib/cookies.js'
+import { requireAuth, UNLOCK_MINUTES } from '../_lib/auth.js'
 
+// Is this browser signed in (and, with fingerprint unlock on, unlocked)?
+// Answers 401 with { locked: true } when signed in but locked.
 export default async function handler(req, res) {
-  const cookies = parseCookies(req.headers.cookie)
-  const authenticated = verifyToken(cookies.admin_session)
-  if (!authenticated) return res.status(401).json({ authenticated: false })
-  return res.status(200).json({ authenticated: true })
+  res.setHeader('Cache-Control', 'no-store')
+  const session = requireAuth(req, res)
+  if (!session) return
+  return res.status(200).json({ authenticated: true, lock: !!session.lock, lockMinutes: UNLOCK_MINUTES })
 }

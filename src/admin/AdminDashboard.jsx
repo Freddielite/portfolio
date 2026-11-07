@@ -11,7 +11,8 @@ import SkillsEditor from './sections/SkillsEditor.jsx'
 import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
-import { IS_APP, readLastPlace, saveLastPlace, slide, usePullToRefresh, useTuckingHeader } from './app.js'
+import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
+import { hasUnsavedPostWriting } from './usePostBackup.js'
 import { useInstallPrompt } from './pwa.js'
 
 const TABS = [
@@ -28,15 +29,16 @@ const fromHash = () => {
   const h = window.location.hash.replace('#', '')
   return byId[h] ? h : 'overview'
 }
-// The app reopens on the section you last used, unless it was opened with a
-// specific one (a shortcut, a shared item).
+// The app opens on Overview every time, with two exceptions: it was opened
+// for something specific (a shortcut, a shared item), or you left unsaved
+// post writing behind, in which case it reopens on that post (PostsEditor
+// restores it).
 function startTab() {
   const h = window.location.hash.replace('#', '')
   if (byId[h]) return h
-  const last = readLastPlace().tab
-  if (IS_APP && byId[last]) {
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${last}`)
-    return last
+  if (IS_APP && hasUnsavedPostWriting()) {
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#posts`)
+    return 'posts'
   }
   return 'overview'
 }
@@ -84,7 +86,6 @@ export default function AdminDashboard({ onLogout }) {
     })
   }, [])
 
-  useEffect(() => saveLastPlace({ tab }), [tab])
 
   // Tabs live in the address (#posts, #skills…) so Back works and a refresh
   // keeps you where you were.

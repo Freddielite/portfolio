@@ -4,6 +4,7 @@ import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '..
 import { onContent } from '../contentBus.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { setBadge } from '../app.js'
+import SecurityCard from './SecurityCard.jsx'
 import { postState } from '../../lib/postStatus.js'
 
 const PLACEHOLDER_AUTHOR = /^client name$/i
@@ -424,6 +425,7 @@ export default function Overview({ go }) {
       {error && <p className="admin-error">{error}</p>}
       <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
       <PulsePanel settings={data.siteSettings} />
+      <SecurityCard />
       <Backup data={data} onChanged={reload} />
     </div>
   )

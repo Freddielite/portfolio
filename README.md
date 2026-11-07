@@ -169,3 +169,10 @@ api/
   _lib/           Shared auth/cookie/GitHub-API helpers
 scripts/          Build-time sitemap + SEO prerendering
 ```
+
+## Admin security
+
+- **Sign-in:** the admin password signs a device in for 7 days. The session is a signed, HttpOnly, Secure cookie; the GitHub token never leaves the server.
+- **Fingerprint / face unlock:** turn it on from Overview → Security on each device you use. From then on the admin locks after 10 minutes away, and every API request is refused until it is unlocked with a passkey (fingerprint, face or device PIN) or the password. The lock is enforced by the server, so opening `/admin` in a browser does not get around it.
+- **Where unlock devices are stored:** `security/passkeys.json` in this repo, written by the admin. It holds credential ids and public keys only, which cannot be used to unlock anything. Adding or removing a device is a commit, so the site rebuilds once.
+- Passkeys are tied to the live domain, so they do not work on Vercel preview links (use the password there).
