@@ -138,7 +138,7 @@
       "outcome": "A single site that both sells Wyntek’s services and runs the day-to-day operations behind them, used as the agency’s actual internal tool, not just a portfolio piece."
     },
     "kind": "Company",
-    "hidden": true
+    "hidden": false
   },
   {
     "id": "08",
