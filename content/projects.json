@@ -137,7 +137,8 @@
       "approach": "Built on Next.js with a password-protected admin dashboard covering leads, quotes, invoices, testimonials, and a scripts and templates shop with Paystack checkout. Disputes are a two-way reply thread with the buyer, not a one-shot form, and a daily Telegram digest flags overdue invoices, open disputes, and stale leads automatically.",
       "outcome": "A single site that both sells Wyntek’s services and runs the day-to-day operations behind them, used as the agency’s actual internal tool, not just a portfolio piece."
     },
-    "kind": "Company"
+    "kind": "Company",
+    "hidden": true
   },
   {
     "id": "08",
