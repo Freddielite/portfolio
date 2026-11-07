@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Check, ChevronRight, ChevronDown, RefreshCw, Download, Upload } from 'lucide-react'
 import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '../api.js'
 import { onContent } from '../contentBus.js'
-import { useAdmin } from '../AdminContext.jsx'
+import { useAdmin, useRefresh } from '../AdminContext.jsx'
+import { setBadge } from '../app.js'
 import { postState } from '../../lib/postStatus.js'
 
 const PLACEHOLDER_AUTHOR = /^client name$/i
@@ -147,6 +148,11 @@ function Checklist({ data, loading, checkedAt, onRecheck, go }) {
 function PulsePanel({ settings }) {
   const [state, setState] = useState({ loading: true, monitors: [], error: null })
   const [nonce, setNonce] = useState(0)
+  useEffect(() => {
+    const again = () => setNonce((n) => n + 1)
+    window.addEventListener('admin:refresh-health', again)
+    return () => window.removeEventListener('admin:refresh-health', again)
+  }, [])
   const api = String(settings.pulseApiUrl || '').replace(/\/$/, '')
   const token = String(settings.pulseStatusToken || '').trim()
 
@@ -171,7 +177,7 @@ function PulsePanel({ settings }) {
   const host = (u) => String(u || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   return (
-    <section className="admin-card">
+    <section className="admin-card" id="site-health">
       <div className="admin-card-header">
         <div>
           <h2 className="admin-card-title">Site health</h2>
@@ -329,19 +335,48 @@ export default function Overview({ go }) {
   const { toast } = useAdmin()
   const { loading, data, error, checkedAt, reload } = useAllContent()
 
-  async function recheck() {
+  // Re-runs the checklist with fresh data and describes what changed.
+  async function check() {
     const before = data ? buildChecklist(data, window.location.origin).filter((i) => i.ok).length : null
     const fresh = await reload()
-    if (!fresh) {
-      toast('Could not reach GitHub. Try again in a moment.', { tone: 'error' })
-      return
-    }
+    if (!fresh) throw new Error('Could not reach GitHub. Try again in a moment.')
     const items = buildChecklist(fresh, window.location.origin)
     const after = items.filter((i) => i.ok).length
-    if (before === null || after === before) toast(`Checked. ${after} of ${items.length} done`)
-    else if (after > before) toast(`Nice, ${after - before} more done. ${after} of ${items.length}`)
-    else toast(`${after} of ${items.length} done. Something needs another look`)
+    if (before === null || after === before) return `Checked. ${after} of ${items.length} done`
+    if (after > before) return `Nice, ${after - before} more done. ${after} of ${items.length}`
+    return `${after} of ${items.length} done. Something needs another look`
   }
+
+  async function recheck() {
+    try {
+      toast(await check())
+    } catch (err) {
+      toast(err.message, { tone: 'error' })
+    }
+  }
+
+  // Pull to refresh in the app: checklist, counts and site health together.
+  useRefresh(() => {
+    window.dispatchEvent(new Event('admin:refresh-health'))
+    return check()
+  })
+
+  // App icon badge: how many setup items are left.
+  const todoCount = data ? buildChecklist(data, window.location.origin).filter((i) => !i.ok).length : null
+  useEffect(() => {
+    if (todoCount !== null) setBadge(todoCount)
+  }, [todoCount])
+
+  // The "Site health" shortcut on the app icon opens here.
+  useEffect(() => {
+    if (!data) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('focus') !== 'health') return
+    params.delete('focus')
+    const qs = params.toString()
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`)
+    requestAnimationFrame(() => document.getElementById('site-health')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [data])
 
   if (loading && !data) {
     return (

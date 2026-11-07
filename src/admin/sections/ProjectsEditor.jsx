@@ -5,7 +5,7 @@ import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
 import useDragReorder from '../useDragReorder.js'
-import { useAdmin } from '../AdminContext.jsx'
+import { useAdmin, useReloadOnPull } from '../AdminContext.jsx'
 import { validateProjects } from '../validate.js'
 
 function blankProject() {
@@ -163,8 +163,9 @@ export default function ProjectsEditor() {
 
   const dirty = !loading && !!list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+  useReloadOnPull(dirty, reload)
 
-  if (loading || !list) return <p className="admin-hint admin-loading">Loading projects…</p>
+  if (!list) return <p className="admin-hint admin-loading">Loading projects…</p>
 
   const errors = validateProjects(list)
   const bar = {

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { ArrowLeft, Plus, RotateCcw } from 'lucide-react'
 import usePostBackup, { applyBackup } from '../usePostBackup.js'
 import useAdminContent from '../useAdminContent.js'
@@ -6,7 +7,11 @@ import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import PostForm from '../builder/PostForm.jsx'
 import { validatePosts } from '../validate.js'
-import { useAdmin } from '../AdminContext.jsx'
+import { useAdmin, usePanel, useRefresh } from '../AdminContext.jsx'
+import { IS_APP, readLastPlace, saveLastPlace, slide, useEdgeSwipeBack } from '../app.js'
+import { takeShared } from '../share.js'
+import { uploadImage } from '../imageUpload.js'
+import { textToBlocks } from '../portableText.js'
 import { postState, todayString } from '../../lib/postStatus.js'
 
 // Published posts live in content/posts.json, drafts in content/drafts.json (which
@@ -21,19 +26,66 @@ const split = (list) => ({
   drafts: list.filter((p) => p.status === 'draft').map((p) => ({ ...p, status: 'draft' })),
 })
 
+const slugify = (t) => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+const blankPost = (extra = {}) => ({
+  _id: `p${Date.now()}`, slug: '', title: '', excerpt: '', publishedAt: todayString(), status: 'draft', coverImage: null, tags: [], body: [], ...extra,
+})
+
 const TABS = [['all', 'All'], ['published', 'Published'], ['draft', 'Drafts'], ['scheduled', 'Scheduled']]
 const label = { draft: 'Draft', published: 'Live', scheduled: 'Scheduled' }
 
 export default function PostsEditor() {
   const pub = useAdminContent('posts')
   const drafts = useAdminContent('drafts', { optional: true })
-  const { confirm } = useAdmin()
+  const { confirm, toast } = useAdmin()
+  const { active: panelActive } = usePanel()
   const [list, setList] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('all')
   const [restoredFrom, setRestoredFrom] = useState(null)
   // On phones the list and the editor are two screens; this says which one.
   const [editing, setEditing] = useState(false)
+  const editingRef = useRef(false)
+  editingRef.current = editing
+  const mainRef = useRef(null)
+  const skipSlide = useRef(false)
+  const started = useRef(false)
+
+  const isPhone = () => window.matchMedia('(max-width: 899px)').matches
+  // In the app, an open post is a real step in the back history, so Android's
+  // back gesture (and the back arrow) returns to the list.
+  const appStack = () => IS_APP && isPhone()
+
+  useEffect(() => {
+    if (!IS_APP) return
+    const onPop = () => {
+      if (!editingRef.current || window.history.state?.adminPost) return
+      const close = () => {
+        flushSync(() => setEditing(false))
+        window.scrollTo(0, 0)
+      }
+      if (skipSlide.current) {
+        skipSlide.current = false
+        close()
+      } else slide('back', close)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  function closeEditor({ animate = true } = {}) {
+    if (appStack() && window.history.state?.adminPost) {
+      skipSlide.current = !animate
+      window.history.back()
+      return
+    }
+    if (animate) slide('back', () => flushSync(() => setEditing(false)))
+    else setEditing(false)
+  }
+
+  // iPhone has no system back gesture, so the app adds one: swipe from the left edge.
+  useEdgeSwipeBack(mainRef, IS_APP && editing && panelActive, () => closeEditor({ animate: false }))
 
   useEffect(() => {
     if (pub.data && drafts.data) {
@@ -53,7 +105,49 @@ export default function PostsEditor() {
   const dirty = !!parts && (JSON.stringify(parts.published) !== JSON.stringify(pub.data) || JSON.stringify(parts.drafts) !== JSON.stringify(drafts.data))
   useUnsavedChangesWarning(dirty)
 
-  if (pub.loading || drafts.loading || !list) return <p className="admin-hint admin-loading">Loading posts…</p>
+  // Pull to refresh in the app.
+  useRefresh(async () => {
+    if (dirty) {
+      const ok = await confirm({
+        title: 'Load the latest posts?',
+        body: 'Your unsaved edits to posts are replaced with what is saved on GitHub now. Writing kept on this device stays available to restore.',
+        confirmLabel: 'Load latest',
+        tone: 'danger',
+      })
+      if (!ok) return false
+    }
+    await Promise.all([pub.reload(), drafts.reload()])
+  })
+
+  // Once the posts are loaded: open what the app was asked to open (the "New
+  // post" shortcut, something shared from another app), or else the post you
+  // were last working on.
+  useEffect(() => {
+    if (!list || started.current) return
+    started.current = true
+    const params = new URLSearchParams(window.location.search)
+    const action = params.get('action')
+    const shared = params.get('shared')
+    if (action || shared) {
+      params.delete('action')
+      params.delete('shared')
+      const qs = params.toString()
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`)
+    }
+    if (action === 'new-post') return addPost()
+    if (shared) return void startFromShare()
+    const last = readLastPlace()
+    if (last.post && list.some((p) => p._id === last.post)) {
+      if (last.editing && isPhone()) openPost(last.post)
+      else setActiveId(last.post)
+    }
+  }, [list]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (started.current) saveLastPlace({ post: activeId, editing })
+  }, [activeId, editing])
+
+  if (!list) return <p className="admin-hint admin-loading">Loading posts…</p>
   const loadError = (!pub.data && pub.error) || (!drafts.data && drafts.error)
   if (loadError) return <p className="admin-error">{loadError}</p>
 
@@ -64,16 +158,59 @@ export default function PostsEditor() {
 
   const update = (id, next) => setList((l) => l.map((p) => (p._id === id ? next : p)))
   function addPost() {
-    const post = { _id: `p${Date.now()}`, slug: '', title: '', excerpt: '', publishedAt: todayString(), status: 'draft', coverImage: null, tags: [], body: [] }
+    const post = blankPost()
     setList((l) => [post, ...l])
     setActiveId(post._id)
     setTab('all')
     openPost(post._id)
   }
+  // Turns what was shared from another app into a new draft: text and links
+  // go in the body, images are optimised, uploaded and placed in the body too.
+  async function startFromShare() {
+    const shared = await takeShared()
+    if (!shared) {
+      toast('Nothing came through from the share. Try sharing again.', { tone: 'error' })
+      return
+    }
+    const paths = []
+    if (shared.files.length) {
+      toast(shared.files.length === 1 ? 'Adding the shared image…' : `Adding ${shared.files.length} shared images…`, { duration: 30000 })
+      for (const file of shared.files) {
+        try {
+          paths.push((await uploadImage(file, 'blog')).path)
+        } catch (err) {
+          toast(`Could not add ${file.name}: ${err.message}`, { tone: 'error' })
+        }
+      }
+    }
+    const text = shared.text.trim()
+    const url = shared.url.trim()
+    const parts = []
+    if (text) parts.push(text)
+    if (url && !text.includes(url)) parts.push(`[${shared.title || url}](${url})`)
+    paths.forEach((p) => parts.push(`![Describe this image](${p})`))
+    const post = blankPost({ title: shared.title || '', slug: slugify(shared.title), body: textToBlocks(parts.join('\n\n')) })
+    setList((l) => [post, ...l])
+    setTab('all')
+    openPost(post._id)
+    toast('New draft started from what you shared')
+  }
+
   function openPost(id) {
+    if (appStack() && !editingRef.current) {
+      window.history.pushState({ adminPost: true }, '', window.location.href)
+      slide('forward', () => {
+        flushSync(() => {
+          setActiveId(id)
+          setEditing(true)
+        })
+        window.scrollTo(0, 0)
+      })
+      return
+    }
     setActiveId(id)
     setEditing(true)
-    if (window.matchMedia('(max-width: 899px)').matches) window.scrollTo(0, 0)
+    if (isPhone()) window.scrollTo(0, 0)
   }
   async function remove(id) {
     const p = list.find((x) => x._id === id)
@@ -86,7 +223,7 @@ export default function PostsEditor() {
     if (!ok) return
     setList((l) => l.filter((x) => x._id !== id))
     setActiveId(null)
-    setEditing(false)
+    closeEditor()
   }
 
   async function saveAll() {
@@ -119,7 +256,7 @@ export default function PostsEditor() {
       setRestoredFrom(null)
       if (!merged.some((p) => p._id === activeId)) {
         setActiveId(merged[0]?._id || null)
-        setEditing(false)
+        closeEditor({ animate: false })
       }
     },
   }
@@ -197,8 +334,8 @@ export default function PostsEditor() {
           </ul>
         </aside>
 
-        <div className="builder-main">
-          <button type="button" className="admin-back" onClick={() => setEditing(false)}>
+        <div className="builder-main" ref={mainRef}>
+          <button type="button" className="admin-back" onClick={() => closeEditor()}>
             <ArrowLeft size={17} aria-hidden="true" /> All posts
           </button>
           {active ? (

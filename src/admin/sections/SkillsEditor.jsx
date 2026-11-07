@@ -4,7 +4,7 @@ import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import useDragReorder from '../useDragReorder.js'
-import { useAdmin } from '../AdminContext.jsx'
+import { useAdmin, useReloadOnPull } from '../AdminContext.jsx'
 import { validateSkills } from '../validate.js'
 
 export default function SkillsEditor() {
@@ -23,8 +23,9 @@ export default function SkillsEditor() {
 
   const dirty = !loading && !!list && JSON.stringify(list) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+  useReloadOnPull(dirty, reload)
 
-  if (loading || !list) return <p className="admin-hint admin-loading">Loading skills…</p>
+  if (!list) return <p className="admin-hint admin-loading">Loading skills…</p>
 
   const bar = {
     saving, error, savedAt, dirty, conflict, commit, restoredFrom, errors: validateSkills(list), onReload: reload, type: 'skills',

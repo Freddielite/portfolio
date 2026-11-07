@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine,
-  ExternalLink, LogOut, Download,
+  ExternalLink, LogOut, Download, ArrowDown, RefreshCw,
 } from 'lucide-react'
 import Overview from './sections/Overview.jsx'
 import SiteSettingsEditor from './sections/SiteSettingsEditor.jsx'
@@ -10,6 +11,7 @@ import SkillsEditor from './sections/SkillsEditor.jsx'
 import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
+import { IS_APP, readLastPlace, saveLastPlace, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { useInstallPrompt } from './pwa.js'
 
 const TABS = [
@@ -21,9 +23,22 @@ const TABS = [
   { id: 'testimonials', label: 'Testimonials', short: 'Testimonials', Icon: MessageSquareQuote, Component: TestimonialsEditor, blurb: 'Quotes from people you have worked with.' },
 ]
 const byId = Object.fromEntries(TABS.map((t) => [t.id, t]))
+const order = TABS.map((t) => t.id)
 const fromHash = () => {
   const h = window.location.hash.replace('#', '')
   return byId[h] ? h : 'overview'
+}
+// The app reopens on the section you last used, unless it was opened with a
+// specific one (a shortcut, a shared item).
+function startTab() {
+  const h = window.location.hash.replace('#', '')
+  if (byId[h]) return h
+  const last = readLastPlace().tab
+  if (IS_APP && byId[last]) {
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${last}`)
+    return last
+  }
+  return 'overview'
 }
 
 // Find the field to focus after a "Fix" jump. The tab may still be loading,
@@ -45,22 +60,31 @@ function focusField(target) {
 }
 
 export default function AdminDashboard({ onLogout }) {
-  const [tab, setTab] = useState(fromHash)
+  const [tab, setTab] = useState(startTab)
   // Every tab you visit stays mounted, so its content is fetched once per
   // session and unsaved edits survive switching tabs. Tabs you never open are
-  // never fetched.
-  const [visited, setVisited] = useState(() => new Set([fromHash()]))
+  // never fetched. The app always loads Overview too, which keeps the badge on
+  // its icon up to date.
+  const [visited, setVisited] = useState(() => new Set([fromHash(), ...(IS_APP ? ['overview'] : [])]))
   const scrolls = useRef({})
   const tabRef = useRef(tab)
   tabRef.current = tab
 
   const show = useCallback((id) => {
-    if (!byId[id]) return
-    if (id !== tabRef.current) scrolls.current[tabRef.current] = window.scrollY
-    setTab(id)
-    setVisited((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
-    requestAnimationFrame(() => window.scrollTo(0, scrolls.current[id] || 0))
+    if (!byId[id] || id === tabRef.current) return
+    const from = tabRef.current
+    scrolls.current[from] = window.scrollY
+    // In the app, the new section slides in from the side it sits on.
+    slide(order.indexOf(id) > order.indexOf(from) ? 'forward' : 'back', () => {
+      flushSync(() => {
+        setTab(id)
+        setVisited((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
+      })
+      window.scrollTo(0, scrolls.current[id] || 0)
+    })
   }, [])
+
+  useEffect(() => saveLastPlace({ tab }), [tab])
 
   // Tabs live in the address (#posts, #skills…) so Back works and a refresh
   // keeps you where you were.
@@ -91,10 +115,24 @@ export default function AdminDashboard({ onLogout }) {
 }
 
 function Shell({ tab, go, visited, onLogout }) {
-  const { dirty, confirm } = useAdmin()
+  const { dirty, confirm, refresh, toast } = useAdmin()
   const install = useInstallPrompt()
   const current = byId[tab]
   const navRef = useRef(null)
+  const headerRef = useRef(null)
+  const titleRef = useRef(null)
+  const header = useTuckingHeader(headerRef, titleRef, tab)
+
+  // Pull to refresh (app only): reloads whatever the current tab shows.
+  const pull = usePullToRefresh(async () => {
+    try {
+      const result = await refresh(tab)
+      if (result === false) return
+      toast(typeof result === 'string' ? result : 'Up to date')
+    } catch (err) {
+      toast(err.message || 'Could not refresh. Try again.', { tone: 'error' })
+    }
+  })
 
   // Same pattern as Wynmail: on phones the sidebar folds into a header and the
   // sections become one row of pills that scrolls sideways. The edge fades
@@ -142,8 +180,15 @@ function Shell({ tab, go, visited, onLogout }) {
 
   return (
     <div className="admin-shell">
-      <aside className="admin-sidebar" aria-label="Admin">
-        <div className="admin-brand">Admin</div>
+      <aside
+        ref={headerRef}
+        className={`admin-sidebar ${header.tucked ? 'is-tucked' : ''} ${header.titleGone ? 'has-title' : ''}`}
+        aria-label="Admin"
+      >
+        <div className="admin-brand">
+          <span className="admin-brand-name">Admin</span>
+          {IS_APP && <span className="admin-brand-title" aria-hidden="true">{current.label}</span>}
+        </div>
 
         <nav className="admin-side-nav" ref={navRef} onScroll={updateFade} aria-label="Admin sections">
           {TABS.map((t) => (
@@ -182,9 +227,21 @@ function Shell({ tab, go, visited, onLogout }) {
         </div>
       </aside>
 
-      <main className="admin-main">
+      {IS_APP && (
+        <div className={`admin-ptr is-${pull.state}`} style={{ '--ptr': `${pull.y}px`, '--ptr-o': Math.min(1, pull.y / 60) }} aria-hidden={pull.state === 'idle'}>
+          <span>
+            {pull.state === 'refreshing' ? (
+              <RefreshCw size={18} className="admin-spin" aria-label="Refreshing" />
+            ) : (
+              <ArrowDown size={18} aria-hidden="true" />
+            )}
+          </span>
+        </div>
+      )}
+
+      <main className="admin-main" style={IS_APP && pull.y ? { transform: `translateY(${pull.y}px)`, transition: pull.state === 'pulling' || pull.state === 'ready' ? 'none' : undefined } : undefined}>
         <header className="admin-page-head">
-          <h1>{current.label}</h1>
+          <h1 ref={titleRef}>{current.label}</h1>
           <p>{current.blurb}</p>
         </header>
         {TABS.map(

@@ -55,7 +55,20 @@ export function AdminProvider({ go, children }) {
     d?.resolve(result)
   }, [])
 
-  const value = useMemo(() => ({ dirty, reportDirty, toast, go, confirm }), [dirty, reportDirty, toast, go, confirm])
+  // Pull to refresh (installed app): each tab registers what refreshing means.
+  const refreshers = useRef(new Map())
+  const registerRefresh = useCallback((id, fn) => {
+    refreshers.current.set(id, fn)
+    return () => {
+      if (refreshers.current.get(id) === fn) refreshers.current.delete(id)
+    }
+  }, [])
+  const refresh = useCallback((id) => refreshers.current.get(id)?.(), [])
+
+  const value = useMemo(
+    () => ({ dirty, reportDirty, toast, go, confirm, registerRefresh, refresh }),
+    [dirty, reportDirty, toast, go, confirm, registerRefresh, refresh]
+  )
 
   return (
     <AdminContext.Provider value={value}>
@@ -82,4 +95,37 @@ export function AdminProvider({ go, children }) {
       </div>
     </AdminContext.Provider>
   )
+}
+
+// Registers what "pull to refresh" does on the current tab. `fn` may return
+// false (cancelled, no message) or a string to show instead of "Up to date".
+export function useRefresh(fn) {
+  const { id } = usePanel()
+  const admin = useAdmin()
+  const ref = useRef(fn)
+  ref.current = fn
+  const register = admin?.registerRefresh
+  useEffect(() => {
+    if (!register || !id) return
+    const handler = () => ref.current()
+    return register(id, handler)
+  }, [register, id])
+}
+
+// The usual editor case: reload from GitHub, asking first if that would
+// replace unsaved edits.
+export function useReloadOnPull(dirty, reload) {
+  const admin = useAdmin()
+  useRefresh(async () => {
+    if (dirty) {
+      const ok = await admin.confirm({
+        title: 'Load the latest version?',
+        body: 'Your unsaved edits on this tab are replaced with what is saved on GitHub now.',
+        confirmLabel: 'Load latest',
+        tone: 'danger',
+      })
+      if (!ok) return false
+    }
+    await reload()
+  })
 }

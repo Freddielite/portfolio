@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
+import { useReloadOnPull } from '../AdminContext.jsx'
 import ImageUploader from '../ImageUploader.jsx'
 import FileUploader from '../FileUploader.jsx'
 import { validateSettings } from '../validate.js'
@@ -35,8 +36,9 @@ export default function SiteSettingsEditor() {
 
   const dirty = !loading && form && JSON.stringify(form) !== JSON.stringify(data)
   useUnsavedChangesWarning(dirty)
+  useReloadOnPull(dirty, reload)
 
-  if (loading || !form) return <p className="admin-hint admin-loading">Loading settings…</p>
+  if (!form) return <p className="admin-hint admin-loading">Loading settings…</p>
 
   const bar = {
     saving, error, savedAt, dirty, conflict, commit, restoredFrom, errors: validateSettings(form), onReload: reload, type: 'siteSettings',

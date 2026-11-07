@@ -1718,3 +1718,143 @@ html.admin-is-dragging * { cursor: grabbing !important; user-select: none !impor
 
 @keyframes admin-dialog-up { from { transform: translateY(100%); } }
 @keyframes admin-dialog-down { to { transform: translateY(100%); } }
+
+/* ==========================================================================
+   Installed app only (html.admin-app, set in app.js). The admin in a normal
+   browser tab is not affected by anything below.
+   ========================================================================== */
+
+html.admin-app,
+html.admin-app body {
+  overscroll-behavior-y: none; /* no rubber-band or browser refresh: the app has its own */
+}
+
+.admin-app .admin-sidebar,
+.admin-app .admin-dock,
+.admin-app .admin-dialog-actions,
+.admin-app .admin-toolbar {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 1. Header that tucks away while you scroll down, back as you scroll up. */
+@media (max-width: 860px) {
+  .admin-app .admin-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: saturate(160%) blur(16px);
+    backdrop-filter: saturate(160%) blur(16px);
+    transition: transform 0.3s var(--a-ease), box-shadow 0.3s;
+  }
+
+  /* Tucked: slides up but leaves the status-bar strip covered. */
+  .admin-app .admin-sidebar.is-tucked {
+    transform: translateY(calc(-100% + var(--a-safe-top)));
+    box-shadow: none;
+  }
+
+  /* The page title moves into the header once it scrolls under it. */
+  .admin-app .admin-brand {
+    position: relative;
+    height: 1.5em;
+    overflow: hidden;
+  }
+
+  .admin-app .admin-brand-name,
+  .admin-app .admin-brand-title {
+    display: block;
+    line-height: 1.5em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: transform 0.28s var(--a-ease), opacity 0.2s;
+  }
+
+  .admin-app .admin-brand-title {
+    position: absolute;
+    inset: 0 0 auto;
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  .admin-app .admin-sidebar.has-title .admin-brand-name { transform: translateY(-100%); opacity: 0; }
+  .admin-app .admin-sidebar.has-title .admin-brand-title { transform: none; opacity: 1; }
+
+  /* Sticky things sit just below the header, wherever it is. */
+  .admin-app .builder-toolbar {
+    top: max(var(--a-safe-top), var(--a-header-now, 0px));
+    transition: top 0.3s var(--a-ease);
+  }
+
+  .admin-app .admin-section h2,
+  .admin-app #site-health { scroll-margin-top: calc(var(--a-header-now, 0px) + 16px); }
+}
+
+/* 4. Pull to refresh */
+.admin-ptr {
+  position: fixed;
+  z-index: 39;
+  left: 0;
+  right: 0;
+  top: calc(var(--a-header-now, 0px) + 6px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.admin-ptr span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.45);
+  color: var(--text-muted);
+  opacity: var(--ptr-o, 0);
+  transform: translateY(calc(var(--ptr) - 52px));
+  transition: color 0.15s;
+}
+
+.admin-ptr.is-idle span { transition: transform 0.3s var(--a-ease), opacity 0.2s; }
+.admin-ptr.is-ready span,
+.admin-ptr.is-refreshing span { color: var(--accent); }
+.admin-ptr span svg { transition: transform 0.2s var(--a-ease); }
+.admin-ptr.is-ready span svg { transform: rotate(180deg); }
+.admin-ptr.is-refreshing span svg { transform: none; }
+.admin-app .admin-main { transition: transform 0.3s var(--a-ease); }
+
+/* 2. Sections (and post list ↔ editor) slide in from the side they come from. */
+.admin-app.admin-vt .admin-panel,
+.admin-app.admin-vt .builder.is-editing .builder-main { animation: none; }
+
+.admin-sliding .admin-main { view-transition-name: admin-main; }
+.admin-sliding .admin-sidebar { view-transition-name: admin-header; }
+
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+
+::view-transition-group(admin-header) { animation-duration: 0.22s; }
+
+::view-transition-old(admin-main) { animation: admin-vt-out-left 0.26s cubic-bezier(0.4, 0, 1, 1) both; }
+::view-transition-new(admin-main) { animation: admin-vt-in-right 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+html[data-nav-dir='back']::view-transition-old(admin-main) { animation-name: admin-vt-out-right; }
+html[data-nav-dir='back']::view-transition-new(admin-main) { animation-name: admin-vt-in-left; }
+
+@keyframes admin-vt-out-left { to { transform: translateX(-22%); opacity: 0; } }
+@keyframes admin-vt-in-right { from { transform: translateX(28%); opacity: 0; } }
+@keyframes admin-vt-out-right { to { transform: translateX(22%); opacity: 0; } }
+@keyframes admin-vt-in-left { from { transform: translateX(-28%); opacity: 0; } }
+
+/* 3. While swiping back, the editor follows the finger (inline transform). */
+.admin-app .builder-main { will-change: auto; touch-action: pan-y; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-app .admin-sidebar,
+  .admin-app .admin-main,
+  .admin-ptr span { transition: none !important; }
+}
