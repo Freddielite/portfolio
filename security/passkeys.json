@@ -1,0 +1,12 @@
+[
+  {
+    "id": "hZujLR7GuM9emlDtkfOo_w",
+    "publicKey": "pQECAyYgASFYICk0f6itFuml3f1_l6ZC8zMqu6c-KeS0vrJHjhdTm395IlggPOOlFEnKEuNZf4sG1LoX0nnizop7pnfGnM4R3CJgnHw",
+    "transports": [
+      "hybrid",
+      "internal"
+    ],
+    "label": "Android phone",
+    "createdAt": "2026-11-07T16:55:02.127Z"
+  }
+]
