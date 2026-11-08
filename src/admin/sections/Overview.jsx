@@ -416,7 +416,7 @@ export default function Overview({ go }) {
   )
 
   return (
-    <div className="admin-section">
+    <div className="admin-section admin-overview">
       <div className="admin-stats">
         {stat(live, live === 1 ? 'Live post' : 'Live posts', postSub || 'No drafts waiting', 'posts')}
         {stat(data.projects.length - hiddenProjects, 'Projects shown', hiddenProjects ? `${hiddenProjects} hidden` : 'None hidden', 'projects')}

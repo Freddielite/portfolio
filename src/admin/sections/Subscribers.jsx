@@ -137,10 +137,10 @@ export default function Subscribers() {
         {stats && (
           <>
             {signupHidden && (
-              <p className="admin-hint admin-note">
-                The signup box is hidden on your site until you add the Wynmail API URL and form slug.{' '}
+              <div className="admin-note-row">
+                <p className="admin-hint">The signup box is hidden on your site until you add the Wynmail API URL and form slug.</p>
                 <button type="button" className="admin-link" onClick={() => go('settings', 'newsletterApiUrl')}>Open settings</button>
-              </p>
+              </div>
             )}
             <div className="admin-stats">
               <div className="admin-stat is-static"><strong>{stats.subscribed}</strong><span>Subscribed</span><em>{stats.total} contacts on the list</em></div>

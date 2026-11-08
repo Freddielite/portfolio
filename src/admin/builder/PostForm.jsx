@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ExternalLink, Trash2 } from 'lucide-react'
 import { PortableText } from '@portabletext/react'
 import ImageUploader from '../ImageUploader.jsx'
 import BlockEditor from './BlockEditor.jsx'
@@ -56,11 +57,14 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
           {state === 'published' && 'Live'}
           {state === 'scheduled' && `Goes live ${day}`}
         </span>
-        <div className="admin-spacer" />
-        {savedLive && state === 'published' && post.slug && (
-          <a className="admin-link" href={`/blog/${post.slug}`} target="_blank" rel="noreferrer" onClick={(e) => { if (window.Capacitor?.isNativePlatform?.()) { e.preventDefault(); openInApp(`/blog/${post.slug}`) } }}>View on site ↗</a>
-        )}
-        <button type="button" className="admin-btn-danger" onClick={onDelete}>Delete post</button>
+        <div className="builder-actions">
+          {savedLive && state === 'published' && post.slug && (
+            <a className="admin-link" href={`/blog/${post.slug}`} target="_blank" rel="noreferrer" onClick={(e) => { if (window.Capacitor?.isNativePlatform?.()) { e.preventDefault(); openInApp(`/blog/${post.slug}`) } }}>
+              View on site <ExternalLink size={15} aria-hidden="true" />
+            </a>
+          )}
+          <button type="button" className="admin-btn-danger" onClick={onDelete}><Trash2 size={15} aria-hidden="true" /> Delete post</button>
+        </div>
       </div>
       {state === 'scheduled' && (
         <p className="admin-hint">

@@ -77,7 +77,7 @@ function TextItem({ item }) {
   return (
     <AutoTextarea
       innerRef={ref}
-      className="blk-text"
+      className="blk-textarea"
       value={item.text}
       placeholder="Write here. ## makes a heading, - a bullet, > a quote."
       onChange={(e) => ed.setText(item.id, e.target.value)}
@@ -122,7 +122,7 @@ function CodeItem({ item }) {
   return (
     <div className="blk-code">
       <input className="blk-input" value={item.language} placeholder="Language (js, html, bash), optional" onChange={(e) => ed.patch(item.id, { language: e.target.value.trim() })} />
-      <AutoTextarea className="blk-text blk-mono" value={item.code} placeholder="Paste your code here" spellCheck={false} onChange={(e) => ed.patch(item.id, { code: e.target.value })} />
+      <AutoTextarea className="blk-textarea blk-mono" value={item.code} placeholder="Paste your code here" spellCheck={false} onChange={(e) => ed.patch(item.id, { code: e.target.value })} />
     </div>
   )
 }
@@ -154,7 +154,7 @@ function Block({ item }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.35 : 1 }
   return (
-    <div ref={setNodeRef} style={style} className={`blk blk-${item.kind}`}>
+    <div ref={setNodeRef} style={style} className={`blk blk-kind-${item.kind}`}>
       <div className="blk-bar">
         <button ref={setActivatorNodeRef} type="button" className="blk-handle" aria-label="Drag to move this block" title="Drag to move" {...attributes} {...listeners}>⋮⋮</button>
         <span className="blk-label">{labelOf(item)}</span>

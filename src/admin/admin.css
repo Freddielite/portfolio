@@ -200,7 +200,17 @@
 }
 
 .admin-main > * { max-width: var(--a-content); }
-.admin-main > .admin-panel:has(.builder) { max-width: 1180px; }
+.admin-main > .admin-panel:has(.builder) { max-width: none; }
+
+/* Use the room on big screens. The editor takes the full width; the overview puts
+   its cards in two columns; everything else gets a wider, but still readable, column. */
+@media (min-width: 1100px) { .admin-page { --a-content: 1000px; } }
+@media (min-width: 1500px) { .admin-page { --a-content: 1160px; } }
+@media (min-width: 1200px) {
+  .admin-main > .admin-panel:has(.admin-overview) { max-width: min(100%, 1480px); }
+  .admin-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
+  .admin-overview > .admin-stats, .admin-overview > .admin-error { grid-column: 1 / -1; }
+}
 
 .admin-page-head { margin-bottom: 22px; }
 
@@ -627,6 +637,35 @@
 
 .admin-btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--a-danger) 10%, transparent); }
 
+/* A link that looks and behaves like a button (View on site, Open settings).
+   Use it for any action that is really a link, so every action in the admin has
+   the same shape, height and tap size. */
+.admin-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: var(--a-r);
+  background: var(--a-tint);
+  color: var(--accent);
+  font: 600 0.88rem var(--font-body);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.admin-link:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
+.admin-link:active { transform: scale(0.97); }
+.admin-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.admin-link svg { flex-shrink: 0; }
+
+/* A sentence with a button beside it; the button wraps under the text on phones. */
+.admin-note-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 12px; }
+.admin-note-row > p { margin: 0; flex: 1 1 260px; min-width: 0; }
+
 .admin-btn:disabled,
 .admin-btn-ghost:disabled,
 .admin-btn-danger:disabled,
@@ -673,7 +712,6 @@
 
 .admin-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
 .admin-spacer { flex: 1; }
-.admin-link { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
 .admin-file { cursor: pointer; }
 .admin-count { opacity: 0.6; font-size: 0.85em; margin-left: 2px; }
 
@@ -681,14 +719,17 @@
   display: none;
   align-items: center;
   gap: 6px;
-  margin: 0 0 12px -6px;
-  padding: 6px;
-  border: 0;
-  background: none;
+  min-height: 38px;
+  margin: 0 0 12px;
+  padding: 0 14px 0 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: var(--a-r);
+  background: var(--a-tint);
   color: var(--accent);
-  font: 600 0.92rem var(--font-body);
+  font: 600 0.88rem var(--font-body);
   cursor: pointer;
 }
+.admin-back:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
 
 .admin-spin { animation: admin-spin 0.9s linear infinite; }
 @keyframes admin-spin { to { transform: rotate(360deg); } }
@@ -1230,11 +1271,19 @@ html.admin-is-dragging * { cursor: grabbing !important; user-select: none !impor
 .admin-check-fix {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 2px;
+  padding: 6px 8px 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, transparent);
+  border-radius: 99px;
+  background: var(--a-tint);
   color: var(--accent);
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
 }
+.admin-check-row:hover .admin-check-fix { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
 
 .admin-all-done { margin: 6px 0 4px; }
 
@@ -1441,6 +1490,13 @@ html.admin-is-dragging * { cursor: grabbing !important; user-select: none !impor
 .builder-form { display: grid; gap: 12px; }
 .builder-title { width: 100%; font: 700 1.6rem var(--font-display); padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
 .builder-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.builder-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+@media (max-width: 640px) {
+  .builder-meta-row .admin-badge { order: 3; }
+  .builder-actions { order: 4; width: 100%; margin-left: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  .builder-actions > * { width: 100%; min-height: 44px; }
+}
+@media (min-width: 1500px) { .builder-layout { grid-template-columns: 290px minmax(0, 1fr); } }
 .admin-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; }
 .admin-seg button { border: 0; background: var(--surface); color: var(--text); padding: 7px 16px; font: 500 0.82rem var(--font-body); cursor: pointer; }
 .admin-seg button.on { background: var(--accent); color: #fff; }
@@ -1965,7 +2021,6 @@ html[data-nav-dir='back']::view-transition-new(admin-main) { animation-name: adm
 .admin-row-main { display: grid; gap: 2px; min-width: 0; }
 .admin-row-main strong { overflow-wrap: anywhere; font-weight: 600; }
 .admin-note { margin: 0 0 12px; }
-.admin-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; }
 .admin-setup code { font-size: 0.85rem; }
 
 /* ---------- Android app settings (Security card) ---------- */
@@ -1991,8 +2046,8 @@ html[data-nav-dir='back']::view-transition-new(admin-main) { animation-name: adm
 .blk-icon:hover { background: var(--border); color: var(--text); }
 .blk-del:hover { color: var(--a-danger); }
 .blk-body { padding: 8px; min-width: 0; }
-.blk-text { display: block; width: 100%; resize: none; overflow: hidden; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; background: transparent; color: var(--text); font: 0.95rem / 1.7 var(--font-body); outline: none; }
-.blk-text:focus { border-color: var(--accent); background: var(--bg); }
+.blk-textarea { display: block; width: 100%; resize: none; overflow: hidden; border: 1px solid transparent; border-radius: 8px; padding: 8px 10px; background: transparent; color: var(--text); font: 0.95rem / 1.7 var(--font-body); outline: none; }
+.blk-textarea:focus { border-color: var(--accent); background: var(--bg); }
 .blk-mono { font-family: var(--font-mono); font-size: 0.86rem; white-space: pre; overflow-x: auto; }
 .blk-input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; background: var(--bg); color: var(--text); font: 0.85rem var(--font-body); outline: none; }
 .blk-input:focus { border-color: var(--accent); }
