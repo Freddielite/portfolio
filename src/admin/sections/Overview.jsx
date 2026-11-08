@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, ChevronRight, ChevronDown, RefreshCw, Download, Upload } from 'lucide-react'
+import { BarChart3, Check, ChevronRight, ChevronDown, FolderKanban, MessageSquareQuote, PenLine, RefreshCw, Download, Upload } from 'lucide-react'
 import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '../api.js'
 import { onContent } from '../contentBus.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
@@ -294,7 +294,7 @@ function Backup({ data, onChanged }) {
   }
 
   return (
-    <section className="admin-card">
+    <section className="admin-card admin-backup">
       <div className="admin-card-header">
         <div>
           <h2 className="admin-card-title">Backup and restore</h2>
@@ -407,28 +407,46 @@ export default function Overview({ go }) {
   const shownTestimonials = data.testimonials.filter((t) => !t.hidden).length
   const postSub = [draftN && `${draftN} draft${draftN > 1 ? 's' : ''}`, sched && `${sched} scheduled`].filter(Boolean).join(', ')
 
-  const stat = (n, label, sub, tab) => (
-    <button type="button" className="admin-stat" onClick={() => go(tab)}>
+  // Real links to the tab (#posts, #projects...), so they still work in a new tab
+  // or if the click handler is ever skipped.
+  const stat = (n, label, sub, tab, Icon) => (
+    <a
+      href={`#${tab}`}
+      className="admin-stat"
+      data-tab={tab}
+      onClick={(e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+        e.preventDefault()
+        go(tab)
+      }}
+    >
+      <span className="admin-stat-icon" aria-hidden="true"><Icon size={18} /></span>
       <strong>{n}</strong>
       <span>{label}</span>
       <em>{sub || '\u00a0'}</em>
-    </button>
+    </a>
   )
 
   return (
     <div className="admin-section admin-overview">
       <div className="admin-stats">
-        {stat(live, live === 1 ? 'Live post' : 'Live posts', postSub || 'No drafts waiting', 'posts')}
-        {stat(data.projects.length - hiddenProjects, 'Projects shown', hiddenProjects ? `${hiddenProjects} hidden` : 'None hidden', 'projects')}
-        {stat(data.skills.filter((s) => !s.hidden).length, 'Skills', null, 'skills')}
-        {stat(shownTestimonials, 'Testimonials', data.siteSettings.showTestimonials ? 'Section on' : 'Section off', 'testimonials')}
+        {stat(live, live === 1 ? 'Live post' : 'Live posts', postSub || 'No drafts waiting', 'posts', PenLine)}
+        {stat(data.projects.length - hiddenProjects, 'Projects shown', hiddenProjects ? `${hiddenProjects} hidden` : 'None hidden', 'projects', FolderKanban)}
+        {stat(data.skills.filter((s) => !s.hidden).length, 'Skills', null, 'skills', BarChart3)}
+        {stat(shownTestimonials, 'Testimonials', data.siteSettings.showTestimonials ? 'Section on' : 'Section off', 'testimonials', MessageSquareQuote)}
       </div>
 
       {error && <p className="admin-error">{error}</p>}
-      <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
-      <PulsePanel settings={data.siteSettings} />
-      <SecurityCard />
-      <Backup data={data} onChanged={reload} />
+      <div className="admin-overview-cols">
+        <div className="admin-overview-col">
+          <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
+          <SecurityCard />
+          <Backup data={data} onChanged={reload} />
+        </div>
+        <div className="admin-overview-col">
+          <PulsePanel settings={data.siteSettings} />
+        </div>
+      </div>
     </div>
   )
 }
