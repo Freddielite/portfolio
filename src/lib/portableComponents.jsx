@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PortableText } from '@portabletext/react'
 import { useToast } from '../context/ToastContext.jsx'
 
 const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -28,6 +29,17 @@ function CodeBlock({ value }) {
   )
 }
 
+// Two side-by-side groups of blocks. Stacks to one column on narrow screens.
+function Columns({ value }) {
+  const ratio = ['narrow-left', 'narrow-right'].includes(value.ratio) ? ` is-${value.ratio}` : ''
+  return (
+    <div className={`post-columns${ratio}`}>
+      <div className="post-col"><PortableText value={value.left || []} components={portableComponents} /></div>
+      <div className="post-col"><PortableText value={value.right || []} components={portableComponents} /></div>
+    </div>
+  )
+}
+
 // Shared by the public blog and the admin's live preview, so what you see while
 // writing is exactly what visitors get.
 export const portableComponents = {
@@ -47,6 +59,7 @@ export const portableComponents = {
   },
   types: {
     code: CodeBlock,
+    columns: Columns,
     image: ({ value }) => (
       <figure className="post-figure">
         <img src={value.url} alt={value.alt || ''} loading="lazy" />

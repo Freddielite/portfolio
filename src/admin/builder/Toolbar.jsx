@@ -4,7 +4,7 @@ import * as act from './actions.js'
 
 // Formatting buttons for the post editor. Works on the textarea passed in `area`
 // and hands the new text back through `onText`.
-export default function Toolbar({ area, text, onText }) {
+export default function Toolbar({ area, text, onText, onImages, uploading = false }) {
   const fileRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -55,10 +55,23 @@ export default function Toolbar({ area, text, onText }) {
           {label}
         </button>
       ))}
-      <button type="button" title="Insert image" disabled={busy} onMouseDown={(e) => e.preventDefault()} onClick={() => fileRef.current?.click()}>
-        {busy ? 'Uploading…' : 'Image'}
+      <button type="button" title="Insert image" disabled={busy || uploading} onMouseDown={(e) => e.preventDefault()} onClick={() => fileRef.current?.click()}>
+        {busy || uploading ? 'Uploading…' : 'Image'}
       </button>
-      <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => addImage(e.target.files?.[0])} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple={!!onImages}
+        hidden
+        onChange={(e) => {
+          if (onImages) {
+            const files = [...(e.target.files || [])]
+            e.target.value = ''
+            if (files.length) onImages(files)
+          } else addImage(e.target.files?.[0])
+        }}
+      />
       {error && <span className="admin-error">{error}</span>}
     </div>
   )

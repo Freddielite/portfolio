@@ -10,6 +10,8 @@
 //   ![alt text](/images/blog/photo.webp)    an image on its own line
 // Inline syntax:  **bold**   *italic*   `code`   [text](https://link)
 
+import { flattenBlocks } from '../lib/blocks.js'
+
 let keyCounter = 0
 const key = () => `k${(keyCounter++).toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
@@ -151,6 +153,6 @@ export function blocksToText(blocks) {
 }
 
 export const plainText = (blocks) =>
-  (blocks || []).map((b) => (b._type === 'block' ? (b.children || []).map((c) => c.text || '').join('') : '')).join(' ')
+  flattenBlocks(blocks).map((b) => (b._type === 'block' ? (b.children || []).map((c) => c.text || '').join('') : '')).join(' ')
 
 export const wordCount = (blocks) => plainText(blocks).split(/\s+/).filter(Boolean).length

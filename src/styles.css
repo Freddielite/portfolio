@@ -902,6 +902,14 @@ a.chip { display: inline-flex; align-items: center; text-decoration: none; }
 .post-figure { margin: 0 0 1.6rem; }
 .post-figure img { width: 100%; border-radius: 14px; border: 1px solid var(--border); display: block; }
 .post-figure figcaption { margin-top: 8px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+.post-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.6rem; margin: 0 0 1.6rem; align-items: start; }
+.post-columns.is-narrow-left { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.post-columns.is-narrow-right { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.post-col { min-width: 0; }
+.post-col > :last-child { margin-bottom: 0; }
+@media (max-width: 720px) {
+  .post-columns, .post-columns.is-narrow-left, .post-columns.is-narrow-right { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
 
 /* Email signup (Subscribe.jsx) */
 .subscribe { display: grid; gap: 14px; }

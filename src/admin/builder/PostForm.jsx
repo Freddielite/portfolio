@@ -1,12 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 import { PortableText } from '@portabletext/react'
 import ImageUploader from '../ImageUploader.jsx'
-import Toolbar, { editorHandlers } from './Toolbar.jsx'
+import BlockEditor from './BlockEditor.jsx'
 import SeoPanel from './SeoPanel.jsx'
-import { uploadImage } from '../imageUpload.js'
 import { openInApp } from '../native.js'
-import * as act from './actions.js'
-import { blocksToText, textToBlocks, wordCount } from '../portableText.js'
+import { wordCount } from '../portableText.js'
 import { portableComponents } from '../../lib/portableComponents.jsx'
 import { postState, todayString } from '../../lib/postStatus.js'
 
@@ -20,14 +18,11 @@ const VIEWS = [
 ]
 
 export default function PostForm({ post, onChange, onDelete, origin, savedLive }) {
-  const [bodyText, setBodyText] = useState(() => blocksToText(post.body))
   const [tagText, setTagText] = useState(() => (post.tags || []).join(', '))
   const [autoSlug, setAutoSlug] = useState(!post.slug)
   const [view, setView] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 1100 ? 'split' : 'write'))
-  const [pasteError, setPasteError] = useState(null)
-  const area = useRef(null)
 
-  const blocks = useMemo(() => textToBlocks(bodyText), [bodyText])
+  const blocks = post.body || []
   const words = wordCount(blocks)
   const state = postState(post)
 
@@ -40,33 +35,6 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
     setTagText(text)
     set('tags', text.split(',').map((t) => t.trim()).filter(Boolean))
   }
-  function setBody(text) {
-    setBodyText(text)
-    onChange({ ...post, body: textToBlocks(text) })
-  }
-
-  function run(fn) {
-    const ta = area.current
-    if (!ta) return
-    const r = fn(ta.value, ta.selectionStart, ta.selectionEnd)
-    setBody(r.value)
-    requestAnimationFrame(() => {
-      ta.focus()
-      ta.setSelectionRange(r.start, r.end)
-    })
-  }
-
-  async function addImageFile(file) {
-    setPasteError(null)
-    try {
-      const { path } = await uploadImage(file, 'blog')
-      run((v, s, e) => act.insertAt(v, s, e, `![Describe this image](${path})`))
-    } catch (err) {
-      setPasteError(err.message)
-    }
-  }
-
-  const handlers = editorHandlers({ run, addImageFile })
   const today = todayString()
   const day = String(post.publishedAt || '').slice(0, 10)
 
@@ -148,16 +116,7 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
         <div className={`builder-editor view-${view}`}>
           {view !== 'preview' && (
             <div className="builder-write">
-              <Toolbar area={area} text={bodyText} onText={setBody} />
-              <textarea
-                ref={area}
-                className="builder-textarea"
-                value={bodyText}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder={'Write here. Use the buttons above, or type:\n\n## A heading\n\nA paragraph with **bold**, *italic* and a [link](https://example.com).\n\n- a bullet\n\n```\ncode\n```\n\nPaste or drop an image to add it.'}
-                {...handlers}
-              />
-              {pasteError && <p className="admin-error">{pasteError}</p>}
+              <BlockEditor body={post.body} onBody={(body) => onChange({ ...post, body })} />
             </div>
           )}
           {view !== 'write' && (

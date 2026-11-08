@@ -7,6 +7,7 @@ import { getPostBySlug, getPosts } from '../lib/content.js'
 import fallbackPosts from '../data/posts.js'
 import { postTags, relatedPosts } from '../lib/tags.js'
 import { portableComponents, blockText } from '../lib/portableComponents.jsx'
+import { flattenBlocks } from '../lib/blocks.js'
 import SEO from '../components/SEO.jsx'
 import Subscribe from '../components/Subscribe.jsx'
 import NotFound from './NotFound.jsx'
@@ -16,7 +17,7 @@ import { formatDate } from '../components/BlogTeaser.jsx'
 const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
 function readMinutes(body = []) {
-  const words = body.reduce((n, b) => n + (b._type === 'block' ? blockText(b).split(/\s+/).filter(Boolean).length : 0), 0)
+  const words = flattenBlocks(body).reduce((n, b) => n + (b._type === 'block' ? blockText(b).split(/\s+/).filter(Boolean).length : 0), 0)
   return Math.max(1, Math.ceil(words / 200))
 }
 
@@ -28,7 +29,7 @@ export default function BlogPost() {
   const { toast } = useToast()
 
   const toc = useMemo(
-    () => (post?.body || []).filter((b) => b._type === 'block' && /^h[23]$/.test(b.style)).map((b) => ({ text: blockText(b), id: slugify(blockText(b)) })),
+    () => flattenBlocks(post?.body).filter((b) => b._type === 'block' && /^h[23]$/.test(b.style)).map((b) => ({ text: blockText(b), id: slugify(blockText(b)) })),
     [post]
   )
   const related = useMemo(() => (post ? relatedPosts(post, getPosts(), 3) : []), [post])

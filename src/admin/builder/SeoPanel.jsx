@@ -1,12 +1,13 @@
 import ShareCard from './ShareCard.jsx'
 import { postTags } from '../../lib/tags.js'
 import { wordCount } from '../portableText.js'
+import { flattenBlocks } from '../../lib/blocks.js'
 
 function checks(post) {
   const words = wordCount(post.body)
   const title = (post.title || '').length
   const ex = (post.excerpt || '').length
-  const h2 = (post.body || []).filter((b) => b.style === 'h2').length
+  const h2 = flattenBlocks(post.body).filter((b) => b.style === 'h2').length
   return [
     [title >= 30 && title <= 65, `Title is ${title} characters. Aim for 30 to 65 so Google shows all of it.`],
     [ex >= 70 && ex <= 160, `Summary is ${ex} characters. Aim for 70 to 160, it becomes the Google and WhatsApp description.`],
