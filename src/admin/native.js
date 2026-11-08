@@ -10,6 +10,7 @@ const AppState = registerPlugin('App')
 const Privacy = registerPlugin('PrivacyScreen')
 const Files = registerPlugin('Filesystem')
 const Share = registerPlugin('Share')
+const InAppBrowser = registerPlugin('Browser')
 
 export const isNative = () => {
   try {
@@ -53,6 +54,8 @@ export const quietFor = (ms) => {
   quietUntil = Math.max(quietUntil, Date.now() + ms)
 }
 export const isQuiet = () => Date.now() < quietUntil
+// The Android shell calls this when it opens your live site in the in-app browser.
+if (typeof window !== 'undefined') window.__adminQuietFor = quietFor
 
 async function quiet(ms, fn) {
   quietFor(ms)
@@ -200,4 +203,20 @@ export async function saveFile(filename, blob) {
   const { uri } = await Files.getUri({ path: filename, directory: 'CACHE' })
   await quiet(120000, () => Share.share({ title: filename, dialogTitle: 'Save or send', url: uri }))
   return 'shared'
+}
+
+// ---------- opening your live site ----------
+// In the Android app a plain link would replace the admin with your site, full
+// screen, with no way back. Here it opens in the phone's in-app browser instead,
+// which has an X at the top and a normal browser look. In a normal browser this
+// returns false and the link opens in a new tab as usual.
+export async function openInApp(url) {
+  if (!isNative()) return false
+  try {
+    quietFor(5 * 60 * 1000) // looking at your own site must not lock the admin when you come back
+    await InAppBrowser.open({ url: new URL(url, window.location.origin).href })
+    return true
+  } catch {
+    return false
+  }
 }

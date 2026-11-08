@@ -23,6 +23,7 @@ An Android app (Capacitor) that opens your live `/admin` and adds a real fingerp
 - **Fingerprint lock:** in the app, Overview, Security, "Turn on fingerprint unlock". A random secret is stored in the phone's Keystore, released only by a live fingerprint (the key is lost if a fingerprint is added to the phone, then use your password and turn it on again). The server keeps only a hash of it (`security/passkeys.json`, `kind: native`). The browser and installed web app keep using passkeys as before.
 - **In the app settings:** lock right away / after 1, 5 or 10 minutes, and hide the app in recent apps and block screenshots (on by default).
 - **Backups and CSV:** Android cannot download files from a page, so the app opens the share sheet (Save to Drive, Files, WhatsApp).
+- **View live site / View on site:** in the app these open in the phone's in-app browser (a Chrome tab with an X at the top) instead of replacing the admin full screen. `MainActivity.java` catches any page of the site outside `/admin` and opens it that way, so it works even before the website update is deployed. Rebuild the APK once after this update.
 - Only Android. The address the app opens is in `capacitor.config.json` (`server.url`).
 
 ## Newsletter with Wynmail (Nov 2026)

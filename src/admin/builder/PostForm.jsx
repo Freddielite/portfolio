@@ -4,6 +4,7 @@ import ImageUploader from '../ImageUploader.jsx'
 import Toolbar, { editorHandlers } from './Toolbar.jsx'
 import SeoPanel from './SeoPanel.jsx'
 import { uploadImage } from '../imageUpload.js'
+import { openInApp } from '../native.js'
 import * as act from './actions.js'
 import { blocksToText, textToBlocks, wordCount } from '../portableText.js'
 import { portableComponents } from '../../lib/portableComponents.jsx'
@@ -89,7 +90,7 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
         </span>
         <div className="admin-spacer" />
         {savedLive && state === 'published' && post.slug && (
-          <a className="admin-link" href={`/blog/${post.slug}`} target="_blank" rel="noreferrer">View on site ↗</a>
+          <a className="admin-link" href={`/blog/${post.slug}`} target="_blank" rel="noreferrer" onClick={(e) => { if (window.Capacitor?.isNativePlatform?.()) { e.preventDefault(); openInApp(`/blog/${post.slug}`) } }}>View on site ↗</a>
         )}
         <button type="button" className="admin-btn-danger" onClick={onDelete}>Delete post</button>
       </div>

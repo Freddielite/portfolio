@@ -12,6 +12,7 @@ import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 import Subscribers from './sections/Subscribers.jsx'
 import { startNativeLock } from './nativeLock.js'
+import { openInApp } from './native.js'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
@@ -223,7 +224,7 @@ function Shell({ tab, go, visited, onLogout }) {
               <span className="admin-nav-label">Install as app</span>
             </button>
           )}
-          <a href="/" target="_blank" rel="noreferrer" className="admin-nav-item admin-view-site" aria-label="View live site">
+          <a href="/" target="_blank" rel="noreferrer" className="admin-nav-item admin-view-site" aria-label="View live site" onClick={(e) => { if (window.Capacitor?.isNativePlatform?.()) { e.preventDefault(); openInApp('/') } }}>
             <span className="admin-nav-icon"><ExternalLink size={18} aria-hidden="true" /></span>
             <span className="admin-nav-label">View live site</span>
           </a>
