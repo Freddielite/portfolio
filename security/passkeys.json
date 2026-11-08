@@ -8,5 +8,12 @@
     ],
     "label": "Android phone",
     "createdAt": "2026-11-07T16:55:02.127Z"
+  },
+  {
+    "id": "6t0kP3kSwOwKc0Mmxh5ATS4D",
+    "kind": "native",
+    "secretHash": "a7c593372d158110fca8bbbe15524640d7c2ad494e7226a5dc810832809bb104",
+    "label": "Android app",
+    "createdAt": "2026-11-08T05:56:09.716Z"
   }
 ]
