@@ -13,6 +13,18 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Android app (Nov 2026)
+
+An Android app (Capacitor) that opens your live `/admin` and adds a real fingerprint lock, like WhatsApp's.
+
+- **Build the APK:** `bash scripts/build-apk.sh`. It finds Android Studio's Java 21 and SDK, syncs the project, builds, and saves `~/Downloads/portfolio-admin.apk`. The first run downloads Gradle and takes a few minutes. Or open the `android/` folder in Android Studio and use Build, Build APK.
+- **Install:** copy the APK to your phone and open it, or `adb install -r ~/Downloads/portfolio-admin.apk`. It is signed with your local debug key, so build every update on the same computer, otherwise Android asks you to uninstall first.
+- **Updates:** the app loads the live site, so every admin change you deploy shows up with no new APK. Rebuild only when something under `android/`, `native/` or `capacitor.config.json` changes.
+- **Fingerprint lock:** in the app, Overview, Security, "Turn on fingerprint unlock". A random secret is stored in the phone's Keystore, released only by a live fingerprint (the key is lost if a fingerprint is added to the phone, then use your password and turn it on again). The server keeps only a hash of it (`security/passkeys.json`, `kind: native`). The browser and installed web app keep using passkeys as before.
+- **In the app settings:** lock right away / after 1, 5 or 10 minutes, and hide the app in recent apps and block screenshots (on by default).
+- **Backups and CSV:** Android cannot download files from a page, so the app opens the share sheet (Save to Drive, Files, WhatsApp).
+- Only Android. The address the app opens is in `capacitor.config.json` (`server.url`).
+
 ## Newsletter with Wynmail (Nov 2026)
 
 - **Signup box** in the footer and under every post. It posts straight to a Wynmail signup form, so the key stays out of the browser. In `/admin` > Site settings > Newsletter set the Wynmail API URL and the form slug. Leave them empty to hide the box.

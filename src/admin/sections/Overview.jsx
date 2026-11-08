@@ -4,6 +4,7 @@ import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '..
 import { onContent } from '../contentBus.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { setBadge } from '../app.js'
+import { saveFile } from '../native.js'
 import SecurityCard from './SecurityCard.jsx'
 import { postState } from '../../lib/postStatus.js'
 
@@ -232,14 +233,14 @@ function Backup({ data, onChanged }) {
   const [error, setError] = useState(null)
   const fileRef = useRef(null)
 
-  function download() {
+  async function download() {
     const blob = new Blob([JSON.stringify({ app: 'portfolio-admin-backup', version: 1, exportedAt: new Date().toISOString(), content: data }, null, 2)], { type: 'application/json' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-    toast('Backup downloaded')
+    try {
+      const how = await saveFile(`portfolio-backup-${new Date().toISOString().slice(0, 10)}.json`, blob)
+      toast(how === 'shared' ? 'Backup ready to save' : 'Backup downloaded')
+    } catch (err) {
+      toast(err.message || 'Could not save the backup', { tone: 'error' })
+    }
   }
 
   async function pick(e) {

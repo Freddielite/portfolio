@@ -1,0 +1,18 @@
+{
+  "appId": "xyz.wyntek.admin",
+  "appName": "Portfolio Admin",
+  "webDir": "native/www",
+  "backgroundColor": "#0b1020",
+  "server": {
+    "url": "https://portfolio.wyntek.xyz/admin",
+    "allowNavigation": ["portfolio.wyntek.xyz"],
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "PrivacyScreen": { "enable": true }
+  }
+}

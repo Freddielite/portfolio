@@ -32,6 +32,8 @@ function friendly(err, action) {
 
 export const listPasskeys = () => call('list', { method: 'GET' })
 export const removePasskey = (id) => call('remove', { body: { id } })
+export const registerNativeOnServer = (body) => call('native-register', { body: { ...body, label: 'Android app' } })
+export const unlockNativeOnServer = (body) => call('native-unlock', { body, locked: true })
 
 export async function addPasskey(label) {
   const options = await call('register-options')

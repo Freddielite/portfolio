@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Fingerprint, KeyRound } from 'lucide-react'
-import { supportsPasskeys, unlockWithPasskey } from './passkeys.js'
+import { supportsPasskeys, unlockNativeOnServer, unlockWithPasskey } from './passkeys.js'
+import { isNative, nativeIsSetUp, unlockNative } from './native.js'
 import { IS_APP } from './app.js'
 
 // Covers the whole admin while it is locked (fingerprint unlock is on and you
 // were away for a while). Fully opaque, so nothing behind it can be read.
 // Fingerprint or face is the quick way back in; the password always works too.
 export default function LockScreen({ onUnlocked, onLogout }) {
-  const canBio = supportsPasskeys()
-  const [mode, setMode] = useState(canBio ? 'bio' : 'password')
+  const native = isNative()
+  // In the Android app the phone's own fingerprint is used, once it is set up.
+  const [canBio, setCanBio] = useState(native ? false : supportsPasskeys())
+  const [mode, setMode] = useState(!native && canBio ? 'bio' : 'password')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [password, setPassword] = useState('')
@@ -19,7 +22,7 @@ export default function LockScreen({ onUnlocked, onLogout }) {
     setBusy(true)
     setError(null)
     try {
-      await unlockWithPasskey()
+      await (native ? unlockNative(unlockNativeOnServer) : unlockWithPasskey())
       onUnlocked()
     } catch (err) {
       setError(err.message)
@@ -28,12 +31,26 @@ export default function LockScreen({ onUnlocked, onLogout }) {
     }
   }
 
+  useEffect(() => {
+    if (!native) return
+    let live = true
+    nativeIsSetUp().then((ok) => {
+      if (live && ok) {
+        setCanBio(true)
+        setMode('bio')
+      }
+    })
+    return () => {
+      live = false
+    }
+  }, [native])
+
   // In the installed app, ask for the fingerprint straight away.
   useEffect(() => {
     if (tried.current || !canBio || !IS_APP) return
     tried.current = true
     bio()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [canBio]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (mode === 'password') requestAnimationFrame(() => pwRef.current?.focus())
@@ -66,7 +83,7 @@ export default function LockScreen({ onUnlocked, onLogout }) {
         <h1 id="admin-lock-title">Admin is locked</h1>
         <p className="admin-lock-sub">
           {mode === 'bio'
-            ? 'It locks after 10 minutes away. Use your fingerprint or face to carry on where you were.'
+            ? 'It locks after time away. Use your fingerprint or face to carry on where you were.'
             : 'Enter your admin password to unlock.'}
         </p>
 

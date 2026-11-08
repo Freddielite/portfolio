@@ -82,6 +82,7 @@ export function appendCookie(res, cookie) {
 
 export const sessionCookie = (lock) => serializeCookie(COOKIE_NAME, createToken({ lock }), { maxAge: SESSION_SECONDS })
 export const unlockCookie = () => serializeCookie(UNLOCK_COOKIE, createUnlockToken(), { maxAge: UNLOCK_SECONDS })
+export const clearUnlockCookie = () => serializeCookie(UNLOCK_COOKIE, '', { maxAge: 0 })
 export const challengeCookie = (challenge, purpose) =>
   serializeCookie(CHALLENGE_COOKIE, createChallengeToken(challenge, purpose), { maxAge: CHALLENGE_SECONDS })
 export const clearCookies = () => [COOKIE_NAME, UNLOCK_COOKIE, CHALLENGE_COOKIE].map((n) => serializeCookie(n, '', { maxAge: 0 }))

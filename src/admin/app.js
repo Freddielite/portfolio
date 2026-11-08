@@ -13,6 +13,7 @@ function detect() {
   } catch {
     /* ignore */
   }
+  if (window.Capacitor?.isNativePlatform?.()) return true // the Android app
   return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
 }
 

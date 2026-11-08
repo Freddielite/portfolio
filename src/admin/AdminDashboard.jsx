@@ -11,6 +11,7 @@ import SkillsEditor from './sections/SkillsEditor.jsx'
 import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 import Subscribers from './sections/Subscribers.jsx'
+import { startNativeLock } from './nativeLock.js'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
@@ -65,6 +66,9 @@ function focusField(target) {
 
 export default function AdminDashboard({ onLogout }) {
   const [tab, setTab] = useState(startTab)
+  useEffect(() => {
+    startNativeLock() // Android app only: locks after time away
+  }, [])
   // Every tab you visit stays mounted, so its content is fetched once per
   // session and unsaved edits survive switching tabs. Tabs you never open are
   // never fetched. The app always loads Overview too, which keeps the badge on

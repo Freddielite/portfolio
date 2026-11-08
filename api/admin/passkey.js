@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto'
 import {
   generateAuthenticationOptions,
   generateRegistrationOptions,
@@ -6,7 +7,7 @@ import {
 } from '@simplewebauthn/server'
 import { isoBase64URL } from '@simplewebauthn/server/helpers'
 import {
-  appendCookie, challengeCookie, clearChallengeCookie, readChallenge, requireAuth, sessionCookie, unlockCookie, UNLOCK_MINUTES,
+  appendCookie, challengeCookie, clearChallengeCookie, clearUnlockCookie, readChallenge, requireAuth, sessionCookie, unlockCookie, UNLOCK_MINUTES,
 } from '../_lib/auth.js'
 import { readPasskeys, relyingParty, writePasskeys } from '../_lib/passkeys.js'
 
@@ -20,6 +21,13 @@ import { readPasskeys, relyingParty, writePasskeys } from '../_lib/passkeys.js'
 //   POST ?step=remove            remove a device ({ id })
 //   POST ?step=unlock-options    start unlocking (works while locked)
 //   POST ?step=unlock-verify     finish unlocking (works while locked)
+//
+// The Android app has its own unlock: the phone keeps a random secret that
+// only a live fingerprint can release, and sends it here. Only a hash of the
+// secret is saved, in the same list (kind: 'native').
+//   POST ?step=native-register   set up the Android app ({ id, secret, label })
+//   POST ?step=native-unlock     unlock with the released secret ({ id, secret })
+//   POST ?step=lock              lock now (the app calls this after time away)
 const USER_ID = new TextEncoder().encode('portfolio-admin')
 
 function body(req) {
@@ -33,12 +41,21 @@ function body(req) {
   return req.body || {}
 }
 
-const publicList = (list) => list.map(({ id, label, createdAt }) => ({ id, label, createdAt }))
+const publicList = (list) => list.map(({ id, label, createdAt, kind }) => ({ id, label, createdAt, kind: kind === 'native' ? 'native' : 'passkey' }))
+const webauthnOnly = (list) => list.filter((p) => p.kind !== 'native')
+const hashSecret = (secret) => createHash('sha256').update(String(secret)).digest('hex')
+const sameHash = (a, b) => {
+  const x = Buffer.from(String(a || ''), 'hex')
+  const y = Buffer.from(String(b || ''), 'hex')
+  return x.length === 32 && x.length === y.length && timingSafeEqual(x, y)
+}
+const ID_RE = /^[A-Za-z0-9_-]{16,64}$/
+const SECRET_RE = /^[A-Za-z0-9_-]{32,128}$/
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   const step = String(req.query.step || '')
-  const unlocking = step === 'unlock-options' || step === 'unlock-verify'
+  const unlocking = ['unlock-options', 'unlock-verify', 'native-unlock', 'lock'].includes(step)
   const session = requireAuth(req, res, { allowLocked: unlocking })
   if (!session) return
   const { rpID, origins } = relyingParty(req)
@@ -63,7 +80,7 @@ export default async function handler(req, res) {
         userName: 'admin',
         userDisplayName: 'Portfolio admin',
         attestationType: 'none',
-        excludeCredentials: list.map((p) => ({ id: p.id, transports: p.transports })),
+        excludeCredentials: webauthnOnly(list).map((p) => ({ id: p.id, transports: p.transports })),
         authenticatorSelection: { residentKey: 'preferred', userVerification: 'required' },
       })
       appendCookie(res, challengeCookie(options.challenge, 'register'))
@@ -111,8 +128,8 @@ export default async function handler(req, res) {
     }
 
     if (step === 'unlock-options') {
-      const { list } = await readPasskeys()
-      if (!list.length) return res.status(400).json({ error: 'Fingerprint unlock is not set up. Use your password.' })
+      const list = webauthnOnly((await readPasskeys()).list)
+      if (!list.length) return res.status(400).json({ error: 'Fingerprint unlock is not set up in this browser. Use your password.' })
       const options = await generateAuthenticationOptions({
         rpID,
         allowCredentials: list.map((p) => ({ id: p.id, transports: p.transports })),
@@ -127,7 +144,7 @@ export default async function handler(req, res) {
       const expectedChallenge = readChallenge(req, 'unlock')
       if (!expectedChallenge) return res.status(400).json({ error: 'Unlock took too long. Try again.' })
       const { list } = await readPasskeys()
-      const saved = list.find((p) => p.id === response?.id)
+      const saved = webauthnOnly(list).find((p) => p.id === response?.id)
       if (!saved) return res.status(400).json({ error: 'This device is not set up for unlock. Use your password.' })
       const result = await verifyAuthenticationResponse({
         response,
@@ -145,6 +162,36 @@ export default async function handler(req, res) {
       if (!result.verified) return res.status(401).json({ error: 'Unlock failed. Try again or use your password.' })
       appendCookie(res, unlockCookie())
       appendCookie(res, clearChallengeCookie())
+      return res.status(200).json({ ok: true })
+    }
+
+    if (step === 'native-register') {
+      const { id, secret, label } = body(req)
+      if (!ID_RE.test(String(id || '')) || !SECRET_RE.test(String(secret || ''))) {
+        return res.status(400).json({ error: 'This device could not be set up.' })
+      }
+      const { list, sha } = await readPasskeys()
+      const entry = { id, kind: 'native', secretHash: hashSecret(secret), label: String(label || 'Android app').slice(0, 60), createdAt: new Date().toISOString() }
+      const next = [...list.filter((p) => p.id !== id), entry]
+      await writePasskeys(next, sha, 'admin: add Android app unlock device')
+      appendCookie(res, sessionCookie(true))
+      appendCookie(res, unlockCookie())
+      return res.status(200).json({ passkeys: publicList(next) })
+    }
+
+    if (step === 'native-unlock') {
+      const { id, secret } = body(req)
+      const { list } = await readPasskeys()
+      const saved = ID_RE.test(String(id || '')) ? list.find((p) => p.kind === 'native' && p.id === id) : null
+      if (!saved || !SECRET_RE.test(String(secret || '')) || !sameHash(saved.secretHash, hashSecret(secret))) {
+        return res.status(401).json({ error: 'Unlock failed. Use your password, then turn fingerprint unlock on again.' })
+      }
+      appendCookie(res, unlockCookie())
+      return res.status(200).json({ ok: true })
+    }
+
+    if (step === 'lock') {
+      appendCookie(res, clearUnlockCookie())
       return res.status(200).json({ ok: true })
     }
 

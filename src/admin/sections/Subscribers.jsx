@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Download, RefreshCw, Send } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { getContent } from '../api.js'
+import { saveFile } from '../native.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { postState } from '../../lib/postStatus.js'
 
@@ -51,13 +52,8 @@ export default function Subscribers() {
     try {
       const res = await adminFetch('/api/admin/subscribers?export=csv')
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Could not export.')
-      const blob = await res.blob()
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = `subscribers-${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-      toast('Subscribers exported')
+      const how = await saveFile(`subscribers-${new Date().toISOString().slice(0, 10)}.csv`, await res.blob())
+      toast(how === 'shared' ? 'Subscribers ready to save' : 'Subscribers exported')
     } catch (err) {
       toast(err.message, { tone: 'error' })
     }

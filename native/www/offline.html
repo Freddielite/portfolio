@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Offline</title>
+<style>
+html,body{margin:0;height:100%;background:#0b1020;color:#e5e9f5;font-family:system-ui,sans-serif}
+main{min-height:100%;display:grid;place-content:center;gap:14px;padding:32px;text-align:center}
+h1{margin:0;font-size:1.3rem}p{margin:0;color:#9aa6c7;line-height:1.5}
+button{justify-self:center;padding:12px 26px;border:0;border-radius:999px;background:#3b82f6;color:#fff;font:inherit;font-weight:600}
+</style></head>
+<body><main><h1>Cannot reach the admin</h1><p>Check your internet connection. This app opens your live admin, so it needs to be online.</p><button onclick="location.replace('https://portfolio.wyntek.xyz/admin')">Try again</button></main>
+<script>addEventListener('online',function(){location.replace('https://portfolio.wyntek.xyz/admin')})</script></body></html>

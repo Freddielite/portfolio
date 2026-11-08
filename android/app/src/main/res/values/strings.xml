@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Portfolio Admin</string>
+    <string name="title_activity_main">Portfolio Admin</string>
+    <string name="package_name">xyz.wyntek.admin</string>
+    <string name="custom_url_scheme">xyz.wyntek.admin</string>
+</resources>
