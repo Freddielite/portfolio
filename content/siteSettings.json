@@ -36,5 +36,7 @@
   "siteUrl": "https://portfolio.wyntek.xyz",
   "metaDescription": "Oseghale Wilfred, full-stack developer building web, backend and infrastructure for Wyntek Technologies and independent clients.",
   "pulseApiUrl": "https://pulse-s9cq.onrender.com",
-  "pulseStatusToken": "Q6gS25Qx2jY9pM7Puj6ecjYm"
+  "pulseStatusToken": "Q6gS25Qx2jY9pM7Puj6ecjYm",
+  "newsletterApiUrl": "https://wynmail.onrender.com",
+  "newsletterFormSlug": "portfolio-newsletter-2c8e1fc7"
 }
