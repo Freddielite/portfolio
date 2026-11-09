@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Pager, { paginate } from '../Pager.jsx'
 import { Download, RefreshCw, Send } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { getContent } from '../api.js'
@@ -20,6 +21,8 @@ export default function Subscribers() {
   const { toast, confirm, go } = useAdmin()
   const [state, setState] = useState({ loading: true, error: null, data: null })
   const [posts, setPosts] = useState([])
+  const [postPage, setPostPage] = useState(1)
+  const [recentPage, setRecentPage] = useState(1)
   const [signupHidden, setSignupHidden] = useState(false)
   const [sending, setSending] = useState(null)
 
@@ -163,8 +166,9 @@ export default function Subscribers() {
           {!posts.length ? (
             <p className="admin-hint">No live posts to send yet.</p>
           ) : (
+            <>
             <ul className="admin-rows">
-              {posts.map((p) => {
+              {paginate(posts, postPage, 5).items.map((p) => {
                 const sent = data.sent?.[p.slug]
                 return (
                   <li key={p.slug}>
@@ -187,6 +191,8 @@ export default function Subscribers() {
                 )
               })}
             </ul>
+            <Pager p={paginate(posts, postPage, 5)} onPage={setPostPage} label="posts" />
+            </>
           )}
         </section>
       )}
@@ -202,8 +208,9 @@ export default function Subscribers() {
           {!data.recent.length ? (
             <p className="admin-hint">Nobody yet. Once the signup box is live, new people show up here.</p>
           ) : (
+            <>
             <ul className="admin-rows">
-              {data.recent.map((c) => (
+              {paginate(data.recent, recentPage, 5).items.map((c) => (
                 <li key={c.email}>
                   <span className="admin-row-main">
                     <strong>{c.email}</strong>
@@ -213,6 +220,8 @@ export default function Subscribers() {
                 </li>
               ))}
             </ul>
+            <Pager p={paginate(data.recent, recentPage, 5)} onPage={setRecentPage} label="signups" />
+            </>
           )}
         </section>
       )}

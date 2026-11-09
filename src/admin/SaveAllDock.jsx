@@ -47,7 +47,7 @@ export function AdminStatusChip({ labels, go, tab }) {
 
   const body = (
     <>
-      {busy ? <Loader2 size={13} className="admin-spin" aria-hidden="true" /> : <i className="admin-status-dot" aria-hidden="true" />}
+      {busy ? <Loader2 size={13} className="admin-spin" aria-hidden="true" /> : <i className="admin-chip-dot" aria-hidden="true" />}
       <span>{text}</span>
     </>
   )

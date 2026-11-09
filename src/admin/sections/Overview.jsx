@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { BarChart3, Check, ChevronRight, ChevronDown, FolderKanban, MessageSquareQuote, PenLine, RefreshCw, Download, Upload } from 'lucide-react'
 import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '../api.js'
 import { onContent } from '../contentBus.js'
+import Pager, { paginate } from '../Pager.jsx'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { setBadge } from '../app.js'
 import { saveFile } from '../native.js'
@@ -151,6 +152,7 @@ function Checklist({ data, loading, checkedAt, onRecheck, go }) {
 function PulsePanel({ settings }) {
   const [state, setState] = useState({ loading: true, monitors: [], error: null })
   const [nonce, setNonce] = useState(0)
+  const [page, setPage] = useState(1)
   useEffect(() => {
     const again = () => setNonce((n) => n + 1)
     window.addEventListener('admin:refresh-health', again)
@@ -177,6 +179,7 @@ function PulsePanel({ settings }) {
   }, [api, token, nonce])
 
   const up = state.monitors.filter((m) => m.current_status === 'up').length
+  const paged = paginate(state.monitors, page, 8)
   const host = (u) => String(u || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   return (
@@ -205,8 +208,9 @@ function PulsePanel({ settings }) {
       ) : !state.monitors.length ? (
         <p className="admin-hint">The status page has no monitors yet.</p>
       ) : (
+        <>
         <ul className="admin-monitors">
-          {state.monitors.map((m) => (
+          {paged.items.map((m) => (
             <li key={m.id || m.url}>
               <span className={`admin-status-dot is-${m.current_status}`} title={m.current_status} aria-label={m.current_status} />
               <span className="admin-monitor-name">
@@ -220,6 +224,8 @@ function PulsePanel({ settings }) {
             </li>
           ))}
         </ul>
+        <Pager p={paged} onPage={setPage} label="monitors" />
+        </>
       )}
     </section>
   )
@@ -441,10 +447,10 @@ export default function Overview({ go }) {
         <div className="admin-overview-col">
           <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
           <SecurityCard />
-          <Backup data={data} onChanged={reload} />
         </div>
         <div className="admin-overview-col">
           <PulsePanel settings={data.siteSettings} />
+          <Backup data={data} onChanged={reload} />
         </div>
       </div>
     </div>

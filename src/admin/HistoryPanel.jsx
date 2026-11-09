@@ -1,5 +1,6 @@
 import { adminFetch } from './http.js'
 import { useEffect, useState } from 'react'
+import Pager, { paginate } from './Pager.jsx'
 
 const when = (iso) =>
   iso ? new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
@@ -11,6 +12,7 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
   const [commits, setCommits] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(null)
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     let off = false
@@ -43,6 +45,8 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
     }
   }
 
+  const paged = paginate(commits || [], page, 6)
+
   return (
     <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="admin-modal" role="dialog" aria-modal="true" aria-label="Change history">
@@ -55,7 +59,9 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
         {!commits && !error && <p className="admin-hint">Loading…</p>}
         {commits && commits.length === 0 && <p className="admin-hint">No history yet.</p>}
         <ul className="admin-history">
-          {(commits || []).map((c, i) => (
+          {paged.items.map((c, n) => {
+            const i = paged.from - 1 + n // position in the whole list: the first is the current version
+            return (
             <li key={c.sha}>
               <div>
                 <strong>{c.message}</strong>
@@ -65,8 +71,10 @@ export default function HistoryPanel({ type, onRestore, onClose }) {
                 {busy === c.sha ? 'Loading…' : 'Load this version'}
               </button>
             </li>
-          ))}
+            )
+          })}
         </ul>
+        <Pager p={paged} onPage={setPage} label="saves" />
       </div>
     </div>
   )

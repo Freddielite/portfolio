@@ -5,6 +5,7 @@ import usePostBackup, { applyBackup } from '../usePostBackup.js'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
+import Pager, { paginate } from '../Pager.jsx'
 import PostForm from '../builder/PostForm.jsx'
 import { validatePosts } from '../validate.js'
 import { useAdmin, usePanel, useRefresh } from '../AdminContext.jsx'
@@ -43,6 +44,7 @@ export default function PostsEditor() {
   const [list, setList] = useState(null)
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('all')
+  const [page, setPage] = useState(1)
   const [restoredFrom, setRestoredFrom] = useState(null)
   // On phones the list and the editor are two screens; this says which one.
   const [editing, setEditing] = useState(false)
@@ -166,10 +168,13 @@ export default function PostsEditor() {
   const active = list.find((p) => p._id === activeId) || null
   const sorted = [...list].sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)))
   const shown = sorted.filter((p) => tab === 'all' || postState(p) === tab)
+  const paged = paginate(shown, page, 8)
   const counts = Object.fromEntries(TABS.map(([id]) => [id, id === 'all' ? list.length : list.filter((p) => postState(p) === id).length]))
 
   const update = (id, next) => setList((l) => l.map((p) => (p._id === id ? next : p)))
   function addPost() {
+    setPage(1)
+    setTab('all')
     const post = blankPost()
     setList((l) => [post, ...l])
     setActiveId(post._id)
@@ -323,13 +328,13 @@ export default function PostsEditor() {
           <button type="button" className="admin-btn admin-btn-icon-text" onClick={addPost}><Plus size={16} aria-hidden="true" /> New post</button>
           <div className="admin-viewtabs" role="tablist" aria-label="Filter posts">
             {TABS.map(([id, name]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => setTab(id)}>
+              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setPage(1) }}>
                 {name} <span className="admin-count">{counts[id]}</span>
               </button>
             ))}
           </div>
           <ul>
-            {shown.map((p) => (
+            {paged.items.map((p) => (
               <li key={p._id}>
                 <button type="button" className={p._id === activeId ? 'on' : ''} onClick={() => openPost(p._id)}>
                   <strong>{p.title || 'Untitled post'}</strong>
@@ -339,6 +344,7 @@ export default function PostsEditor() {
             ))}
             {shown.length === 0 && <li className="admin-hint">Nothing here yet.</li>}
           </ul>
+          <Pager p={paged} onPage={setPage} compact label="posts" />
         </aside>
 
         <div className="builder-main" ref={mainRef}>
