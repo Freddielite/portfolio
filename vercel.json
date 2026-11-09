@@ -8,6 +8,9 @@
   "functions": {
     "api/admin/newsletter.js": {
       "maxDuration": 30
+    },
+    "api/admin/alerts.js": {
+      "maxDuration": 30
     }
   }
 }

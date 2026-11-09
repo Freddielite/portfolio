@@ -5,7 +5,9 @@
   "backgroundColor": "#0b1020",
   "server": {
     "url": "https://portfolio.wyntek.xyz/admin",
-    "allowNavigation": ["portfolio.wyntek.xyz"],
+    "allowNavigation": [
+      "portfolio.wyntek.xyz"
+    ],
     "errorPath": "offline.html"
   },
   "android": {
@@ -13,6 +15,11 @@
     "webContentsDebuggingEnabled": false
   },
   "plugins": {
-    "PrivacyScreen": { "enable": true }
+    "PrivacyScreen": {
+      "enable": true
+    },
+    "App": {
+      "disableBackButtonHandler": true
+    }
   }
 }

@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "xyz.wyntek.admin",
+      "sha256_cert_fingerprints": ["F2:45:DA:9F:46:3B:9A:4B:4D:83:F2:4D:C3:65:F3:55:CB:B2:42:0C:4B:62:6C:EA:82:72:B6:2C:D0:CA:C8:EC"]
+    }
+  }
+]

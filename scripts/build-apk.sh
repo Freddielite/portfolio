@@ -46,6 +46,9 @@ chmod +x android/gradlew
 
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
 [ -f "$APK" ] || die "The build finished but the APK was not found at $APK"
+say "Letting links to /admin open the app"
+bash scripts/assetlinks.sh "$APK" || echo "(skipped: links to /admin will open in the browser until this works)"
+
 OUT="$HOME/Downloads/portfolio-admin.apk"
 mkdir -p "$HOME/Downloads"
 cp "$APK" "$OUT"

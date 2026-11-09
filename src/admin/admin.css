@@ -2450,11 +2450,19 @@ button.admin-status:hover { border-color: currentColor; }
 
 /* ---------- Recent activity ---------- */
 
-/* Phone order on the Overview: checklist, activity, site health, security, backup. */
+/* Phone order on the Overview: checklist, activity, site health, security, phone alerts, backup. */
 .admin-activity-card { order: 2; }
 #site-health { order: 3; }
 .admin-security { order: 4; }
-.admin-backup { order: 5; }
+.admin-alerts-card { order: 5; }
+.admin-backup { order: 6; }
+
+/* Phone alerts card */
+.admin-alerts-card .admin-native-settings { margin-bottom: 10px; }
+.admin-alerts-status { margin: 0 0 12px; }
+.admin-alerts-status.is-warn { color: var(--a-warn); }
+.admin-alerts-others { margin: 16px 0 6px; font-weight: 600; }
+.admin-alerts-card .admin-row-main strong { display: inline-flex; align-items: center; gap: 6px; }
 
 .admin-activity { display: grid; margin: 0; padding: 0; list-style: none; }
 

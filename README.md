@@ -13,6 +13,25 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Phone alerts, predictive back, links open the app (APK 1.1, Nov 2026)
+
+Needs the APK rebuilt once (`bash scripts/build-apk.sh`). The web half ships with the deploy.
+
+- **Phone alerts.** In the app, Overview, Phone alerts, "Turn on alerts":
+  - Android asks to allow notifications.
+  - Then about every 15 minutes, even with the admin closed, the app checks and notifies you when a site goes down or comes back up (Pulse), when someone subscribes (Wynmail), and when the site finishes rebuilding.
+  - Android may delay checks while the phone is idle, so an alert can be several minutes late. There is no Firebase and no push server.
+  - Each kind can be switched off. "Send a test" shows what an alert looks like.
+  - Tapping an alert opens the admin at the right place.
+- **How alerts stay safe.** Each phone gets its own token for `GET /api/admin/alerts`. That token can only read the alert status: it cannot sign in, read content or change anything. The site keeps only a hash of it in `security/alerts.json`, listed under Phone alerts. Removing a phone there stops it at its next check. Turning alerts on or off adds a commit, which rebuilds the site once, like adding a fingerprint device.
+- **Where the code is.** Server: `api/admin/alerts.js`, `api/_lib/alerts.js`. App: `Alerts.java`, `AlertWorker.java`, and new methods in `AdminBridge.java`. Card: `admin/sections/PhoneAlertsCard.jsx`.
+- **Predictive back (Android 13 and newer).** Inside the admin, the back swipe shrinks the screen with your finger, and letting go goes back one step (section, open post, More sheet, photo editor). On the first screen, Android shows its own preview of going home and puts the app in the background. Before, Back did nothing there. Code: `MainActivity.java`. The App plugin's own Back handling is off in `capacitor.config.json`.
+- **Links open the app.** Tapping a `portfolio.wyntek.xyz/admin` link anywhere (an email, a chat, an alert) opens the app on the section the link names, such as `/admin#subscribers` or `/admin?focus=health`.
+  - Android only allows this once the site vouches for the app in `/.well-known/assetlinks.json`.
+  - `scripts/build-apk.sh` writes that file (`scripts/assetlinks.sh`) with the fingerprint of the key your APK is signed with. Commit and push it.
+  - If you build on another computer, the key changes, and the file must be pushed again.
+  - Android checks the file when the app is installed. If the file was not live yet, re-check with `adb shell pm verify-app-links --re-verify xyz.wyntek.admin`.
+
 ## Admin feels like a phone app (Nov 2026)
 
 Web-only change: deploy as usual, no APK rebuild needed.
@@ -31,7 +50,7 @@ Web-only change: deploy as usual, no APK rebuild needed.
   - New subscribers from Wynmail.
   - "Site finished rebuilding".
 
-  It refreshes after every save, checks every 20 seconds while something is building, and refreshes again when you pull down. API additions: `GET /api/admin/history?type=all` (latest commits on the branch) and `GET /api/admin/subscribers?recent=1` (newest signups only). Code: `admin/sections/RecentActivity.jsx`.
+  It shows 5 entries per page (the last 20 saves and 10 signups), refreshes after every save, checks every 20 seconds while something is building, and refreshes again when you pull down. API additions: `GET /api/admin/history?type=all` (latest commits on the branch) and `GET /api/admin/subscribers?recent=1` (newest signups only). Code: `admin/sections/RecentActivity.jsx`.
 - **Crop and rotate before upload.** Picking, pasting or dropping a single photo opens an editor:
   - Rotate left or right.
   - Crop freely or as Original, Square, 16:9 or 4:3 by dragging the box or its corners. Arrow keys move the box.

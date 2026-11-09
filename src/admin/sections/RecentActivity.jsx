@@ -3,6 +3,7 @@ import { Code2, FileUp, ImagePlus, PencilLine, RefreshCw, Rocket, ShieldCheck, U
 import { adminFetch } from '../http.js'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
+import Pager, { paginate } from '../Pager.jsx'
 
 // Overview card: the latest saves (every save is a commit), new signups from
 // Wynmail and when the site last finished rebuilding, in one list, newest first.
@@ -18,7 +19,8 @@ const TYPE_LABELS = {
 }
 const ICONS = { save: PencilLine, image: ImagePlus, file: FileUp, security: ShieldCheck, code: Code2, deploy: Rocket, signup: UserPlus }
 const BUILD_WINDOW = 15 * 60 * 1000 // a save newer than the live site, made in the last 15 minutes, is still building
-const SHOWN = 8
+const KEPT = 40 // everything fetched fits; the list pages through it
+const PER_PAGE = 5
 
 const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
 
@@ -29,6 +31,7 @@ export function describeCommit(message) {
   if ((m = /^admin: upload image (.+)/.exec(msg))) return { kind: 'image', title: 'Image uploaded', detail: m[1] }
   if (/^admin: replace public\/cv\.pdf/.test(msg)) return { kind: 'file', title: 'CV replaced' }
   if ((m = /^admin: replace (.+)/.exec(msg))) return { kind: 'file', title: 'File replaced', detail: m[1] }
+  if ((m = /^admin: (add|remove) alerts device/.exec(msg))) return { kind: 'security', title: m[1] === 'add' ? 'Phone alerts turned on' : 'Phone alerts turned off' }
   if ((m = /^admin: (add|remove) .*device/.exec(msg))) return { kind: 'security', title: m[1] === 'add' ? 'Unlock device added' : 'Unlock device removed' }
   if ((m = /^admin:\s*(.+)/.exec(msg))) return { kind: 'save', title: capital(m[1]) }
   return { kind: 'code', title: 'Code update', detail: msg }
@@ -69,7 +72,7 @@ export function buildActivity({ commits = [], build = null, recent = [] }, now =
     })
   }
 
-  return items.sort((a, b) => b.at - a.at).slice(0, SHOWN)
+  return items.sort((a, b) => b.at - a.at).slice(0, KEPT)
 }
 
 async function json(res, what) {
@@ -112,6 +115,7 @@ export default function RecentActivity() {
   }))
   const now = useNow()
   const busy = useRef(false)
+  const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
     if (busy.current) return
@@ -164,6 +168,7 @@ export default function RecentActivity() {
 
   const items = state.sources ? buildActivity(state.sources, now) : []
   const building = items.some((i) => i.deploy === 'building')
+  const paged = paginate(items, page, PER_PAGE)
 
   // While something is building, check every 20 seconds until it is live.
   useEffect(() => {
@@ -201,8 +206,9 @@ export default function RecentActivity() {
       ) : state.sources && !items.length ? (
         <p className="admin-hint">Nothing yet. Saves, new subscribers and rebuilds show up here.</p>
       ) : (
+        <>
         <ul className="admin-activity">
-          {items.map((item) => {
+          {paged.items.map((item) => {
             const Icon = ICONS[item.kind] || PencilLine
             return (
               <li key={item.id} className={`is-${item.kind}`}>
@@ -222,6 +228,8 @@ export default function RecentActivity() {
             )
           })}
         </ul>
+        <Pager p={paged} onPage={setPage} label="recent activity" />
+        </>
       )}
     </section>
   )

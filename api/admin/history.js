@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   const { type, ref } = req.query
   if (type === 'all') {
     try {
-      return res.status(200).json({ commits: await listCommits(null, 12) })
+      return res.status(200).json({ commits: await listCommits(null, 20) })
     } catch (err) {
       return res.status(500).json({ error: err.message })
     }

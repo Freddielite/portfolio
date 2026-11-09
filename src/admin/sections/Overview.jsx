@@ -8,6 +8,7 @@ import { setBadge } from '../app.js'
 import { saveFile } from '../native.js'
 import SecurityCard from './SecurityCard.jsx'
 import RecentActivity from './RecentActivity.jsx'
+import PhoneAlertsCard from './PhoneAlertsCard.jsx'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useNetwork, useOnRetry } from '../network.js'
 import { postState } from '../../lib/postStatus.js'
@@ -543,6 +544,7 @@ export default function Overview({ go }) {
           <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
           <RecentActivity />
           <SecurityCard />
+          <PhoneAlertsCard />
         </div>
         <div className="admin-overview-col">
           <PulsePanel settings={data.siteSettings} />

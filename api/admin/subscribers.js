@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
 
     if (req.query.recent) {
-      const recent = await wm(`/v1/lists/${LIST_ID}/contacts?limit=6`)
+      const recent = await wm(`/v1/lists/${LIST_ID}/contacts?limit=10`)
       return res.status(200).json({ configured: true, recent: recent.data || [] })
     }
 

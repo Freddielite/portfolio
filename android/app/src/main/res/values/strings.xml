@@ -10,4 +10,10 @@
     <string name="shortcut_subscribers_long">See your subscribers</string>
     <string name="shortcut_health">Site health</string>
     <string name="shortcut_health_long">Check that your sites are up</string>
+    <string name="channel_health">Site health</string>
+    <string name="channel_health_desc">A site goes down or comes back up</string>
+    <string name="channel_subscribers">New subscribers</string>
+    <string name="channel_subscribers_desc">Someone signs up for your posts</string>
+    <string name="channel_deploys">Site rebuilds</string>
+    <string name="channel_deploys_desc">Your changes are live on the site</string>
 </resources>

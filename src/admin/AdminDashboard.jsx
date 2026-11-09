@@ -167,6 +167,19 @@ function Shell({ tab, go, visited, onLogout }) {
       } else if (i.kind === 'share') {
         pushIntent({ kind: 'share', shared: await sharedFromPhone(i) })
         goRef.current('posts')
+      } else if (i.kind === 'link') {
+        // A link to the admin opened the app (an email, a chat, a phone alert):
+        // go to the section it names, e.g. /admin#subscribers or /admin?focus=health.
+        let url
+        try {
+          url = new URL(i.url)
+        } catch {
+          return
+        }
+        const id = url.hash.replace('#', '')
+        const health = url.searchParams.get('focus') === 'health'
+        goRef.current(byId[id] ? id : 'overview')
+        if (health) setTimeout(() => document.getElementById('site-health')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 450)
       }
     }
     listenForPhoneIntents(onPhoneIntent).then((fn) => (gone ? fn() : (stop = fn)))

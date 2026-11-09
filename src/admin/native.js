@@ -304,3 +304,28 @@ export async function listenForPhoneIntents(handler) {
     return () => {}
   }
 }
+
+// ---------- phone alerts (Android app, APK 1.1 and newer) ----------
+// The checks themselves run in the app (AlertWorker.java), also while the admin
+// is closed. These only switch them on or off and read how they are doing.
+// An older APK does not have them: alertsStatus() then says { supported: false }.
+const askPhone = async (method, options) => AdminBridge[method](options || {})
+
+export async function alertsStatus() {
+  if (!isNative()) return { supported: false, reason: 'browser' }
+  try {
+    return await askPhone('alertsStatus')
+  } catch {
+    return { supported: false, reason: 'old-app' }
+  }
+}
+
+// Android's "Allow notifications?" prompt and its settings screen briefly
+// background the app, which must not lock it.
+export const requestNotifications = () => quiet(60000, () => askPhone('requestNotifications'))
+export const openNotificationSettings = () => quiet(300000, () => askPhone('openNotificationSettings'))
+export const alertsEnable = (options) => askPhone('alertsEnable', options)
+export const alertsSetKinds = (kinds) => askPhone('alertsSetKinds', kinds)
+export const alertsDisable = () => askPhone('alertsDisable')
+export const alertsCheckNow = () => askPhone('alertsCheckNow')
+export const alertsTest = () => askPhone('alertsTest')
