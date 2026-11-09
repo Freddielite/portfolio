@@ -57,6 +57,11 @@ export const quietFor = (ms) => {
   quietUntil = Math.max(quietUntil, Date.now() + ms)
 }
 export const isQuiet = () => Date.now() < quietUntil
+// Coming back from the file picker, the share sheet or the live site uses up
+// the grace period: leaving again afterwards locks as usual.
+export const endQuiet = () => {
+  quietUntil = 0
+}
 // The Android shell calls this when it opens your live site in the in-app browser.
 if (typeof window !== 'undefined') window.__adminQuietFor = quietFor
 

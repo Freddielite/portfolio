@@ -2687,3 +2687,13 @@ button.admin-status:hover { border-color: currentColor; }
   .admin-screen { will-change: auto; }
   html.admin-swiping .admin-screen { will-change: transform, opacity; }
 }
+
+/* App lock: an opaque cover put over the admin while the app is out of sight,
+   so coming back never shows it before the lock screen (nativeLock.js). Just
+   under the lock screen itself. */
+.admin-lock-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 399;
+  background: var(--bg);
+}

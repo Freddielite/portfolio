@@ -8,6 +8,8 @@ import { checkSession, reauthCancelled } from '../admin/http.js'
 import { reportNetwork } from '../admin/network.js'
 import { canOpenFromCache, clearCache, rememberSession } from '../admin/cache.js'
 import { useAdminApp } from '../admin/pwa.js'
+import { lockAtLaunch } from '../admin/nativeLock.js'
+import { isNative, thisDeviceId } from '../admin/native.js'
 import SEO from '../components/SEO.jsx'
 import '../admin/admin.css'
 
@@ -36,12 +38,25 @@ async function askServer() {
 export default function Admin() {
   // With fingerprint unlock off and last-known data on this device, the
   // dashboard opens straight away from that data while the server is asked.
-  const [status, setStatus] = useState(() => (canOpenFromCache() ? 'in' : 'checking')) // checking | out | locked | in | offline
+  // Never on a phone with fingerprint unlock set up: there the lock decides first.
+  const [status, setStatus] = useState(() => (canOpenFromCache() && !(isNative() && thisDeviceId()) ? 'in' : 'checking')) // checking | out | locked | in | offline
   const statusRef = useRef(status)
   statusRef.current = status
   useAdminApp()
 
+  const launched = useRef(false)
   const check = useCallback(async () => {
+    // A fresh start of the Android app with fingerprint unlock set up: ask for
+    // the fingerprint before anything else, like WhatsApp (nativeLock.js).
+    if (!launched.current) {
+      launched.current = true
+      if (await lockAtLaunch()) {
+        setStatus('locked')
+        // Only a signed-out answer changes that (then the password is needed anyway).
+        askServer().then((answer) => answer === 'out' && setStatus('out'))
+        return
+      }
+    }
     const answer = await askServer()
     const now = statusRef.current
     if (answer === 'offline') {
