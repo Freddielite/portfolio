@@ -52,6 +52,60 @@ export function slide(dir, update) {
   })
 }
 
+// ---------- 2b. Switching sections on phones ----------
+// The section (its title and its panel, wrapped in .admin-screen) leaves toward
+// one side and fades, the new one comes in from the other side. Only transform
+// and opacity change, which the phone's graphics chip animates by itself, so it
+// stays smooth even while the new section is still loading. (The browser's own
+// page transition photographs the whole long page first, which made phones drop
+// frames.) `update` swaps the content while the screen is invisible.
+// dir: 'forward' (to a section further right in the tab bar) | 'back'.
+// fromX: where a swipe left the screen, so it carries on from under the finger.
+let switching = null
+
+export function switchScreen(el, dir, update, { fromX = 0, swiped = false } = {}) {
+  switching?.finishNow()
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (!el || !el.animate || reduce) {
+    if (el) {
+      el.style.transform = ''
+      el.style.opacity = ''
+    }
+    update()
+    return
+  }
+  const sign = dir === 'forward' ? -1 : 1 // the side the old screen leaves toward
+  const w = el.offsetWidth || window.innerWidth
+  const fromOpacity = swiped ? Math.max(0.5, 1 - Math.abs(fromX) / w) : 1
+  const outTo = swiped ? sign * Math.max(w * 0.45, Math.abs(fromX) + 60) : sign * 56
+  el.style.transform = ''
+  el.style.opacity = ''
+  const job = { done: false, out: null, inn: null }
+  const swap = () => {
+    if (job.done) return
+    job.done = true
+    update()
+    job.out?.cancel()
+    job.inn = el.animate(
+      [{ transform: `translateX(${-sign * (swiped ? 72 : 56)}px)`, opacity: 0 }, { transform: 'translateX(0)', opacity: 1 }],
+      { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+    )
+    job.inn.onfinish = () => {
+      if (switching === job) switching = null
+    }
+  }
+  job.finishNow = () => {
+    swap()
+    job.inn?.finish()
+  }
+  job.out = el.animate(
+    [{ transform: `translateX(${fromX}px)`, opacity: fromOpacity }, { transform: `translateX(${outTo}px)`, opacity: 0 }],
+    { duration: swiped ? 140 : 110, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+  )
+  job.out.onfinish = swap
+  switching = job
+}
+
 // ---------- 1. Header that tucks away ----------
 // Hides the header while you scroll down and brings it back as soon as you
 // scroll up a little. Also says whether the big page title has scrolled under
@@ -307,18 +361,30 @@ export function useTabSwipe({ tab, order, go }) {
     const root = document.documentElement
     const EDGE = 24
     let g = null
+    let frame = 0
 
     const next = (dir) => {
       const { tab: t, order: o } = cur.current
       const i = o.indexOf(t)
       return i < 0 ? null : o[i + dir] || null
     }
-    const paint = (el, x, animate) => {
-      if (!el) return
-      el.style.transition = animate ? 'transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.24s' : 'none'
-      el.style.transform = x ? `translateX(${x}px)` : ''
-      el.style.opacity = x ? String(Math.max(0.5, 1 - Math.abs(x) / window.innerWidth)) : ''
-      if (!x && animate) setTimeout(() => el.style.transition = '', 260)
+    // One write per frame, transform and opacity only.
+    const paint = (el, x) => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        el.style.transform = x ? `translateX(${x}px)` : ''
+        el.style.opacity = x ? String(Math.max(0.5, 1 - Math.abs(x) / el.offsetWidth)) : ''
+      })
+    }
+    const settle = (el, x) => {
+      cancelAnimationFrame(frame)
+      el.style.transform = ''
+      el.style.opacity = ''
+      if (!x || !el.animate) return
+      el.animate(
+        [{ transform: `translateX(${x}px)`, opacity: Math.max(0.5, 1 - Math.abs(x) / el.offsetWidth) }, { transform: 'translateX(0)', opacity: 1 }],
+        { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+      )
     }
 
     const onStart = (e) => {
@@ -328,15 +394,20 @@ export function useTabSwipe({ tab, order, go }) {
       if (t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return
       if (!cur.current.order.includes(cur.current.tab)) return
       if (root.classList.contains('admin-is-dragging') || document.querySelector(OPEN_OVERLAY)) return
+      const screen = document.querySelector('.admin-screen')
       const panel = document.querySelector('.admin-panel:not([hidden])')
-      if (!panel || panel.querySelector('.builder.is-editing')) return
+      if (!screen || !panel || panel.querySelector('.builder.is-editing')) return
       if (e.target.closest?.(NO_SWIPE) || scrollsSideways(e.target)) return
-      g = { x: t.clientX, y: t.clientY, time: Date.now(), dx: 0, lock: null, panel }
+      g = { x: t.clientX, y: t.clientY, last: t.clientX, time: Date.now(), shown: 0, lock: null, screen }
     }
 
     const onMove = (e) => {
       if (!g) return
       const t = e.touches[0]
+      // A finger cannot cross 40% of the screen between two touch events: a
+      // jump like that is a stray point, and following it would flash the screen.
+      if (Math.abs(t.clientX - g.last) > window.innerWidth * 0.4) return
+      g.last = t.clientX
       const dx = t.clientX - g.x
       const dy = t.clientY - g.y
       if (g.lock === null) {
@@ -347,27 +418,30 @@ export function useTabSwipe({ tab, order, go }) {
           return
         }
         root.classList.add('admin-swiping')
+        g.x = t.clientX // start following from here, so the screen does not jump by 10px
+        return
       }
       e.preventDefault()
-      g.dx = dx
-      // Follows the finger, with resistance; much stiffer where there is no next section.
-      const has = next(dx < 0 ? 1 : -1)
-      paint(g.panel, dx * (has ? 0.45 : 0.12), false)
+      const d = t.clientX - g.x
+      // Follows the finger; stiff where there is no next section.
+      g.shown = next(d < 0 ? 1 : -1) ? d : d * 0.15
+      paint(g.screen, g.shown)
     }
 
     const onEnd = () => {
       if (!g) return
-      const { dx, time, lock, panel } = g
+      const { shown, time, lock, screen } = g
       g = null
       root.classList.remove('admin-swiping')
       if (lock !== 'x') return
-      const target = next(dx < 0 ? 1 : -1)
-      const fast = Math.abs(dx) > 50 && Math.abs(dx) / Math.max(1, Date.now() - time) > 0.5
-      if (target && (Math.abs(dx) > Math.min(120, window.innerWidth * 0.3) || fast)) {
-        cur.current.go(target)
-        requestAnimationFrame(() => paint(panel, 0, false)) // the old panel is hidden by now
+      const target = next(shown < 0 ? 1 : -1)
+      const fast = Math.abs(shown) > 40 && Math.abs(shown) / Math.max(1, Date.now() - time) > 0.45
+      if (target && (Math.abs(shown) > Math.min(110, window.innerWidth * 0.28) || fast)) {
+        cancelAnimationFrame(frame)
+        // The switch carries on from where the finger left the screen.
+        cur.current.go(target, undefined, { fromX: shown, swiped: true })
       } else {
-        paint(panel, 0, true)
+        settle(screen, shown)
       }
     }
 
@@ -376,6 +450,7 @@ export function useTabSwipe({ tab, order, go }) {
     document.addEventListener('touchend', onEnd)
     document.addEventListener('touchcancel', onEnd)
     return () => {
+      cancelAnimationFrame(frame)
       document.removeEventListener('touchstart', onStart)
       document.removeEventListener('touchmove', onMove)
       document.removeEventListener('touchend', onEnd)

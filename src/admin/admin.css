@@ -200,8 +200,12 @@
   padding: 36px clamp(20px, 4vw, 48px) 160px;
 }
 
-.admin-main > * { max-width: var(--a-content); }
-.admin-main > .admin-panel:has(.builder) { max-width: none; }
+/* .admin-screen holds the page title and the sections (it moves when switching
+   sections on phones); the width rules apply to what is inside it. */
+.admin-main > *,
+.admin-screen > * { max-width: var(--a-content); }
+.admin-main > .admin-screen { max-width: none; }
+.admin-screen > .admin-panel:has(.builder) { max-width: none; }
 
 /* Use the room on big screens. The editor takes the full width; the overview puts
    its cards in two columns; everything else gets a wider, but still readable, column. */
@@ -217,7 +221,7 @@
 .admin-security { order: 3; }
 .admin-backup { order: 4; }
 @media (min-width: 1200px) {
-  .admin-main > .admin-panel:has(.admin-overview) { max-width: min(100%, 1480px); }
+  .admin-screen > .admin-panel:has(.admin-overview) { max-width: min(100%, 1480px); }
   .admin-overview-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
   .admin-overview-col { display: flex; flex-direction: column; min-width: 0; }
 }
@@ -2109,7 +2113,7 @@ html[data-nav-dir='back']::view-transition-new(admin-main) { animation-name: adm
 /* ---------- live preview beside the form ---------- */
 .admin-split { display: block; }
 @media (min-width: 1280px) {
-  .admin-main > .admin-panel:has(.admin-split.has-side) { max-width: min(100%, 1320px); }
+  .admin-screen > .admin-panel:has(.admin-split.has-side) { max-width: min(100%, 1320px); }
   .admin-split.has-side { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; }
   .admin-split-side { position: sticky; top: 24px; }
 }
@@ -2674,4 +2678,12 @@ button.admin-status:hover { border-color: currentColor; }
 @media (prefers-reduced-motion: reduce) {
   .admin-cropper,
   .admin-cropper-backdrop { animation: none !important; }
+}
+
+/* Phones: switching sections is animated as a whole (switchScreen in app.js),
+   so the panel's own fade-in would play twice. */
+@media (max-width: 860px) {
+  .admin-panel { animation: none; }
+  .admin-screen { will-change: auto; }
+  html.admin-swiping .admin-screen { will-change: transform, opacity; }
 }

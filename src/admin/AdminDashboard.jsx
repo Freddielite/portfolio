@@ -17,7 +17,7 @@ import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import SaveAllDock, { AdminStatusChip } from './SaveAllDock.jsx'
 import { followTheme, listenForPhoneIntents } from './native.js'
 import { pushIntent, sharedFromPhone } from './intents.js'
-import { IS_APP, slide, useKeyboardClass, usePullToRefresh, useTabSwipe, useTuckingHeader } from './app.js'
+import { IS_APP, slide, switchScreen, useKeyboardClass, usePullToRefresh, useTabSwipe, useTuckingHeader } from './app.js'
 import TabBar, { MORE, PRIMARY } from './TabBar.jsx'
 import OfflineBanner from './OfflineBanner.jsx'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
@@ -87,27 +87,55 @@ export default function AdminDashboard({ onLogout }) {
   const tabRef = useRef(tab)
   tabRef.current = tab
 
-  const show = useCallback((id) => {
+  const screenRef = useRef(null)
+  const show = useCallback((id, motion = {}) => {
     if (!byId[id] || id === tabRef.current) return
     const from = tabRef.current
     scrolls.current[from] = window.scrollY
-    // In the app, the new section slides in from the side it sits on.
-    slide(order.indexOf(id) > order.indexOf(from) ? 'forward' : 'back', () => {
+    const dir = order.indexOf(id) > order.indexOf(from) ? 'forward' : 'back'
+    const update = () => {
       flushSync(() => {
         setTab(id)
         setVisited((prev) => (prev.has(id) ? prev : new Set(prev).add(id)))
       })
+      tabRef.current = id
       window.scrollTo(0, scrolls.current[id] || 0)
-    })
+    }
+    // Phones: the section slides out and the new one in from the side it sits
+    // on (switchScreen in app.js). Wider screens in the installed app keep the
+    // browser's page transition; elsewhere it simply changes.
+    if (window.matchMedia('(max-width: 860px)').matches) switchScreen(screenRef.current, dir, update, motion)
+    else slide(dir, update)
+  }, [])
+
+  // Phones: once the Overview has settled, quietly load the other tab bar
+  // sections, so the first visit to each opens straight away instead of building
+  // the whole screen mid-animation. Posts waits if unsaved writing is waiting to
+  // be restored (that reopens the editor, which must only happen on purpose).
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 860px)').matches) return
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1))
+    const t = setTimeout(
+      () =>
+        idle(() =>
+          setVisited((prev) => {
+            const next = new Set(prev)
+            for (const id of PRIMARY) if (id !== 'posts' || !hasUnsavedPostWriting()) next.add(id)
+            return next.size === prev.size ? prev : next
+          })
+        ),
+      2500
+    )
+    return () => clearTimeout(t)
   }, [])
 
 
   // Tabs live in the address (#posts, #skills…) so Back works and a refresh
   // keeps you where you were.
   const go = useCallback(
-    (id, target) => {
+    (id, target, motion) => {
       if (window.location.hash !== `#${id}`) window.history.pushState(null, '', `#${id}`)
-      show(id)
+      show(id, motion)
       if (target) focusField(target)
     },
     [show]
@@ -125,12 +153,12 @@ export default function AdminDashboard({ onLogout }) {
 
   return (
     <AdminProvider go={go}>
-      <Shell tab={tab} go={go} visited={visited} onLogout={onLogout} />
+      <Shell tab={tab} go={go} visited={visited} onLogout={onLogout} screenRef={screenRef} />
     </AdminProvider>
   )
 }
 
-function Shell({ tab, go, visited, onLogout }) {
+function Shell({ tab, go, visited, onLogout, screenRef }) {
   const { dirty, confirm, refresh, toast } = useAdmin()
   const install = useInstallPrompt()
   const current = byId[tab]
@@ -310,20 +338,23 @@ function Shell({ tab, go, visited, onLogout }) {
 
       <main className="admin-main" style={IS_APP && pull.y ? { transform: `translateY(${pull.y}px)`, transition: pull.state === 'pulling' || pull.state === 'ready' ? 'none' : undefined } : undefined}>
         <OfflineBanner />
-        <header className="admin-page-head">
-          <h1 ref={titleRef}>{current.label}</h1>
-          <p>{current.blurb}</p>
-        </header>
-        {TABS.map(
-          ({ id, Component }) =>
-            visited.has(id) && (
-              <PanelContext.Provider key={id} value={{ id, active: tab === id }}>
-                <div className="admin-panel" hidden={tab !== id}>
-                  <Component go={go} />
-                </div>
-              </PanelContext.Provider>
-            )
-        )}
+        {/* The title and the section move together when switching sections. */}
+        <div className="admin-screen" ref={screenRef}>
+          <header className="admin-page-head">
+            <h1 ref={titleRef}>{current.label}</h1>
+            <p>{current.blurb}</p>
+          </header>
+          {TABS.map(
+            ({ id, Component }) =>
+              visited.has(id) && (
+                <PanelContext.Provider key={id} value={{ id, active: tab === id }}>
+                  <div className="admin-panel" hidden={tab !== id}>
+                    <Component go={go} />
+                  </div>
+                </PanelContext.Provider>
+              )
+          )}
+        </div>
       </main>
       <TabBar tabs={TABS} tab={tab} go={go} dirty={dirty} />
       <SaveAllDock labels={LABELS} go={go} />
