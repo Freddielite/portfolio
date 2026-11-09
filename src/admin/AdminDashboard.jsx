@@ -17,7 +17,9 @@ import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import SaveAllDock, { AdminStatusChip } from './SaveAllDock.jsx'
 import { followTheme, listenForPhoneIntents } from './native.js'
 import { pushIntent, sharedFromPhone } from './intents.js'
-import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
+import { IS_APP, slide, useKeyboardClass, usePullToRefresh, useTabSwipe, useTuckingHeader } from './app.js'
+import TabBar, { MORE, PRIMARY } from './TabBar.jsx'
+import OfflineBanner from './OfflineBanner.jsx'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
 import { useInstallPrompt } from './pwa.js'
 
@@ -31,7 +33,9 @@ const TABS = [
   { id: 'testimonials', label: 'Testimonials', short: 'Testimonials', Icon: MessageSquareQuote, Component: TestimonialsEditor, blurb: 'Quotes from people you have worked with.' },
 ]
 const byId = Object.fromEntries(TABS.map((t) => [t.id, t]))
-const order = TABS.map((t) => t.id)
+// Left-to-right order of the phone's tab bar (then the sections under More).
+// Sliding between sections and swiping follow it.
+const order = [...PRIMARY, ...MORE]
 const LABELS = Object.fromEntries(TABS.map((t) => [t.id, t.label]))
 const fromHash = () => {
   const h = window.location.hash.replace('#', '')
@@ -135,6 +139,11 @@ function Shell({ tab, go, visited, onLogout }) {
   const titleRef = useRef(null)
   const header = useTuckingHeader(headerRef, titleRef, tab)
 
+  // Phones: swipe sideways to move between the tab bar's sections, and the
+  // tab bar steps aside while the keyboard is open.
+  useTabSwipe({ tab, order: PRIMARY, go })
+  useKeyboardClass()
+
   // The status and navigation bar icons follow the theme the admin is showing.
   useEffect(() => followTheme(), [])
 
@@ -178,10 +187,10 @@ function Shell({ tab, go, visited, onLogout }) {
     }
   })
 
-  // Same pattern as Wynmail: on phones the sidebar folds into a header and the
-  // sections become one row of pills that scrolls sideways. The edge fades
-  // grow with the scroll (the left one appears once you move off the start,
-  // the right one fades out as you reach the end) ...
+  // On phones (860px and narrower) this list is hidden and the sections live in
+  // the tab bar at the bottom (TabBar.jsx). If the list ever scrolls sideways,
+  // its edge fades grow with the scroll (the left one appears once you move off
+  // the start, the right one fades out as you reach the end) ...
   const updateFade = useCallback(() => {
     const n = navRef.current
     if (!n) return
@@ -287,6 +296,7 @@ function Shell({ tab, go, visited, onLogout }) {
       )}
 
       <main className="admin-main" style={IS_APP && pull.y ? { transform: `translateY(${pull.y}px)`, transition: pull.state === 'pulling' || pull.state === 'ready' ? 'none' : undefined } : undefined}>
+        <OfflineBanner />
         <header className="admin-page-head">
           <h1 ref={titleRef}>{current.label}</h1>
           <p>{current.blurb}</p>
@@ -302,6 +312,7 @@ function Shell({ tab, go, visited, onLogout }) {
             )
         )}
       </main>
+      <TabBar tabs={TABS} tab={tab} go={go} dirty={dirty} />
       <SaveAllDock labels={LABELS} go={go} />
     </div>
   )

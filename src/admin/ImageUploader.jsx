@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { prettySize, uploadImage } from './imageUpload.js'
+import { useAdmin } from './AdminContext.jsx'
 
 // Upload, optimise and preview one image. `onChange(path, { lqip })` fires after
 // an upload (null when removed). Pass `alt` and `onAltChange` to add an alt text
@@ -9,10 +10,17 @@ export default function ImageUploader({ value, onChange, folder = 'uploads', lab
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
   const [saved, setSaved] = useState(null)
+  const admin = useAdmin()
 
   async function handleFile(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const picked = e.target.files?.[0]
+    if (!picked) return
+    // Crop and rotate first; cancelling uploads nothing.
+    const file = admin?.editImage ? await admin.editImage(picked) : picked
+    if (!file) {
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
     setUploading(true)
     setError(null)
     setSaved(null)

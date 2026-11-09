@@ -5,6 +5,8 @@ import { adminFetch } from '../http.js'
 import { getContent } from '../api.js'
 import { saveFile } from '../native.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
+import { agoText, readCache, writeCache } from '../cache.js'
+import { useOnRetry } from '../network.js'
 import { postState } from '../../lib/postStatus.js'
 
 const day = (v) => {
@@ -19,34 +21,52 @@ async function readJson(res) {
 
 export default function Subscribers() {
   const { toast, confirm, go } = useAdmin()
-  const [state, setState] = useState({ loading: true, error: null, data: null })
-  const [posts, setPosts] = useState([])
+  // The last answer is kept on the device and shown straight away while
+  // Wynmail (which may be asleep) answers. Sending and export wait for the
+  // fresh answer, so nothing is ever sent from an old list.
+  const [saved] = useState(() => readCache('subscribers'))
+  const [state, setState] = useState(() => ({ loading: true, error: null, data: saved?.value?.data || null, at: saved?.at || null, fresh: false }))
+  const [posts, setPosts] = useState(() => saved?.value?.posts || [])
   const [postPage, setPostPage] = useState(1)
   const [recentPage, setRecentPage] = useState(1)
-  const [signupHidden, setSignupHidden] = useState(false)
+  const [signupHidden, setSignupHidden] = useState(() => !!saved?.value?.signupHidden)
   const [sending, setSending] = useState(null)
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
+    let data = null
     try {
       const { ok, body } = await readJson(await adminFetch('/api/admin/subscribers', { cache: 'no-store' }))
       if (!ok) throw new Error(body.error || 'Could not load subscribers.')
-      setState({ loading: false, error: null, data: body })
+      data = body
+      setState({ loading: false, error: null, data: body, at: Date.now(), fresh: true })
     } catch (err) {
-      setState({ loading: false, error: err.message, data: null })
+      // Keep what was shown before (if anything) and say it could not be updated.
+      setState((s) => ({ ...s, loading: false, error: err.message }))
     }
+    let list = null
+    let hidden = null
     try {
       const [p, s] = await Promise.all([getContent('posts'), getContent('siteSettings')])
-      setPosts((p.data || []).filter((x) => postState(x) === 'published').sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt))))
-      setSignupHidden(!(s.data?.newsletterApiUrl && s.data?.newsletterFormSlug))
+      list = (p.data || [])
+        .filter((x) => postState(x) === 'published')
+        .sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt)))
+        .map(({ slug, title, publishedAt }) => ({ slug, title, publishedAt }))
+      hidden = !(s.data?.newsletterApiUrl && s.data?.newsletterFormSlug)
+      setPosts(list)
+      setSignupHidden(hidden)
     } catch {
       /* the posts list is optional here */
     }
+    if (data) writeCache('subscribers', { data, posts: list || [], signupHidden: !!hidden })
   }, [])
 
   useEffect(() => {
     load()
   }, [load])
+  useOnRetry(() => {
+    if (!state.fresh) load()
+  })
   useRefresh(async () => {
     await load()
   })
@@ -116,7 +136,7 @@ export default function Subscribers() {
           </div>
           <div className="admin-card-actions">
             {data?.configured && (
-              <button type="button" className="admin-btn-ghost" onClick={exportCsv}>
+              <button type="button" className="admin-btn-ghost" onClick={exportCsv} disabled={!state.fresh}>
                 <Download size={15} aria-hidden="true" /> Export CSV
               </button>
             )}
@@ -126,7 +146,17 @@ export default function Subscribers() {
           </div>
         </div>
 
-        {error && <p className="admin-error">{error}</p>}
+        {!state.fresh && data && (
+          <p className={`admin-stale ${error ? 'is-error' : ''}`} role="status">
+            {loading && <RefreshCw size={14} className="admin-spin" aria-hidden="true" />}
+            <span>
+              {loading
+                ? `Showing the list from ${agoText(state.at)}. Asking Wynmail…`
+                : `Could not update: ${error}. Showing the list from ${agoText(state.at)}. Sending waits for the latest list.`}
+            </span>
+          </p>
+        )}
+        {error && !data && <p className="admin-error">{error}</p>}
         {loading && !data && !error && <p className="admin-hint admin-loading">Asking Wynmail…</p>}
 
         {data && !data.configured && (
@@ -185,7 +215,7 @@ export default function Subscribers() {
                     {sent ? (
                       <span className="admin-badge is-published">Sent</span>
                     ) : (
-                      <button type="button" className="admin-btn" onClick={() => sendPost(p)} disabled={!!sending || stats.subscribed === 0}>
+                      <button type="button" className="admin-btn" onClick={() => sendPost(p)} disabled={!!sending || !state.fresh || stats.subscribed === 0}>
                         <Send size={15} aria-hidden="true" /> {sending === p.slug ? 'Sending…' : 'Send'}
                       </button>
                     )}

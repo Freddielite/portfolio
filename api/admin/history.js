@@ -5,7 +5,10 @@ const ALLOWED_TYPES = ['projects', 'skills', 'testimonials', 'posts', 'drafts', 
 
 // GET /api/admin/history?type=posts            -> recent commits for that file
 // GET /api/admin/history?type=posts&ref=<sha>  -> the file's data as of that commit
+// GET /api/admin/history?type=all              -> the latest commits on the branch
+//                                                 (Recent activity on the Overview)
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
   if (!requireAuth(req, res)) return
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -13,6 +16,13 @@ export default async function handler(req, res) {
   }
 
   const { type, ref } = req.query
+  if (type === 'all') {
+    try {
+      return res.status(200).json({ commits: await listCommits(null, 12) })
+    } catch (err) {
+      return res.status(500).json({ error: err.message })
+    }
+  }
   if (!ALLOWED_TYPES.includes(type)) {
     return res.status(400).json({ error: `Unknown content type "${type}".` })
   }

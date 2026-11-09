@@ -139,17 +139,24 @@ export function usePullToRefresh(onRefresh) {
     const blocked = (target) =>
       s.busy ||
       window.scrollY > 0 ||
-      document.querySelector('.admin-dialog-backdrop, .admin-modal-overlay') ||
-      target.closest?.('.admin-side-nav, textarea, input[type="range"], .admin-grip, .builder-preview, .admin-paper')
+      document.querySelector('.admin-dialog-backdrop, .admin-modal-overlay, .admin-sheet-backdrop, .admin-cropper-backdrop') ||
+      document.documentElement.classList.contains('admin-swiping') ||
+      target.closest?.('.admin-side-nav, .admin-tabbar, .admin-sheet-backdrop, textarea, input[type="range"], .admin-grip, .builder-preview, .admin-paper')
 
     const start = (e) => {
       if (e.touches.length !== 1 || blocked(e.target)) return
       s.start = e.touches[0].clientY
+      s.startX = e.touches[0].clientX
       s.y = 0
     }
     const move = (e) => {
       if (s.start === null) return
       const dy = e.touches[0].clientY - s.start
+      // A sideways swipe (switching sections) is not a pull.
+      if (!s.y && Math.abs(e.touches[0].clientX - s.startX) > Math.abs(dy)) {
+        s.start = null
+        return
+      }
       if (dy <= 0 || window.scrollY > 0) {
         if (s.y) setPull({ y: 0, state: 'idle' })
         s.start = dy <= 0 ? null : s.start
@@ -217,7 +224,7 @@ export function useEdgeSwipeBack(elRef, enabled, onBack) {
     const onStart = (e) => {
       const t = e.touches[0]
       if (e.touches.length !== 1 || t.clientX > EDGE) return
-      if (document.querySelector('.admin-dialog-backdrop, .admin-modal-overlay')) return
+      if (document.querySelector('.admin-dialog-backdrop, .admin-modal-overlay, .admin-sheet-backdrop, .admin-cropper-backdrop')) return
       start = { x: t.clientX, y: t.clientY, time: Date.now(), dx: 0, locked: null }
     }
     const onMove = (e) => {
@@ -265,4 +272,174 @@ export function useEdgeSwipeBack(elRef, enabled, onBack) {
 export function setBadge(count) {
   if (!IS_APP || !('setAppBadge' in navigator)) return
   ;(count ? navigator.setAppBadge(count) : navigator.clearAppBadge()).catch(() => {})
+}
+
+// ---------- 9. Swipe between sections (phones, browser and app) ----------
+// Swipe left or right on Overview, Posts, Projects or Subscribers to move to
+// the next or previous one, in the same order as the tab bar. It stays out of
+// the way of everything else that uses a sideways drag: it never starts on a
+// field, a drag handle, the post editor, anything that scrolls sideways, or
+// within 24px of the screen edges (Android's back gesture lives there).
+const NO_SWIPE = [
+  'input', 'textarea', 'select', 'button[role="slider"]', '[contenteditable="true"]', '[data-no-swipe]',
+  '.admin-grip', '.admin-tabbar', '.admin-sidebar', '.admin-dock', '.admin-toast-wrap', '.admin-cropper',
+  '.blk-editor', '.builder-preview', '.admin-paper', 'video', 'canvas',
+].join(', ')
+const OPEN_OVERLAY = '.admin-dialog-backdrop, .admin-modal-overlay, .admin-sheet-backdrop, .admin-cropper-backdrop, .admin-lock'
+
+function scrollsSideways(el) {
+  for (let n = el; n && n !== document.body; n = n.parentElement) {
+    if (n.scrollWidth > n.clientWidth + 2) {
+      const ox = getComputedStyle(n).overflowX
+      if (ox === 'auto' || ox === 'scroll') return true
+    }
+  }
+  return false
+}
+
+export function useTabSwipe({ tab, order, go }) {
+  const cur = useRef({ tab, order, go })
+  cur.current = { tab, order, go }
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('ontouchstart' in window)) return
+    const phone = window.matchMedia('(max-width: 860px)')
+    const root = document.documentElement
+    const EDGE = 24
+    let g = null
+
+    const next = (dir) => {
+      const { tab: t, order: o } = cur.current
+      const i = o.indexOf(t)
+      return i < 0 ? null : o[i + dir] || null
+    }
+    const paint = (el, x, animate) => {
+      if (!el) return
+      el.style.transition = animate ? 'transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.24s' : 'none'
+      el.style.transform = x ? `translateX(${x}px)` : ''
+      el.style.opacity = x ? String(Math.max(0.5, 1 - Math.abs(x) / window.innerWidth)) : ''
+      if (!x && animate) setTimeout(() => el.style.transition = '', 260)
+    }
+
+    const onStart = (e) => {
+      g = null
+      if (!phone.matches || e.touches.length !== 1) return
+      const t = e.touches[0]
+      if (t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return
+      if (!cur.current.order.includes(cur.current.tab)) return
+      if (root.classList.contains('admin-is-dragging') || document.querySelector(OPEN_OVERLAY)) return
+      const panel = document.querySelector('.admin-panel:not([hidden])')
+      if (!panel || panel.querySelector('.builder.is-editing')) return
+      if (e.target.closest?.(NO_SWIPE) || scrollsSideways(e.target)) return
+      g = { x: t.clientX, y: t.clientY, time: Date.now(), dx: 0, lock: null, panel }
+    }
+
+    const onMove = (e) => {
+      if (!g) return
+      const t = e.touches[0]
+      const dx = t.clientX - g.x
+      const dy = t.clientY - g.y
+      if (g.lock === null) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return
+        g.lock = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'x' : 'y'
+        if (g.lock === 'y') {
+          g = null
+          return
+        }
+        root.classList.add('admin-swiping')
+      }
+      e.preventDefault()
+      g.dx = dx
+      // Follows the finger, with resistance; much stiffer where there is no next section.
+      const has = next(dx < 0 ? 1 : -1)
+      paint(g.panel, dx * (has ? 0.45 : 0.12), false)
+    }
+
+    const onEnd = () => {
+      if (!g) return
+      const { dx, time, lock, panel } = g
+      g = null
+      root.classList.remove('admin-swiping')
+      if (lock !== 'x') return
+      const target = next(dx < 0 ? 1 : -1)
+      const fast = Math.abs(dx) > 50 && Math.abs(dx) / Math.max(1, Date.now() - time) > 0.5
+      if (target && (Math.abs(dx) > Math.min(120, window.innerWidth * 0.3) || fast)) {
+        cur.current.go(target)
+        requestAnimationFrame(() => paint(panel, 0, false)) // the old panel is hidden by now
+      } else {
+        paint(panel, 0, true)
+      }
+    }
+
+    document.addEventListener('touchstart', onStart, { passive: true })
+    document.addEventListener('touchmove', onMove, { passive: false })
+    document.addEventListener('touchend', onEnd)
+    document.addEventListener('touchcancel', onEnd)
+    return () => {
+      document.removeEventListener('touchstart', onStart)
+      document.removeEventListener('touchmove', onMove)
+      document.removeEventListener('touchend', onEnd)
+      document.removeEventListener('touchcancel', onEnd)
+      root.classList.remove('admin-swiping')
+    }
+  }, [])
+}
+
+// ---------- 10. Keyboard open (phones) ----------
+// While you type, the tab bar steps aside so the keyboard and the field get
+// the room (html.admin-kb-open, see admin.css). Focusing a text field hides it
+// straight away; after that the screen height decides, so closing the keyboard
+// with the phone's Back (which leaves the field focused) brings the bar back.
+export function useKeyboardClass() {
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('ontouchstart' in window)) return
+    const root = document.documentElement
+    const vv = window.visualViewport
+    const isField = (el) =>
+      !!el?.matches?.(
+        'textarea, [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="color"])'
+      )
+    const height = () => Math.min(window.innerHeight, vv ? vv.height : Infinity)
+    let tallest = height()
+    let width = window.innerWidth
+    let focusedAt = 0
+    let t = 0
+    const set = (on) => root.classList.toggle('admin-kb-open', on)
+
+    const onResize = () => {
+      if (window.innerWidth !== width) {
+        width = window.innerWidth // turned the phone: start measuring again
+        tallest = 0
+      }
+      const h = height()
+      tallest = Math.max(tallest, h)
+      if (!isField(document.activeElement)) return set(false)
+      if (h < tallest * 0.8) set(true)
+      else if (Date.now() - focusedAt > 800) set(false) // keyboard closed, field still focused
+    }
+    const onIn = (e) => {
+      if (!isField(e.target)) return
+      clearTimeout(t)
+      focusedAt = Date.now()
+      set(true)
+    }
+    const onOut = () => {
+      clearTimeout(t)
+      t = setTimeout(() => {
+        if (!isField(document.activeElement)) set(false)
+      }, 120)
+    }
+    document.addEventListener('focusin', onIn)
+    document.addEventListener('focusout', onOut)
+    window.addEventListener('resize', onResize)
+    vv?.addEventListener('resize', onResize)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('focusin', onIn)
+      document.removeEventListener('focusout', onOut)
+      window.removeEventListener('resize', onResize)
+      vv?.removeEventListener('resize', onResize)
+      set(false)
+    }
+  }, [])
 }

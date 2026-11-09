@@ -10,6 +10,7 @@ const csvCell = (v) => {
 
 // GET /api/admin/subscribers              -> counts, newest signups, posts already emailed
 // GET /api/admin/subscribers?export=csv   -> every subscribed contact as a CSV file
+// GET /api/admin/subscribers?recent=1     -> only the newest signups (Recent activity)
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   if (!requireAuth(req, res)) return
@@ -32,6 +33,11 @@ export default async function handler(req, res) {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
       res.setHeader('Content-Disposition', 'attachment; filename="subscribers.csv"')
       return res.status(200).send(lines.join('\n'))
+    }
+
+    if (req.query.recent) {
+      const recent = await wm(`/v1/lists/${LIST_ID}/contacts?limit=6`)
+      return res.status(200).json({ configured: true, recent: recent.data || [] })
     }
 
     const [stats, recent, campaigns] = await Promise.all([

@@ -1,6 +1,7 @@
 import { adminFetch } from './http.js'
 import { useCallback, useEffect, useState } from 'react'
 import { publishContent } from './contentBus.js'
+import { useOnRetry } from './network.js'
 
 // Loads content/<type>.json through the API and knows how to save it back.
 // Tracks the file's git `sha` so the API can detect if the file changed
@@ -45,6 +46,13 @@ export default function useAdminContent(type, { optional = false } = {}) {
     load()
   }, [load])
 
+  // Retry after being offline: load again if nothing came through. A tab that
+  // already has content is left alone, so unsaved edits are never replaced.
+  const hasData = data !== null
+  useOnRetry(() => {
+    if (!hasData) load()
+  })
+
   const save = useCallback(
     async (newData) => {
       setSaving(true)
@@ -63,6 +71,7 @@ export default function useAdminContent(type, { optional = false } = {}) {
         publishContent(type, newData)
         setCommit(body.commit || null)
         setSavedAt(Date.now())
+        window.dispatchEvent(new CustomEvent('admin:saved', { detail: { type, commit: body.commit || null } }))
         return true
       } catch (err) {
         if (/\b409\b|does not match/i.test(err.message)) {

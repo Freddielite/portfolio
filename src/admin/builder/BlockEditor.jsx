@@ -16,6 +16,7 @@ import { CSS } from '@dnd-kit/utilities'
 import Toolbar, { editorHandlers } from './Toolbar.jsx'
 import { uploadImage } from '../imageUpload.js'
 import { haptic } from '../native.js'
+import { useAdmin } from '../AdminContext.jsx'
 import {
   RATIOS,
   blocksToItems,
@@ -200,6 +201,7 @@ function Container({ cid, list, compact }) {
 }
 
 export default function BlockEditor({ body, onBody }) {
+  const admin = useAdmin()
   const [items, setItems] = useState(() => {
     const start = blocksToItems(body)
     return start.length ? start : [newItem('text')]
@@ -245,8 +247,15 @@ export default function BlockEditor({ body, onBody }) {
   }
 
   async function addImages(files, { cid = 'root', afterId = null } = {}) {
-    const images = [...files].filter((f) => f.type.startsWith('image/'))
+    let images = [...files].filter((f) => f.type.startsWith('image/'))
     if (!images.length) return
+    // One photo (picked, pasted or dropped): crop and rotate it first.
+    // Several at once go straight up, so a batch is not a dozen screens.
+    if (images.length === 1 && admin?.editImage) {
+      const edited = await admin.editImage(images[0])
+      if (!edited) return
+      images = [edited]
+    }
     setError(null)
     setBusy(true)
     let after = afterId
@@ -263,7 +272,9 @@ export default function BlockEditor({ body, onBody }) {
     setBusy(false)
   }
 
-  async function replaceImage(id, file) {
+  async function replaceImage(id, picked) {
+    const file = admin?.editImage ? await admin.editImage(picked) : picked
+    if (!file) return
     setError(null)
     setBusy(true)
     try {

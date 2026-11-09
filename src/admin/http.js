@@ -6,6 +6,8 @@
 //   'expired' the 7-day sign-in ran out: the password is needed
 // Requests turned away at the same time share one prompt, and whatever you
 // were saving still gets saved.
+import { OFFLINE_MESSAGE, reportNetwork } from './network.js'
+
 let pending = null // { promise, resolve, reject, reason }
 const listeners = new Set()
 
@@ -54,11 +56,26 @@ async function reasonOf(res) {
   return body.locked ? 'locked' : 'expired'
 }
 
+// A request that cannot reach the server at all (no connection, server
+// unreachable) marks the admin offline and fails with a plain message; any
+// answer marks it online again. A cancelled request (AbortError) is passed on.
+async function send(url, options) {
+  try {
+    const res = await fetch(url, options)
+    reportNetwork(true)
+    return res
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err
+    reportNetwork(false)
+    throw new Error(OFFLINE_MESSAGE)
+  }
+}
+
 export async function adminFetch(url, options) {
-  const res = await fetch(url, options)
+  const res = await send(url, options)
   if (res.status !== 401) return res
   await waitForReauth(await reasonOf(res))
-  return fetch(url, options)
+  return send(url, options)
 }
 
 // Asks the server whether this browser is still signed in and unlocked, and
@@ -66,8 +83,9 @@ export async function adminFetch(url, options) {
 export async function checkSession() {
   try {
     const res = await fetch('/api/admin/me', { cache: 'no-store' })
+    reportNetwork(true)
     if (res.status === 401) waitForReauth(await reasonOf(res)).catch(() => {})
   } catch {
-    /* offline: the next request will tell */
+    reportNetwork(false) // offline: the banner says so, and the next request will tell
   }
 }

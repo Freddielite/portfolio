@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BarChart3, Check, ChevronRight, ChevronDown, FolderKanban, MessageSquareQuote, PenLine, RefreshCw, Download, Upload } from 'lucide-react'
+import { BarChart3, Check, ChevronRight, ChevronDown, FolderKanban, MessageSquareQuote, PenLine, RefreshCw, Download, Upload, History } from 'lucide-react'
 import { CONTENT_TYPES, countOf, getContent, mergeContent, putContent } from '../api.js'
 import { onContent } from '../contentBus.js'
 import Pager, { paginate } from '../Pager.jsx'
@@ -7,19 +7,37 @@ import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { setBadge } from '../app.js'
 import { saveFile } from '../native.js'
 import SecurityCard from './SecurityCard.jsx'
+import RecentActivity from './RecentActivity.jsx'
+import { agoText, readCache, writeCache } from '../cache.js'
+import { useNetwork, useOnRetry } from '../network.js'
 import { postState } from '../../lib/postStatus.js'
 
 const PLACEHOLDER_AUTHOR = /^client name$/i
 const LABELS = { siteSettings: 'Site settings', projects: 'Projects', skills: 'Skills', testimonials: 'Testimonials', posts: 'Published posts', drafts: 'Draft posts' }
 
+// Only what the Overview needs is kept on the device: post bodies are left
+// out, so the saved copy stays small. This is also why Backup waits for the
+// fresh, complete content before it can download anything.
+const POST_FIELDS = ['slug', 'title', 'excerpt', 'status', 'publishedAt', 'hidden']
+const slimPosts = (list) => (Array.isArray(list) ? list.map((p) => Object.fromEntries(POST_FIELDS.filter((k) => k in p).map((k) => [k, p[k]]))) : list)
+const slim = (data) => ({ ...data, posts: slimPosts(data.posts), drafts: slimPosts(data.drafts) })
+
+// Opens with the last-known content from this device (fresh: false), then
+// loads the latest from GitHub behind the scenes (fresh: true).
 function useAllContent() {
-  const [state, setState] = useState({ loading: true, data: null, error: null, checkedAt: null })
+  const [state, setState] = useState(() => {
+    const saved = readCache('overview')
+    return saved
+      ? { loading: true, data: saved.value, error: null, checkedAt: saved.at, fresh: false }
+      : { loading: true, data: null, error: null, checkedAt: null, fresh: false }
+  })
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
       const entries = await Promise.all(CONTENT_TYPES.map(async (t) => [t, (await getContent(t, { optional: t === 'drafts' })).data]))
       const data = Object.fromEntries(entries)
-      setState({ loading: false, data, error: null, checkedAt: Date.now() })
+      writeCache('overview', slim(data))
+      setState({ loading: false, data, error: null, checkedAt: Date.now(), fresh: true })
       return data
     } catch (err) {
       setState((s) => ({ ...s, loading: false, error: err.message }))
@@ -30,6 +48,12 @@ function useAllContent() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Back online after Retry: load again if the latest content never arrived.
+  const fresh = state.fresh
+  useOnRetry(() => {
+    if (!fresh) load()
+  })
 
   // Follow edits made in the other tabs as soon as they load or save.
   useEffect(
@@ -149,38 +173,77 @@ function Checklist({ data, loading, checkedAt, onRecheck, go }) {
   )
 }
 
+// The last answer from Pulse is kept on the device (per status page), so the
+// list shows straight away even while a sleeping Pulse server wakes up.
+function savedMonitors(key) {
+  const saved = readCache('pulse')
+  return saved && saved.value?.key === key ? { monitors: saved.value.monitors || [], at: saved.at } : null
+}
+
 function PulsePanel({ settings }) {
-  const [state, setState] = useState({ loading: true, monitors: [], error: null })
+  const api = String(settings.pulseApiUrl || '').replace(/\/$/, '')
+  const token = String(settings.pulseStatusToken || '').trim()
+  const key = `${api}|${token}`
+  const [state, setState] = useState(() => {
+    const saved = savedMonitors(key)
+    return { loading: true, monitors: saved?.monitors || [], at: saved?.at || null, error: null, fresh: false, key }
+  })
   const [nonce, setNonce] = useState(0)
   const [page, setPage] = useState(1)
+  const now = useNow()
   useEffect(() => {
     const again = () => setNonce((n) => n + 1)
     window.addEventListener('admin:refresh-health', again)
-    return () => window.removeEventListener('admin:refresh-health', again)
+    window.addEventListener('admin:retry', again)
+    return () => {
+      window.removeEventListener('admin:refresh-health', again)
+      window.removeEventListener('admin:retry', again)
+    }
   }, [])
-  const api = String(settings.pulseApiUrl || '').replace(/\/$/, '')
-  const token = String(settings.pulseStatusToken || '').trim()
 
   useEffect(() => {
     if (!api || !token) return
     let off = false
     const ctl = new AbortController()
-    const timer = setTimeout(() => ctl.abort(), 15000)
-    setState((s) => ({ ...s, loading: true, error: null }))
+    const timer = setTimeout(() => ctl.abort(), 20000)
+    setState((s) => {
+      if (s.key === key) return { ...s, loading: true, error: null }
+      // Settings now point at another status page: what was shown belongs to the old one.
+      const saved = savedMonitors(key)
+      return { loading: true, monitors: saved?.monitors || [], at: saved?.at || null, error: null, fresh: false, key }
+    })
     fetch(`${api}/api/public/status-pages/${encodeURIComponent(token)}`, { signal: ctl.signal, cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`Pulse answered ${r.status}`))))
-      .then((b) => !off && setState({ loading: false, monitors: b.monitors || [], error: null }))
-      .catch((e) => !off && setState({ loading: false, monitors: [], error: e.name === 'AbortError' ? 'Pulse took too long to answer. It may be waking up, so try again in a moment.' : `${e.message}. Check the Pulse API URL, the token and Pulse's CORS_ORIGIN.` }))
+      .then((b) => {
+        if (off) return
+        const monitors = b.monitors || []
+        writeCache('pulse', { key, monitors })
+        setState({ loading: false, monitors, at: Date.now(), error: null, fresh: true, key })
+      })
+      .catch((e) => {
+        if (off) return
+        const slow = e.name === 'AbortError'
+        // Keep showing the last check when there is one; just say it could not be updated.
+        setState((s) => ({
+          ...s,
+          loading: false,
+          error: slow
+            ? 'Pulse took too long to answer. It may be waking up, so try again in a moment.'
+            : `${e.message === 'Failed to fetch' ? 'Could not reach Pulse' : e.message}. Check the Pulse API URL, the token and Pulse's CORS_ORIGIN.`,
+        }))
+      })
       .finally(() => clearTimeout(timer))
     return () => {
       off = true
       ctl.abort()
     }
-  }, [api, token, nonce])
+  }, [api, token, key, nonce])
 
   const up = state.monitors.filter((m) => m.current_status === 'up').length
   const paged = paginate(state.monitors, page, 8)
   const host = (u) => String(u || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
+  const showing = state.monitors.length > 0
+  const summary = `${up} of ${state.monitors.length} up`
 
   return (
     <section className="admin-card" id="site-health">
@@ -188,7 +251,17 @@ function PulsePanel({ settings }) {
         <div>
           <h2 className="admin-card-title">Site health</h2>
           <p className="admin-hint">
-            {!api || !token ? 'From Pulse' : state.loading ? 'Asking Pulse…' : state.error ? 'From Pulse' : `${up} of ${state.monitors.length} up, from Pulse`}
+            {!api || !token
+              ? 'From Pulse'
+              : state.loading
+                ? showing
+                  ? `${summary}, ${agoText(state.at, now)}. Asking Pulse…`
+                  : 'Asking Pulse…'
+                : state.error
+                  ? showing
+                    ? `${summary}, last checked ${agoText(state.at, now)}`
+                    : 'From Pulse'
+                  : `${summary}, from Pulse`}
           </p>
         </div>
         {api && token && (
@@ -199,9 +272,9 @@ function PulsePanel({ settings }) {
       </div>
       {!api || !token ? (
         <p className="admin-hint">Not connected. Add the Pulse API URL and token in Site settings to see your sites here.</p>
-      ) : state.error ? (
+      ) : state.error && !showing ? (
         <p className="admin-error">{state.error}</p>
-      ) : state.loading && !state.monitors.length ? (
+      ) : state.loading && !showing ? (
         <ul className="admin-monitors" aria-hidden="true">
           {[0, 1, 2].map((i) => <li key={i} className="admin-skeleton" />)}
         </ul>
@@ -209,7 +282,8 @@ function PulsePanel({ settings }) {
         <p className="admin-hint">The status page has no monitors yet.</p>
       ) : (
         <>
-        <ul className="admin-monitors">
+        {state.error && <p className="admin-error admin-stale-error">{state.error}</p>}
+        <ul className={`admin-monitors ${state.fresh ? '' : 'is-stale'}`}>
           {paged.items.map((m) => (
             <li key={m.id || m.url}>
               <span className={`admin-status-dot is-${m.current_status}`} title={m.current_status} aria-label={m.current_status} />
@@ -231,7 +305,7 @@ function PulsePanel({ settings }) {
   )
 }
 
-function Backup({ data, onChanged }) {
+function Backup({ data, ready, onChanged }) {
   const { toast, confirm } = useAdmin()
   const [plan, setPlan] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -306,14 +380,16 @@ function Backup({ data, onChanged }) {
       <div className="admin-card-header">
         <div>
           <h2 className="admin-card-title">Backup and restore</h2>
-          <p className="admin-hint">All your text content. Images and your CV stay in GitHub.</p>
+          <p className="admin-hint">
+            {ready ? 'All your text content. Images and your CV stay in GitHub.' : 'Available once the latest content has loaded, so a backup is never made from an old copy.'}
+          </p>
         </div>
       </div>
       <div className="admin-row">
-        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={download}>
+        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={download} disabled={!ready}>
           <Download size={15} aria-hidden="true" /> Download backup
         </button>
-        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={() => fileRef.current?.click()}>
+        <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={() => fileRef.current?.click()} disabled={!ready}>
           <Upload size={15} aria-hidden="true" /> Restore from file
         </button>
         <input ref={fileRef} type="file" accept="application/json,.json" onChange={pick} hidden />
@@ -332,8 +408,8 @@ function Backup({ data, onChanged }) {
             </table>
           </div>
           <div className="admin-row">
-            <button type="button" className="admin-btn" disabled={busy} onClick={() => apply('merge')}>{busy ? 'Working…' : 'Add what is missing (safe)'}</button>
-            <button type="button" className="admin-btn-danger" disabled={busy} onClick={() => apply('replace')}>Replace everything</button>
+            <button type="button" className="admin-btn" disabled={busy || !ready} onClick={() => apply('merge')}>{busy ? 'Working…' : 'Add what is missing (safe)'}</button>
+            <button type="button" className="admin-btn-danger" disabled={busy || !ready} onClick={() => apply('replace')}>Replace everything</button>
             <button type="button" className="admin-btn-ghost" disabled={busy} onClick={() => setPlan(null)}>Cancel</button>
           </div>
         </div>
@@ -344,7 +420,9 @@ function Backup({ data, onChanged }) {
 
 export default function Overview({ go }) {
   const { toast } = useAdmin()
-  const { loading, data, error, checkedAt, reload } = useAllContent()
+  const { loading, data, error, checkedAt, fresh, reload } = useAllContent()
+  const { offline } = useNetwork()
+  const now = useNow()
 
   // Re-runs the checklist with fresh data and describes what changed.
   async function check() {
@@ -444,15 +522,31 @@ export default function Overview({ go }) {
         {stat(shownTestimonials, 'Testimonials', data.siteSettings.showTestimonials ? 'Section on' : 'Section off', 'testimonials', MessageSquareQuote)}
       </div>
 
-      {error && <p className="admin-error">{error}</p>}
+      {!fresh && (
+        <p className={`admin-stale ${error ? 'is-error' : ''}`} role="status">
+          {loading ? <RefreshCw size={14} className="admin-spin" aria-hidden="true" /> : <History size={14} aria-hidden="true" />}
+          <span>
+            {loading
+              ? `Showing your numbers from ${agoText(checkedAt, now)}. Updating…`
+              : offline
+                ? `Showing your numbers from ${agoText(checkedAt, now)}.`
+                : `Could not update: ${error || 'try again in a moment'}. Showing your numbers from ${agoText(checkedAt, now)}.`}
+          </span>
+          {!loading && !offline && (
+            <button type="button" className="admin-inline-link" onClick={reload}>Try again</button>
+          )}
+        </p>
+      )}
+      {error && fresh && <p className="admin-error">{error}</p>}
       <div className="admin-overview-cols">
         <div className="admin-overview-col">
           <Checklist data={data} loading={loading} checkedAt={checkedAt} onRecheck={recheck} go={go} />
+          <RecentActivity />
           <SecurityCard />
         </div>
         <div className="admin-overview-col">
           <PulsePanel settings={data.siteSettings} />
-          <Backup data={data} onChanged={reload} />
+          <Backup data={data} ready={fresh} onChanged={reload} />
         </div>
       </div>
     </div>

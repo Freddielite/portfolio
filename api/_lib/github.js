@@ -85,14 +85,16 @@ export async function putFile(path, content, sha, message, { isBase64 = false } 
   return res.json()
 }
 
-// Recent commits that touched one file, newest first.
+// Recent commits that touched one file, newest first. Without a path: the
+// latest commits on the branch, whatever they changed.
 export async function listCommits(path, limit = 15) {
   const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO, GITHUB_BRANCH } = env()
-  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?sha=${encodeURIComponent(GITHUB_BRANCH)}&path=${encodeURIComponent(path)}&per_page=${limit}`
+  const only = path ? `&path=${encodeURIComponent(path)}` : ''
+  const url = `${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?sha=${encodeURIComponent(GITHUB_BRANCH)}${only}&per_page=${limit}`
   const res = await fetch(url, { headers: headers(GITHUB_TOKEN) })
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`GitHub commits for ${path} failed (${res.status}): ${body}`)
+    throw new Error(`GitHub commits for ${path || 'the branch'} failed (${res.status}): ${body}`)
   }
   const list = await res.json()
   return list.map((c) => ({

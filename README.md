@@ -13,6 +13,34 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Admin feels like a phone app (Nov 2026)
+
+Web-only change: deploy as usual, no APK rebuild needed.
+
+- **Bottom tab bar on phones.** At 860px and narrower the section pills at the top are gone. Overview, Posts, Projects and Subscribers sit in a bar at the bottom, and More opens a sheet with Site settings, Skills and Testimonials. Tapping the tab you are on scrolls to the top, unsaved-changes dots show on the bar, and the phone's Back closes the More sheet. The bar steps aside while you edit a post and while the keyboard is open. Code: `admin/TabBar.jsx`. Desktop keeps the sidebar.
+- **Swipe between tabs.** On Overview, Posts, Projects and Subscribers, swipe left or right to move along the bar. It never starts on a field, a drag handle, the post editor, anything that scrolls sideways, or within 24px of the screen edges, because Android's back gesture lives there. Code: `useTabSwipe` in `admin/app.js`.
+- **Opens instantly with last-known data.** Overview, Site health, Subscribers and Recent activity are kept on the device (`admin/cache.js`) and shown at once, with a note such as "Showing your numbers from 5 minutes ago. Updating…" while the fresh copy loads. This matters most when Pulse or Wynmail is waking up. Safety rules:
+  - The editors never use the saved copy, so an old version can never be saved over newer content.
+  - Backup, Send and Export wait for the fresh data.
+  - The saved copy has no post bodies.
+  - Logging out, or the sign-in running out, wipes it.
+  - The admin opens from it before the server has answered only when fingerprint unlock is off. With it on, the unlock always comes first.
+- **Offline handling.** When the admin cannot reach its server, a "You’re offline" banner with Retry appears at the top, and what was last loaded stays on screen. It also retries by itself when the phone reports it is back online, and every 30 seconds. If the server cannot be reached at open and nothing can be shown without signing in, you get an offline screen with Retry instead of the login page. Code: `admin/network.js`, `admin/OfflineBanner.jsx`, `pages/Admin.jsx`.
+- **Recent activity** on the Overview combines three sources, newest first:
+  - Saves: every save is a commit, marked Building, Live or Not live by comparing it with `/build.json`.
+  - New subscribers from Wynmail.
+  - "Site finished rebuilding".
+
+  It refreshes after every save, checks every 20 seconds while something is building, and refreshes again when you pull down. API additions: `GET /api/admin/history?type=all` (latest commits on the branch) and `GET /api/admin/subscribers?recent=1` (newest signups only). Code: `admin/sections/RecentActivity.jsx`.
+- **Crop and rotate before upload.** Picking, pasting or dropping a single photo opens an editor:
+  - Rotate left or right.
+  - Crop freely or as Original, Square, 16:9 or 4:3 by dragging the box or its corners. Arrow keys move the box.
+  - Cancel or Back uploads nothing.
+  - "Use photo" with no change uploads the original file. An edited photo still goes through the usual shrink and WebP step.
+  - Several photos at once, and GIFs, skip the editor.
+
+  It covers project screenshots, the profile photo, post covers and images in the post editor. Code: `admin/ImageCropper.jsx`, `editImage()` in `AdminContext.jsx`.
+
 ## Android app (Nov 2026)
 
 An Android app (Capacitor) that opens your live `/admin` and adds a real fingerprint lock, like WhatsApp's.

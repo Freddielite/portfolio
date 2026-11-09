@@ -3,6 +3,7 @@ import { Fingerprint, ShieldCheck, Smartphone, Trash2, Plus } from 'lucide-react
 import { useAdmin } from '../AdminContext.jsx'
 import { addPasskey, deviceLabel, listPasskeys, registerNativeOnServer, removePasskey, supportsPasskeys } from '../passkeys.js'
 import { biometricStatus, forgetNative, getLockAfter, getPrivacy, isNative, LOCK_CHOICES, setLockAfter, setPrivacy, setUpNative, thisDeviceId } from '../native.js'
+import { rememberSession } from '../cache.js'
 
 const when = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -35,6 +36,7 @@ export default function SecurityCard() {
     try {
       const d = native ? await setUpNative(registerNativeOnServer) : await addPasskey(deviceLabel())
       setState((s) => ({ ...s, list: d.passkeys, error: null }))
+      rememberSession({ lock: true }) // from now on the admin waits for the unlock before showing saved data
       toast(on ? 'This device can now unlock the admin' : 'Fingerprint unlock is on')
     } catch (err) {
       toast(err.message, { tone: 'error' })

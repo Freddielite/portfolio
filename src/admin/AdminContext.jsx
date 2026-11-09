@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, AlertTriangle } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import ImageCropper from './ImageCropper.jsx'
 import { confirmIdentity, haptic } from './native.js'
 
 // Shared state for the whole admin: which tabs have unsaved edits (for the dots
@@ -67,6 +68,29 @@ export function AdminProvider({ go, children }) {
     d?.resolve(result)
   }, [])
 
+  // editImage(file) -> Promise<File | null>: crop and rotate before uploading.
+  // Resolves with the file to upload (the original if nothing changed) or
+  // null if you cancelled. GIFs and non-images pass straight through.
+  const [imageJob, setImageJob] = useState(null)
+  const imageJobRef = useRef(null)
+  const editImage = useCallback((file) => {
+    if (!file || !file.type?.startsWith('image/') || file.type === 'image/gif' || typeof createImageBitmap !== 'function') {
+      return Promise.resolve(file)
+    }
+    return new Promise((resolve) => {
+      imageJobRef.current?.resolve(null)
+      const job = { file, resolve, id: Date.now() }
+      imageJobRef.current = job
+      setImageJob(job)
+    })
+  }, [])
+  const closeImageJob = useCallback((result) => {
+    const job = imageJobRef.current
+    imageJobRef.current = null
+    setImageJob(null)
+    job?.resolve(result)
+  }, [])
+
   // Pull to refresh (installed app): each tab registers what refreshing means.
   const refreshers = useRef(new Map())
   const registerRefresh = useCallback((id, fn) => {
@@ -94,14 +118,15 @@ export function AdminProvider({ go, children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ dirty, reportDirty, toast, go, confirm, registerRefresh, refresh, tabs: tabs.current, tabsVersion, publishTab, dropTab }),
-    [dirty, reportDirty, toast, go, confirm, registerRefresh, refresh, tabsVersion, publishTab, dropTab]
+    () => ({ dirty, reportDirty, toast, go, confirm, editImage, registerRefresh, refresh, tabs: tabs.current, tabsVersion, publishTab, dropTab }),
+    [dirty, reportDirty, toast, go, confirm, editImage, registerRefresh, refresh, tabsVersion, publishTab, dropTab]
   )
 
   return (
     <AdminContext.Provider value={value}>
       {children}
       {dialog && <ConfirmDialog key={dialog.id} request={dialog} onClose={closeDialog} />}
+      {imageJob && <ImageCropper key={imageJob.id} file={imageJob.file} onDone={closeImageJob} />}
       <div className="admin-toast-wrap" role="status" aria-live="polite">
         {toastItem && (
           <div className={`admin-toast is-${toastItem.tone}`} key={toastItem.id}>
