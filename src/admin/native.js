@@ -11,6 +11,9 @@ const Privacy = registerPlugin('PrivacyScreen')
 const Files = registerPlugin('Filesystem')
 const Share = registerPlugin('Share')
 const InAppBrowser = registerPlugin('Browser')
+const Haptics = registerPlugin('Haptics')
+const SystemBars = registerPlugin('SystemBars')
+const AdminBridge = registerPlugin('AdminBridge') // our own: shortcuts and shared content (AdminBridge.java)
 
 export const isNative = () => {
   try {
@@ -218,5 +221,86 @@ export async function openInApp(url) {
     return true
   } catch {
     return false
+  }
+}
+
+// ---------- extra fingerprint check for things that cannot be undone ----------
+// Asks for the fingerprint once more before emailing subscribers, restoring a
+// backup or removing a device. If fingerprint unlock was never turned on there is
+// nothing to check against, so it lets the action through (the dialog still asked).
+export async function confirmIdentity(reason = 'Confirm it is you') {
+  if (!(await nativeIsSetUp())) return true
+  try {
+    await quiet(60000, () =>
+      Biometric.verifyIdentity({
+        reason,
+        title: 'Confirm it is you',
+        subtitle: reason,
+        negativeButtonText: 'Cancel',
+        maxAttempts: 3,
+      })
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+// ---------- small vibrations ----------
+// A light tap for picking something up, a firmer one for a destructive confirm, and
+// a double pulse for saved or failed. Silent in a normal browser, and never throws.
+const buzz = (fn) => {
+  if (!isNative()) return
+  Promise.resolve()
+    .then(fn)
+    .catch(() => {})
+}
+export const haptic = {
+  tap: () => buzz(() => Haptics.impact({ style: 'LIGHT' })),
+  warn: () => buzz(() => Haptics.impact({ style: 'MEDIUM' })),
+  success: () => buzz(() => Haptics.notification({ type: 'SUCCESS' })),
+  error: () => buzz(() => Haptics.notification({ type: 'ERROR' })),
+}
+
+// ---------- status bar and navigation bar ----------
+// The page draws behind the system bars. Their icons must stay readable on the
+// admin's colours, so they follow the theme the page is actually showing.
+function pageIsDark() {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor || '')
+  if (!m) return window.matchMedia('(prefers-color-scheme: dark)').matches
+  const [r, g, b] = [m[1], m[2], m[3]].map(Number)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5
+}
+
+export function followTheme() {
+  if (!isNative()) return () => {}
+  const apply = () => {
+    // 'DARK' means a dark page, so the bar icons turn light.
+    Promise.resolve()
+      .then(() => SystemBars.setStyle({ style: pageIsDark() ? 'DARK' : 'LIGHT' }))
+      .catch(() => {})
+  }
+  apply()
+  const watch = new MutationObserver(apply)
+  watch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
+  const mq = window.matchMedia('(prefers-color-scheme: dark)')
+  mq.addEventListener('change', apply)
+  return () => {
+    watch.disconnect()
+    mq.removeEventListener('change', apply)
+  }
+}
+
+// ---------- shortcuts and shared content from the phone ----------
+// Calls `handler` with { kind: 'shortcut', dest } or { kind: 'share', title, text,
+// images: [{ name, type, data }] } (photos as base64). Returns a function that stops
+// listening. Something that arrived before this was called is delivered right away.
+export async function listenForPhoneIntents(handler) {
+  if (!isNative()) return () => {}
+  try {
+    const sub = await AdminBridge.addListener('adminIntent', handler)
+    return () => sub.remove()
+  } catch {
+    return () => {}
   }
 }

@@ -52,6 +52,8 @@ export default function SecurityCard() {
         : 'That device will need the password to unlock the admin until you set it up again.',
       confirmLabel: last ? 'Turn off unlock' : 'Remove device',
       tone: 'danger',
+      secure: true,
+      secureReason: last ? 'Turn off fingerprint unlock' : `Remove ${p.label}`,
     })
     if (!ok) return
     setBusy(true)

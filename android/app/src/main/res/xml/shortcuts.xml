@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_post"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_new_post"
+        android:shortcutShortLabel="@string/shortcut_new_post"
+        android:shortcutLongLabel="@string/shortcut_new_post_long">
+        <intent
+            android:action="xyz.wyntek.admin.SHORTCUT"
+            android:targetPackage="xyz.wyntek.admin"
+            android:targetClass="xyz.wyntek.admin.MainActivity">
+            <extra android:name="dest" android:value="new-post" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="subscribers"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_subscribers"
+        android:shortcutShortLabel="@string/shortcut_subscribers"
+        android:shortcutLongLabel="@string/shortcut_subscribers_long">
+        <intent
+            android:action="xyz.wyntek.admin.SHORTCUT"
+            android:targetPackage="xyz.wyntek.admin"
+            android:targetClass="xyz.wyntek.admin.MainActivity">
+            <extra android:name="dest" android:value="subscribers" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="health"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_health"
+        android:shortcutShortLabel="@string/shortcut_health"
+        android:shortcutLongLabel="@string/shortcut_health_long">
+        <intent
+            android:action="xyz.wyntek.admin.SHORTCUT"
+            android:targetPackage="xyz.wyntek.admin"
+            android:targetClass="xyz.wyntek.admin.MainActivity">
+            <extra android:name="dest" android:value="health" />
+        </intent>
+    </shortcut>
+</shortcuts>

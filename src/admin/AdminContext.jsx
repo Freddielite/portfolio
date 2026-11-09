@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, AlertTriangle } from 'lucide-react'
 import ConfirmDialog from './ConfirmDialog.jsx'
+import { confirmIdentity, haptic } from './native.js'
 
 // Shared state for the whole admin: which tabs have unsaved edits (for the dots
 // in the navigation and the log-out warning), a small toast with an optional
@@ -40,13 +41,24 @@ export function AdminProvider({ go, children }) {
   // One dialog at a time: a new request answers the open one with "no".
   const [dialog, setDialog] = useState(null)
   const dialogRef = useRef(null)
-  const confirm = useCallback((request) => {
-    return new Promise((resolve) => {
+  // Pass `secure: true` for something that cannot be undone: on the phone the
+  // fingerprint is asked for once more after the person says yes.
+  const toastRef = useRef(null)
+  toastRef.current = toast
+  const confirm = useCallback(async (request) => {
+    const yes = await new Promise((resolve) => {
       dialogRef.current?.resolve(false)
       const next = { ...request, resolve, id: Date.now(), returnTo: document.activeElement }
       dialogRef.current = next
       setDialog(next)
     })
+    if (!yes) return false
+    if (request.secure && !(await confirmIdentity(request.secureReason || request.title || 'Confirm it is you'))) {
+      toastRef.current?.('Not confirmed, so nothing was changed.', { tone: 'error' })
+      return false
+    }
+    if (request.tone === 'danger') haptic.warn()
+    return true
   }, [])
   const closeDialog = useCallback((result) => {
     const d = dialogRef.current

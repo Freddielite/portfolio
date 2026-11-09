@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Check, ChevronUp, Loader2, RotateCcw } from 'lucide-react'
 import { useAdmin } from './AdminContext.jsx'
 import useDeployStatus from './useDeployStatus.js'
+import { haptic } from './native.js'
 
 const names = (list, labels) => list.map((t) => labels[t.id] || t.id)
 const sentence = (arr) => (arr.length < 3 ? arr.join(' and ') : `${arr.slice(0, -1).join(', ')} and ${arr[arr.length - 1]}`)
@@ -112,6 +113,7 @@ export default function SaveAllDock({ labels, go }) {
       if (!ok) failed.push(t.id)
     }
     setRunning(false)
+    if (saveable.length) (failed.length === saveable.length ? haptic.error : haptic.success)()
     const skipped = s.blocked.map((t) => t.id)
     if (failed.length || skipped.length) {
       setAttention([...failed, ...skipped])

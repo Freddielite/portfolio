@@ -13,6 +13,8 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Must be registered before super.onCreate builds the bridge.
+        registerPlugin(AdminBridge.class);
         super.onCreate(savedInstanceState);
         // The admin lives under /admin. Any other page of the same site (View live site,
         // View on site) opens in the phone's in-app browser, which has an X to close it,

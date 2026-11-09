@@ -277,6 +277,8 @@ function Backup({ data, onChanged }) {
         body: 'Anything newer than the backup is overwritten. History can still bring it back.',
         confirmLabel: 'Replace everything',
         tone: 'danger',
+        secure: true,
+        secureReason: 'Replace your content with the backup',
       })
       if (!ok) return
     }

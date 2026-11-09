@@ -15,6 +15,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities'
 import Toolbar, { editorHandlers } from './Toolbar.jsx'
 import { uploadImage } from '../imageUpload.js'
+import { haptic } from '../native.js'
 import {
   RATIOS,
   blocksToItems,
@@ -341,6 +342,7 @@ export default function BlockEditor({ body, onBody }) {
   }
 
   function onDragStart({ active }) {
+    haptic.tap()
     dragStart.current = itemsRef.current
     setActiveDragId(active.id)
   }
@@ -364,6 +366,7 @@ export default function BlockEditor({ body, onBody }) {
   }
 
   function onDragEnd({ active, over }) {
+    haptic.tap()
     setActiveDragId(null)
     const cur = itemsRef.current
     if (over) {

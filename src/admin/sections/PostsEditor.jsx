@@ -6,6 +6,7 @@ import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import Pager, { paginate } from '../Pager.jsx'
+import { takeIntent } from '../intents.js'
 import PostForm from '../builder/PostForm.jsx'
 import { validatePosts } from '../validate.js'
 import { useAdmin, usePanel, useRefresh } from '../AdminContext.jsx'
@@ -161,6 +162,22 @@ export default function PostsEditor() {
     toast('Picked up where you left off. Not saved yet.')
   }, [backup.offer, list]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // "New post" from the app icon, and things shared to the app from another app.
+  // The latest functions are kept in a ref so the listener never uses stale state.
+  const phoneActions = useRef(null)
+  phoneActions.current = { addPost, startFromShare }
+  useEffect(() => {
+    if (!list) return
+    const run = () => {
+      if (takeIntent('new-post')) phoneActions.current.addPost()
+      const shared = takeIntent('share')
+      if (shared) phoneActions.current.startFromShare(shared.shared)
+    }
+    run()
+    window.addEventListener('admin:intent', run)
+    return () => window.removeEventListener('admin:intent', run)
+  }, [list !== null]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!list) return <p className="admin-hint admin-loading">Loading posts…</p>
   const loadError = (!pub.data && pub.error) || (!drafts.data && drafts.error)
   if (loadError) return <p className="admin-error">{loadError}</p>
@@ -183,8 +200,8 @@ export default function PostsEditor() {
   }
   // Turns what was shared from another app into a new draft: text and links
   // go in the body, images are optimised, uploaded and placed in the body too.
-  async function startFromShare() {
-    const shared = await takeShared()
+  async function startFromShare(given) {
+    const shared = given || (await takeShared())
     if (!shared) {
       toast('Nothing came through from the share. Try sharing again.', { tone: 'error' })
       return
@@ -205,7 +222,7 @@ export default function PostsEditor() {
     const parts = []
     if (text) parts.push(text)
     if (url && !text.includes(url)) parts.push(`[${shared.title || url}](${url})`)
-    paths.forEach((p) => parts.push(`![Describe this image](${p})`))
+    paths.forEach((p) => parts.push(`![](${p})`))
     const post = blankPost({ title: shared.title || '', slug: slugify(shared.title), body: textToBlocks(parts.join('\n\n')) })
     setList((l) => [post, ...l])
     setTab('all')

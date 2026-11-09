@@ -15,6 +15,8 @@ import { startNativeLock } from './nativeLock.js'
 import { openInApp } from './native.js'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import SaveAllDock, { AdminStatusChip } from './SaveAllDock.jsx'
+import { followTheme, listenForPhoneIntents } from './native.js'
+import { pushIntent, sharedFromPhone } from './intents.js'
 import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
 import { useInstallPrompt } from './pwa.js'
@@ -132,6 +134,38 @@ function Shell({ tab, go, visited, onLogout }) {
   const headerRef = useRef(null)
   const titleRef = useRef(null)
   const header = useTuckingHeader(headerRef, titleRef, tab)
+
+  // The status and navigation bar icons follow the theme the admin is showing.
+  useEffect(() => followTheme(), [])
+
+  // Shortcuts on the app icon and things shared to the app from other apps.
+  const goRef = useRef(go)
+  goRef.current = go
+  useEffect(() => {
+    let stop = () => {}
+    let gone = false
+    async function onPhoneIntent(i) {
+      if (i.kind === 'shortcut') {
+        if (i.dest === 'new-post') {
+          pushIntent({ kind: 'new-post' })
+          goRef.current('posts')
+        } else if (i.dest === 'subscribers') {
+          goRef.current('subscribers')
+        } else if (i.dest === 'health') {
+          goRef.current('overview')
+          setTimeout(() => document.getElementById('site-health')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 450)
+        }
+      } else if (i.kind === 'share') {
+        pushIntent({ kind: 'share', shared: await sharedFromPhone(i) })
+        goRef.current('posts')
+      }
+    }
+    listenForPhoneIntents(onPhoneIntent).then((fn) => (gone ? fn() : (stop = fn)))
+    return () => {
+      gone = true
+      stop()
+    }
+  }, [])
 
   // Pull to refresh (app only): reloads whatever the current tab shows.
   const pull = usePullToRefresh(async () => {

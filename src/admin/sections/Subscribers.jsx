@@ -69,6 +69,8 @@ export default function Subscribers() {
         title: 'Email this post?',
         body: `"${post.title}" will be emailed to ${count} ${count === 1 ? 'subscriber' : 'subscribers'} now. This cannot be undone.`,
         confirmLabel: 'Send to subscribers',
+        secure: true,
+        secureReason: 'Email this post to your subscribers',
       })
       if (!ok) return
     }
@@ -82,7 +84,7 @@ export default function Subscribers() {
         })
       )
       if (status === 409 && body.alreadySent) {
-        const again = await confirm({ title: 'Already emailed', body: 'This post was already sent to subscribers. Send it again?', confirmLabel: 'Send again', tone: 'danger' })
+        const again = await confirm({ title: 'Already emailed', body: 'This post was already sent to subscribers. Send it again?', confirmLabel: 'Send again', tone: 'danger', secure: true, secureReason: 'Email this post again' })
         setSending(null)
         if (again) return sendPost(post, true)
         return

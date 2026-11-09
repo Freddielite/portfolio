@@ -4,4 +4,10 @@
     <string name="title_activity_main">Portfolio Admin</string>
     <string name="package_name">xyz.wyntek.admin</string>
     <string name="custom_url_scheme">xyz.wyntek.admin</string>
+    <string name="shortcut_new_post">New post</string>
+    <string name="shortcut_new_post_long">Write a new blog post</string>
+    <string name="shortcut_subscribers">Subscribers</string>
+    <string name="shortcut_subscribers_long">See your subscribers</string>
+    <string name="shortcut_health">Site health</string>
+    <string name="shortcut_health_long">Check that your sites are up</string>
 </resources>

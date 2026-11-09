@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { haptic, isNative } from './native.js'
 
 // Drag-to-reorder for a list kept in React state, built on pointer events so it
 // works the same with a mouse, a finger or a pen. Give each row's grip
@@ -44,6 +45,7 @@ export default function useDragReorder(setList, { onMove, onStart } = {}) {
 
   function end() {
     if (!drag.current) return
+    if (isNative()) haptic.tap()
     drag.current = null
     setDragging(null)
     stopScroll()
@@ -66,7 +68,8 @@ export default function useDragReorder(setList, { onMove, onStart } = {}) {
       setDragging(i)
       opts.current.onStart?.(i)
       document.documentElement.classList.add('admin-is-dragging')
-      navigator.vibrate?.(8)
+      if (isNative()) haptic.tap()
+      else navigator.vibrate?.(8)
     },
     onPointerMove: (e) => {
       const d = drag.current
@@ -88,6 +91,7 @@ export default function useDragReorder(setList, { onMove, onStart } = {}) {
       const mid = r.top + r.height / 2
       if ((to > d.index && y < mid) || (to < d.index && y > mid)) return
       move(d.index, to)
+      if (isNative()) haptic.tap()
       d.index = to
       setDragging(to)
     },
