@@ -3,6 +3,7 @@ import { ExternalLink, Trash2 } from 'lucide-react'
 import { PortableText } from '@portabletext/react'
 import ImageUploader from '../ImageUploader.jsx'
 import BlockEditor from './BlockEditor.jsx'
+import TagInput from './TagInput.jsx'
 import SeoPanel from './SeoPanel.jsx'
 import { openInApp } from '../native.js'
 import { wordCount } from '../portableText.js'
@@ -19,7 +20,6 @@ const VIEWS = [
 ]
 
 export default function PostForm({ post, onChange, onDelete, origin, savedLive }) {
-  const [tagText, setTagText] = useState(() => (post.tags || []).join(', '))
   const [autoSlug, setAutoSlug] = useState(!post.slug)
   const [view, setView] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 1100 ? 'split' : 'write'))
 
@@ -31,10 +31,6 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
 
   function setTitle(title) {
     onChange({ ...post, title, slug: autoSlug ? slugify(title) : post.slug })
-  }
-  function setTags(text) {
-    setTagText(text)
-    set('tags', text.split(',').map((t) => t.trim()).filter(Boolean))
   }
   const today = todayString()
   const day = String(post.publishedAt || '').slice(0, 10)
@@ -89,8 +85,8 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
             <p className="admin-hint">{origin}/blog/{post.slug || 'your-slug'}</p>
           </div>
           <div className="admin-field">
-            <label className="admin-label">Tags (comma separated)</label>
-            <input value={tagText} placeholder="Email, Backend" onChange={(e) => setTags(e.target.value)} />
+            <label className="admin-label">Tags</label>
+            <TagInput value={post.tags || []} onChange={(tags) => set('tags', tags)} placeholder="Email, Backend" />
             <p className="admin-hint">Leave empty and tags are chosen automatically from the title and summary.</p>
           </div>
         </div>

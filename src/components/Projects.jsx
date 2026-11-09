@@ -5,12 +5,10 @@ import CaseStudyModal from './CaseStudyModal.jsx'
 import useContent from '../hooks/useContent.js'
 import { getProjects } from '../lib/content.js'
 import fallbackProjects from '../data/projects.js'
-import { cardMove, cardLeave } from '../hooks/usePointerFx.js'
 import { kindOf } from '../lib/projectKind.js'
 import usePulseStatus from '../hooks/usePulseStatus.js'
 import useReveal from '../hooks/useReveal.js'
-import StatusChip from './StatusChip.jsx'
-import BlurImage from './BlurImage.jsx'
+import ProjectCard from './ProjectCard.jsx'
 
 const canMorph = () =>
   typeof document !== 'undefined' &&
@@ -102,42 +100,7 @@ export default function Projects() {
       <div className="project-grid">
         {shown.map((p, i) => (
           <Reveal className={`tl ${(hasFeatured ? p.featured : i === 0) ? 'is-wide' : ''}`} delay={(i % 3) * 80} key={p.id}>
-            <article
-              className="card project-card"
-              data-cursor="View"
-              data-pid={p.id}
-              onPointerMove={cardMove}
-              onPointerLeave={cardLeave}
-              onClick={(e) => {
-                if (!e.target.closest('a, button')) openProject(p, e.currentTarget)
-              }}
-            >
-              <div className="thumb">
-                {p.image ? (
-                  <BlurImage src={p.image} alt={p.imageAlt || `${p.name} preview`} placeholder={p.imageLqip} />
-                ) : (
-                  <span className="thumb-initial">{p.name.charAt(0)}</span>
-                )}
-                <StatusChip status={statusFor(p)} />
-                <span className={`kind kind-${kindOf(p).toLowerCase().replace(/\s/g, '-')}`}>{kindOf(p)}</span>
-              </div>
-              <h3>{p.name}</h3>
-              <p>{p.description}</p>
-              <div className="tag-row">
-                {(p.tags || []).map((t) => <span className="tag" key={t}>{t}</span>)}
-              </div>
-              <div className="project-links">
-                <button type="button" className="link-btn" onClick={(e) => openProject(p, e.currentTarget.closest('.project-card'))}>
-                  Case study →
-                </button>
-                {p.live && (
-                  <a href={p.live} target="_blank" rel="noreferrer" className="link-btn link-btn-ghost">Live ↗</a>
-                )}
-                {p.github && (
-                  <a href={p.github} target="_blank" rel="noreferrer" className="link-btn link-btn-ghost">GitHub ↗</a>
-                )}
-              </div>
-            </article>
+            <ProjectCard project={p} status={statusFor(p)} onOpen={openProject} />
           </Reveal>
         ))}
       </div>

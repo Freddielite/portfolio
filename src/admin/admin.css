@@ -123,10 +123,11 @@
   border-right: 1px solid var(--border);
 }
 
+.admin-brand-wrap { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 12px 18px; }
 .admin-brand {
   font: 700 1.15rem var(--font-display);
   letter-spacing: -0.01em;
-  padding: 2px 12px 18px;
+  min-width: 0;
 }
 
 .admin-side-nav {
@@ -262,13 +263,18 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .admin-brand {
+  .admin-brand-wrap {
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
     padding: 0 0 0 2px;
+    justify-content: flex-start;
+  }
+  .admin-brand {
+    flex: 0 1 auto;
     font-size: 1.12rem;
   }
+  .admin-status { margin-left: 0; }
 
   .admin-sidebar-footer {
     grid-column: 2;
@@ -2088,3 +2094,70 @@ html[data-nav-dir='back']::view-transition-new(admin-main) { animation-name: adm
 .blk-ghost { display: grid; gap: 2px; max-width: 320px; padding: 10px 14px; border: 1px solid var(--accent); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); font: 0.85rem var(--font-body); }
 .blk-ghost strong { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
 .blk-ghost span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- tag chips ---------- */
+.admin-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 42px; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--a-r); background: var(--bg); cursor: text; }
+.admin-tags:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--a-ring); }
+.admin-chip { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 11px; border-radius: 99px; background: var(--a-tint); color: var(--accent); font: 600 0.82rem var(--font-body); }
+.admin-chip button { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 99px; background: transparent; color: inherit; cursor: pointer; }
+.admin-chip button:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.admin-field .admin-tags input.admin-tags-input:not([type='file']):not([type='range']):not([type='checkbox']) {
+  flex: 1 1 140px; width: auto; min-width: 100px; min-height: 30px; padding: 3px 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+@media (max-width: 860px) { .admin-field .admin-tags input.admin-tags-input:not([type='file']):not([type='range']):not([type='checkbox']) { font-size: 16px; } }
+
+/* ---------- live preview beside the form ---------- */
+.admin-split { display: block; }
+@media (min-width: 1280px) {
+  .admin-main > .admin-panel:has(.admin-split.has-side) { max-width: min(100%, 1320px); }
+  .admin-split.has-side { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; align-items: start; }
+  .admin-split-side { position: sticky; top: 24px; }
+}
+.admin-preview { display: grid; gap: 10px; margin-top: 14px; }
+.admin-split-side .admin-preview { margin-top: 0; padding: 16px; border: 1px solid var(--border); border-radius: var(--a-r-lg); background: var(--surface); }
+.admin-preview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.admin-preview-head h3 { margin: 0; font: 600 0.98rem var(--font-display); }
+.admin-preview-head .admin-hint { margin: 2px 0 0; }
+.admin-preview-theme { display: inline-flex; border: 1px solid var(--border); border-radius: 99px; overflow: hidden; }
+.admin-preview-theme button { min-height: 32px; padding: 0 14px; border: 0; background: transparent; color: var(--text-muted); font: 600 0.78rem var(--font-body); cursor: pointer; }
+.admin-preview-theme button.on { background: var(--accent); color: #fff; }
+.admin-preview-stage { padding: 16px; border: 1px solid var(--border); border-radius: var(--a-r-lg); overflow: hidden; }
+.admin-preview-card { max-width: 420px; margin: 0 auto; }
+.admin-preview-card .project-card { width: 100%; }
+.admin-preview-empty { margin: 0; padding: 36px 10px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+.admin-preview-note { margin: 0; }
+
+/* ---------- status chip (header, every tab) ---------- */
+.admin-status { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; min-height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 99px; background: var(--surface); color: var(--text-muted); font: 600 0.72rem var(--font-body); white-space: nowrap; }
+button.admin-status { cursor: pointer; }
+button.admin-status:hover { border-color: currentColor; }
+.admin-status-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.admin-status.is-ok { color: var(--a-ok); }
+.admin-status.is-warn { color: var(--a-warn); }
+.admin-status.is-bad { color: var(--a-danger); }
+.admin-status.is-busy { color: var(--accent); }
+.admin-status.is-warn .admin-status-dot, .admin-status.is-busy .admin-status-dot { animation: admin-pulse 1.4s ease-in-out infinite; }
+.admin-status.is-ok, .admin-status.is-warn, .admin-status.is-bad, .admin-status.is-busy { background: color-mix(in srgb, currentColor 10%, var(--surface)); border-color: color-mix(in srgb, currentColor 30%, var(--border)); }
+
+/* ---------- Save all dock: per-tab rows ---------- */
+.admin-dock-toggle { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.admin-dock-chevron { margin-left: auto; flex-shrink: 0; transition: transform 0.2s; }
+.admin-dock-chevron.is-open { transform: rotate(180deg); }
+.admin-dock-rows { display: grid; gap: 8px; max-height: 50vh; overflow-y: auto; margin: 0 0 10px; padding: 0 8px 10px 0; list-style: none; border-bottom: 1px solid var(--border); }
+.admin-dock-row { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--a-r); background: var(--bg); }
+.admin-dock-row.is-attention { border-color: color-mix(in srgb, var(--a-danger) 55%, var(--border)); }
+.admin-dock-row-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-dock-row-state { min-width: 0; color: var(--text-muted); font-size: 0.82rem; }
+.admin-dock-row.is-bad .admin-dock-row-state { color: var(--a-danger); }
+.admin-dock-row .admin-btn, .admin-dock-row .admin-btn-ghost { min-height: 34px; padding: 0 12px; font-size: 0.82rem; }
+.admin-dock-row .admin-problems { margin: 8px 0 0; }
+@media (max-width: 860px) {
+  .admin-dock-row-state { flex-basis: 100%; order: 3; }
+  .admin-dock-row-head .admin-spacer { display: none; }
+}
+@media (max-width: 520px) {
+  /* The message gets the full width, the buttons sit under it. */
+  .admin-dock-inner { flex-wrap: wrap; }
+  .admin-dock-status { flex: 1 1 100%; }
+  .admin-dock-actions { margin-left: auto; }
+}

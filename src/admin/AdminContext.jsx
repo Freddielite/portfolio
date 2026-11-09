@@ -65,9 +65,25 @@ export function AdminProvider({ go, children }) {
   }, [])
   const refresh = useCallback((id) => refreshers.current.get(id)?.(), [])
 
+  // Every editor tab tells the admin where it stands (unsaved edits, saving, a problem)
+  // and hands over what Save and Discard do. The Save all dock and the status chip
+  // read this, so they show the same on every tab. The map is kept in a ref and the
+  // version below changes only when something visible changed, to avoid extra renders.
+  const tabs = useRef(new Map())
+  const [tabsVersion, setTabsVersion] = useState(0)
+  const publishTab = useCallback((id, info) => {
+    const sig = (t) => (t ? [t.dirty, t.saving, t.blocked, t.error, t.conflict, t.savedAt, t.restored, t.errors.join('|')].join('~') : '')
+    const prev = tabs.current.get(id)
+    tabs.current.set(id, info)
+    if (sig(prev) !== sig(info)) setTabsVersion((v) => v + 1)
+  }, [])
+  const dropTab = useCallback((id) => {
+    if (tabs.current.delete(id)) setTabsVersion((v) => v + 1)
+  }, [])
+
   const value = useMemo(
-    () => ({ dirty, reportDirty, toast, go, confirm, registerRefresh, refresh }),
-    [dirty, reportDirty, toast, go, confirm, registerRefresh, refresh]
+    () => ({ dirty, reportDirty, toast, go, confirm, registerRefresh, refresh, tabs: tabs.current, tabsVersion, publishTab, dropTab }),
+    [dirty, reportDirty, toast, go, confirm, registerRefresh, refresh, tabsVersion, publishTab, dropTab]
   )
 
   return (

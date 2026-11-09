@@ -1,7 +1,8 @@
 /* ==========================================================================
    Tokens
    ========================================================================== */
-:root {
+:root,
+.site-scope {
   --bg: #f4f7ff;
   --surface: #ffffff;
   --surface-2: #f6f8fc;
@@ -22,7 +23,8 @@
   --pad: clamp(16px, 4vw, 32px);
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+.site-scope[data-theme='dark'] {
   --bg: #0b1020;
   --surface: #121a30;
   --surface-2: #0f1629;
@@ -724,10 +726,12 @@ html.theme-vt::view-transition-new(root) {
    Premium polish: success animations, gradient borders, grain, tints,
    sheet gestures, blur-up images
    ========================================================================== */
-:root { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-:root[data-theme='dark'] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root, .site-scope { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+:root[data-theme='dark'], .site-scope[data-theme='dark'] { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .13 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 body { background-image: var(--grain); }
 .card, .side-card, .palette { background-image: var(--grain); }
+/* An embedded copy of the site's look with its own light/dark choice (admin preview). */
+.site-scope { background: var(--bg); color: var(--text); font-family: var(--font-body); }
 
 /* Press feedback and chip pop */
 .btn, .chip, .link-btn, .icon-btn, .theme-toggle { -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition-property: transform, scale, box-shadow, border-color, background, color; transition-duration: 0.2s, 0.12s, 0.2s, 0.2s, 0.2s, 0.2s; }
@@ -755,7 +759,7 @@ body { background-image: var(--grain); }
   background: conic-gradient(from var(--angle), transparent 0 55%, var(--accent) 75%, #7fd0ff 87%, transparent 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
 }
-:root[data-theme='dark'] .card::after { opacity: 0.35; }
+:root[data-theme='dark'] .card::after, .site-scope[data-theme='dark'] .card::after { opacity: 0.35; }
 @media (hover: hover) and (pointer: fine) {
   .card:hover::after { opacity: 1; animation: angle 3.5s linear infinite; }
 }

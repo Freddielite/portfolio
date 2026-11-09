@@ -14,6 +14,7 @@ import Subscribers from './sections/Subscribers.jsx'
 import { startNativeLock } from './nativeLock.js'
 import { openInApp } from './native.js'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
+import SaveAllDock, { AdminStatusChip } from './SaveAllDock.jsx'
 import { IS_APP, slide, usePullToRefresh, useTuckingHeader } from './app.js'
 import { hasUnsavedPostWriting } from './usePostBackup.js'
 import { useInstallPrompt } from './pwa.js'
@@ -29,6 +30,7 @@ const TABS = [
 ]
 const byId = Object.fromEntries(TABS.map((t) => [t.id, t]))
 const order = TABS.map((t) => t.id)
+const LABELS = Object.fromEntries(TABS.map((t) => [t.id, t.label]))
 const fromHash = () => {
   const h = window.location.hash.replace('#', '')
   return byId[h] ? h : 'overview'
@@ -193,9 +195,12 @@ function Shell({ tab, go, visited, onLogout }) {
         className={`admin-sidebar ${header.tucked ? 'is-tucked' : ''} ${header.titleGone ? 'has-title' : ''}`}
         aria-label="Admin"
       >
-        <div className="admin-brand">
-          <span className="admin-brand-name">Admin</span>
-          {IS_APP && <span className="admin-brand-title" aria-hidden="true">{current.label}</span>}
+        <div className="admin-brand-wrap">
+          <div className="admin-brand">
+            <span className="admin-brand-name">Admin</span>
+            {IS_APP && <span className="admin-brand-title" aria-hidden="true">{current.label}</span>}
+          </div>
+          <AdminStatusChip labels={LABELS} go={go} tab={tab} />
         </div>
 
         <nav className="admin-side-nav" ref={navRef} onScroll={updateFade} aria-label="Admin sections">
@@ -263,6 +268,7 @@ function Shell({ tab, go, visited, onLogout }) {
             )
         )}
       </main>
+      <SaveAllDock labels={LABELS} go={go} />
     </div>
   )
 }

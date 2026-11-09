@@ -4,9 +4,24 @@ import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
 import ImageUploader from '../ImageUploader.jsx'
+import TagInput from '../builder/TagInput.jsx'
+import ProjectPreview from './ProjectPreview.jsx'
 import useDragReorder from '../useDragReorder.js'
 import { useAdmin, useReloadOnPull } from '../AdminContext.jsx'
 import { validateProjects } from '../validate.js'
+
+// True when the screen is at least this wide; used to put the preview beside the form.
+function useMedia(query) {
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const update = () => setOn(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [query])
+  return on
+}
 
 function blankProject() {
   return {
@@ -21,7 +36,7 @@ function blankProject() {
   }
 }
 
-function ProjectCard({ project, open, onToggle, onChange, onRemove, onMove, isFirst, isLast, handleProps, rowProps, isDragging }) {
+function ProjectRow({ project, open, onToggle, onChange, onRemove, onMove, isFirst, isLast, handleProps, rowProps, isDragging, preview }) {
   function set(key, value) {
     onChange({ ...project, [key]: value })
   }
@@ -96,12 +111,8 @@ function ProjectCard({ project, open, onToggle, onChange, onRemove, onMove, isFi
 
           <div className="admin-field">
             <label className="admin-label">Tags</label>
-            <input
-              value={(project.tags || []).join(', ')}
-              onChange={(e) => set('tags', e.target.value.split(',').map((t) => t.trim()).filter(Boolean))}
-              placeholder="React, Full-stack, Payments"
-            />
-            <p className="admin-hint">Comma-separated.</p>
+            <TagInput value={project.tags || []} onChange={(tags) => set('tags', tags)} placeholder="React, Full-stack, Payments" />
+            <p className="admin-hint">Press Enter or comma after each tag.</p>
           </div>
 
           <div className="admin-grid-2">
@@ -137,6 +148,7 @@ function ProjectCard({ project, open, onToggle, onChange, onRemove, onMove, isFi
             <label className="admin-label">Outcome</label>
             <textarea rows={4} value={project.caseStudy?.outcome || ''} onChange={(e) => setCaseStudy('outcome', e.target.value)} />
           </div>
+          {preview}
         </div>
       )}
     </div>
@@ -153,6 +165,7 @@ export default function ProjectsEditor() {
   const follow = (from, to) =>
     setOpen((o) => (o === from ? to : o === null ? null : from < o && to >= o ? o - 1 : from > o && to <= o ? o + 1 : o))
   const { handleProps, rowProps, dragging } = useDragReorder(setList, { onMove: follow })
+  const sideBySide = useMedia('(min-width: 1280px)')
 
   useEffect(() => {
     if (data) {
@@ -202,33 +215,46 @@ export default function ProjectsEditor() {
     requestAnimationFrame(() => document.querySelector('.admin-collapse.is-open')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
+  const openProject = open !== null ? list[open] : null
+
   return (
     <div className="admin-section">
       <SaveBar {...bar} />
-      <p className="admin-hint admin-intro">Tap a project to edit it. Drag the grip to change the order. Hidden projects stay saved but do not show on the site.</p>
+      <div className={`admin-split ${sideBySide ? 'has-side' : ''}`}>
+        <div className="admin-split-main">
+          <p className="admin-hint admin-intro">Tap a project to edit it. Drag the grip to change the order. Hidden projects stay saved but do not show on the site.</p>
 
-      <div className="admin-stack">
-        {list.map((project, i) => (
-          <ProjectCard
-            key={i}
-            project={project}
-            open={open === i}
-            onToggle={() => setOpen((o) => (o === i ? null : i))}
-            onChange={(p) => updateAt(i, p)}
-            onRemove={() => removeAt(i)}
-            onMove={(dir) => moveAt(i, dir)}
-            isFirst={i === 0}
-            isLast={i === list.length - 1}
-            handleProps={handleProps(i)}
-            rowProps={rowProps(i)}
-            isDragging={dragging === i}
-          />
-        ))}
+          <div className="admin-stack">
+            {list.map((project, i) => (
+              <ProjectRow
+                key={i}
+                project={project}
+                open={open === i}
+                onToggle={() => setOpen((o) => (o === i ? null : i))}
+                onChange={(p) => updateAt(i, p)}
+                onRemove={() => removeAt(i)}
+                onMove={(dir) => moveAt(i, dir)}
+                isFirst={i === 0}
+                isLast={i === list.length - 1}
+                handleProps={handleProps(i)}
+                rowProps={rowProps(i)}
+                isDragging={dragging === i}
+                preview={!sideBySide && open === i ? <ProjectPreview project={project} /> : null}
+              />
+            ))}
+          </div>
+
+          <button type="button" className="admin-btn-add" onClick={addProject}>
+            <Plus size={16} aria-hidden="true" /> Add project
+          </button>
+        </div>
+
+        {sideBySide && (
+          <div className="admin-split-side">
+            <ProjectPreview project={openProject} />
+          </div>
+        )}
       </div>
-
-      <button type="button" className="admin-btn-add" onClick={addProject}>
-        <Plus size={16} aria-hidden="true" /> Add project
-      </button>
     </div>
   )
 }
