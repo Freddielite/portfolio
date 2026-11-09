@@ -1,3 +1,4 @@
+import { FileUp } from 'lucide-react'
 import { adminFetch } from './http.js'
 import { useRef, useState } from 'react'
 
@@ -51,7 +52,10 @@ export default function FileUploader({ value, onChange, folder, label = 'File', 
           <div className="admin-image-preview admin-image-empty">No file</div>
         )}
         <div className="admin-image-controls">
-          <input ref={inputRef} type="file" accept={accept} onChange={handleFile} disabled={uploading} />
+          <button type="button" className="admin-btn-ghost admin-btn-icon-text admin-upload-btn" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            <FileUp size={15} aria-hidden="true" /> {value ? 'Replace file' : 'Choose file'}
+          </button>
+          <input ref={inputRef} type="file" accept={accept} onChange={handleFile} disabled={uploading} hidden />
           {uploading && <p className="admin-hint">Uploading…</p>}
           {error && <p className="admin-error">{error}</p>}
           {hint && !uploading && !error && <p className="admin-hint">{hint}</p>}

@@ -55,6 +55,8 @@ const randomId = (bytes) => {
 let quietUntil = 0
 export const quietFor = (ms) => {
   quietUntil = Math.max(quietUntil, Date.now() + ms)
+  // The app's own lock (APK 1.2 and newer) keeps its own grace period.
+  if (isNative()) AdminBridge.appLockQuiet({ ms }).catch(() => {})
 }
 export const isQuiet = () => Date.now() < quietUntil
 // Coming back from the file picker, the share sheet or the live site uses up
@@ -163,8 +165,8 @@ export async function forgetNative() {
 
 // ---------- settings kept on this phone ----------
 export const LOCK_CHOICES = [
-  { value: 'now', label: 'Right away' },
-  { value: '1', label: 'After 1 minute' },
+  { value: 'now', label: 'Right away', hint: 'Every time you leave the app' },
+  { value: '1', label: 'After 1 minute', hint: 'Quick trips to other apps stay unlocked' },
   { value: '5', label: 'After 5 minutes' },
   { value: '10', label: 'After 10 minutes' },
 ]
@@ -334,3 +336,25 @@ export const alertsSetKinds = (kinds) => askPhone('alertsSetKinds', kinds)
 export const alertsDisable = () => askPhone('alertsDisable')
 export const alertsCheckNow = () => askPhone('alertsCheckNow')
 export const alertsTest = () => askPhone('alertsTest')
+
+// ---------- app lock in the app itself (APK 1.2 and newer) ----------
+// The app decides when to lock (AppLock.java), because Android always runs its
+// code when the app leaves and comes back, while this page may be paused then.
+// An older APK does not have it: nativeLock.js then decides here, as before.
+let lockSupport = null
+export function appLockSupported() {
+  if (!isNative()) return Promise.resolve(false)
+  if (!lockSupport) lockSupport = AdminBridge.appLockPending().then(() => true, () => false)
+  return lockSupport
+}
+export const appLockConfigure = (o) => AdminBridge.appLockConfigure(o).catch(() => {})
+export const appLockPending = () => AdminBridge.appLockPending().then((r) => !!r.pending, () => false)
+export const appLockShown = () => (isNative() ? AdminBridge.appLockShown().catch(() => {}) : Promise.resolve())
+export async function onAppLock(fn) {
+  try {
+    const sub = await AdminBridge.addListener('appLock', fn)
+    return () => sub.remove()
+  } catch {
+    return () => {}
+  }
+}

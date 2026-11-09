@@ -8,7 +8,7 @@ import { checkSession, reauthCancelled } from '../admin/http.js'
 import { reportNetwork } from '../admin/network.js'
 import { canOpenFromCache, clearCache, rememberSession } from '../admin/cache.js'
 import { useAdminApp } from '../admin/pwa.js'
-import { lockAtLaunch } from '../admin/nativeLock.js'
+import { confirmLockShown, lockAtLaunch } from '../admin/nativeLock.js'
 import { isNative, thisDeviceId } from '../admin/native.js'
 import SEO from '../components/SEO.jsx'
 import '../admin/admin.css'
@@ -72,6 +72,12 @@ export default function Admin() {
   useEffect(() => {
     check()
   }, [check])
+
+  // The app (APK 1.2+) keeps its window covered on a fresh start until this page
+  // has decided what to show: the lock screen, or whatever else is safe.
+  useEffect(() => {
+    if (status !== 'checking') confirmLockShown()
+  }, [status])
 
   // Offline screen: try again as soon as the phone says it is back online.
   useEffect(() => {

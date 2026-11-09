@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { prettySize, uploadImage } from './imageUpload.js'
 import { useAdmin } from './AdminContext.jsx'
+import { ImagePlus } from 'lucide-react'
 
 // Upload, optimise and preview one image. `onChange(path, { lqip })` fires after
 // an upload (null when removed). Pass `alt` and `onAltChange` to add an alt text
@@ -48,7 +49,11 @@ export default function ImageUploader({ value, onChange, folder = 'uploads', lab
           <div className="admin-image-preview admin-image-empty">No image</div>
         )}
         <div className="admin-image-controls">
-          <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading} />
+          {/* The admin's own button; the hidden input only opens the phone's or computer's file chooser. */}
+          <button type="button" className="admin-btn-ghost admin-btn-icon-text admin-upload-btn" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            <ImagePlus size={15} aria-hidden="true" /> {value ? 'Replace image' : 'Choose image'}
+          </button>
+          <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} disabled={uploading} hidden />
           {value && (
             <button type="button" className="admin-btn-ghost" onClick={() => onChange(null, { lqip: null })}>
               Remove image

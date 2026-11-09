@@ -2697,3 +2697,191 @@ button.admin-status:hover { border-color: currentColor; }
   z-index: 399;
   background: var(--bg);
 }
+
+/* ---------- Picker (the admin's own dropdown, Picker.jsx) ---------- */
+
+.admin-picker { position: relative; display: block; min-width: 0; }
+.admin-picker.is-compact { display: inline-block; }
+
+.admin-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--a-r);
+  background: var(--bg);
+  color: var(--text);
+  font: 400 0.95rem/1.45 var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.admin-picker-btn:focus-visible,
+.admin-picker-btn[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--a-ring);
+}
+
+.admin-picker-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-picker-chevron { flex-shrink: 0; color: var(--text-muted); transition: transform 0.2s var(--a-ease); }
+.admin-picker-chevron.is-open { transform: rotate(180deg); }
+
+.admin-picker-btn.is-compact {
+  min-height: 32px;
+  padding: 4px 8px 4px 10px;
+  gap: 6px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+/* In the Security card's settings rows */
+.admin-native-row .admin-picker { flex: 0 1 auto; max-width: 60%; }
+.admin-native-row .admin-picker-btn { min-height: 40px; background: var(--surface); }
+
+/* Menu under the button (wider screens) */
+.admin-picker-menu {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(360px, 90vw);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.45);
+  animation: admin-picker-in 0.16s var(--a-ease);
+}
+
+.admin-native-row .admin-picker-menu { left: auto; right: 0; }
+.admin-picker-menu.is-up { top: auto; bottom: calc(100% + 6px); }
+
+@keyframes admin-picker-in { from { opacity: 0; transform: translateY(-4px); } }
+
+.admin-picker-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+
+.admin-picker-item,
+.admin-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.admin-picker-item { padding: 8px 10px; }
+.admin-picker-item:focus { outline: none; background: var(--a-hover); }
+.admin-picker-item.is-selected .admin-picker-text strong { color: var(--accent); }
+
+.admin-picker-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.admin-picker-text strong { font-size: 0.9rem; font-weight: 500; }
+.admin-picker-text span { font-size: 0.78rem; line-height: 1.35; color: var(--text-muted); }
+
+.admin-picker-mark { display: grid; place-items: center; flex-shrink: 0; width: 18px; color: var(--accent); }
+
+/* Sheet from the bottom (phones): big rows, a filled ring for the choice. */
+.admin-picker-row {
+  min-height: 56px;
+  padding: 8px 12px;
+  border-radius: 14px;
+}
+
+.admin-picker-row:focus { outline: none; }
+.admin-picker-row:focus-visible { box-shadow: inset 0 0 0 2px var(--accent); }
+.admin-picker-row:active { background: var(--a-hover); }
+.admin-picker-row.is-selected { background: var(--a-tint); }
+.admin-picker-row .admin-picker-text strong { font-size: 0.98rem; }
+.admin-picker-row.is-selected .admin-picker-text strong { font-weight: 600; }
+
+.admin-picker-row .admin-picker-mark {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+}
+
+.admin-picker-row.is-selected .admin-picker-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-picker-row.is-selected .admin-picker-mark svg { width: 14px; height: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-picker-menu { animation: none; }
+}
+
+/* ---------- Date picker (DatePicker.jsx) ---------- */
+
+.admin-date-btn { justify-content: flex-start; min-height: 38px; padding: 6px 12px; }
+.admin-date-icon { flex-shrink: 0; color: var(--text-muted); }
+.admin-inline .admin-picker { display: inline-block; }
+.admin-inline .admin-date-btn { color: var(--text); font-size: 0.9rem; }
+
+.admin-date-pop.admin-picker-menu { width: 300px; padding: 10px; }
+
+.admin-cal { display: grid; gap: 8px; }
+
+.admin-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-cal-head strong { font: 600 0.95rem var(--font-display); }
+
+.admin-cal-grid { display: grid; gap: 2px; }
+.admin-cal-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+
+.admin-cal-wd {
+  display: grid;
+  place-items: center;
+  height: 28px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.admin-cal-day {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font: 500 0.88rem var(--font-body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.admin-cal-day.is-other { color: color-mix(in srgb, var(--text-muted) 55%, transparent); }
+.admin-cal-day:focus { outline: none; }
+.admin-cal-day:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.admin-cal-day.is-today { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--accent); }
+.admin-cal-day.is-selected { background: var(--accent); color: #fff; box-shadow: none; }
+.admin-cal-day:active:not(.is-selected) { background: var(--a-hover); }
+@media (hover: hover) { .admin-cal-day:hover:not(.is-selected) { background: var(--a-hover); } }
+
+.admin-cal-foot { display: flex; justify-content: flex-end; padding-top: 2px; }
+
+/* Phones: the calendar fills the sheet, days are big enough for a thumb. */
+.admin-popup-sheet .admin-cal { padding: 0 6px; }
+.admin-popup-sheet .admin-cal-day { min-height: 44px; font-size: 0.98rem; }
+.admin-popup-sheet .admin-cal-head strong { font-size: 1.02rem; }
+.admin-popup-sheet .admin-cal-foot .admin-btn-ghost { flex: 1; min-height: 46px; }
+
+/* Upload buttons (the hidden file inputs behind them open the file chooser) */
+.admin-upload-btn { min-height: 38px; }

@@ -93,6 +93,46 @@ public class AdminBridge extends Plugin {
         return path.equals("/admin") || path.startsWith("/admin/");
     }
 
+    // ---------- App lock (AppLock.java, MainActivity) ----------
+
+    /** Called by MainActivity when the app comes back and must lock. */
+    void askForLock() {
+        // Not kept for later: a page that loads afterwards asks appLockPending itself.
+        notifyListeners("appLock", new JSObject(), false);
+    }
+
+    @PluginMethod
+    public void appLockConfigure(PluginCall call) {
+        Boolean enabled = call.getBoolean("enabled", false);
+        Double after = call.getDouble("lockAfterMs");
+        String background = call.getString("background", "#0b1020");
+        AppLock.configure(getContext(), enabled != null && enabled, after == null ? 0 : after.longValue(), background);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void appLockPending(PluginCall call) {
+        JSObject out = new JSObject();
+        out.put("pending", AppLock.pending(getContext()));
+        call.resolve(out);
+    }
+
+    @PluginMethod
+    public void appLockShown(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).lockShown();
+            else AppLock.setPending(getContext(), false);
+        });
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void appLockQuiet(PluginCall call) {
+        Double ms = call.getDouble("ms");
+        AppLock.quiet(getContext(), ms == null ? 0 : ms.longValue());
+        call.resolve();
+    }
+
     // ---------- Phone alerts ----------
 
     private JSObject alertsState() {

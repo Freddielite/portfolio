@@ -17,6 +17,7 @@ import Toolbar, { editorHandlers } from './Toolbar.jsx'
 import { uploadImage } from '../imageUpload.js'
 import { haptic } from '../native.js'
 import { useAdmin } from '../AdminContext.jsx'
+import Picker from '../Picker.jsx'
 import {
   RATIOS,
   blocksToItems,
@@ -133,12 +134,10 @@ function ColumnsItem({ item }) {
   const ed = useEditor()
   return (
     <div className="blk-columns">
-      <label className="blk-ratio">
-        Layout
-        <select value={item.ratio} onChange={(e) => ed.patch(item.id, { ratio: e.target.value }, true)}>
-          {RATIOS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      </label>
+      <div className="blk-ratio">
+        <span>Layout</span>
+        <Picker compact label="Column layout" value={item.ratio} onChange={(v) => ed.patch(item.id, { ratio: v }, true)} options={RATIOS.map(([value, label]) => ({ value, label }))} />
+      </div>
       <div className={`blk-cols is-${item.ratio}`}>
         {[0, 1].map((side) => (
           <div key={side} className="blk-col">

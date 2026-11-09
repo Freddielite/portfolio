@@ -9,6 +9,7 @@ import ProjectPreview from './ProjectPreview.jsx'
 import useDragReorder from '../useDragReorder.js'
 import { useAdmin, useReloadOnPull } from '../AdminContext.jsx'
 import { validateProjects } from '../validate.js'
+import Picker from '../Picker.jsx'
 
 // True when the screen is at least this wide; used to put the preview beside the form.
 function useMedia(query) {
@@ -96,11 +97,16 @@ function ProjectRow({ project, open, onToggle, onChange, onRemove, onMove, isFir
 
           <div className="admin-field">
             <label className="admin-label">Type</label>
-            <select value={project.kind || 'Own product'} onChange={(e) => set('kind', e.target.value)}>
-              <option value="Own product">Own product</option>
-              <option value="Client work">Client work</option>
-              <option value="Company">Company</option>
-            </select>
+            <Picker
+              label="Type"
+              value={project.kind || 'Own product'}
+              onChange={(v) => set('kind', v)}
+              options={[
+                { value: 'Own product', label: 'Own product', hint: 'Something you built for yourself' },
+                { value: 'Client work', label: 'Client work', hint: 'Built for a client' },
+                { value: 'Company', label: 'Company', hint: 'Work for a company you are part of' },
+              ]}
+            />
             <p className="admin-hint">Shown as a badge on the project card and used by the Work filter.</p>
           </div>
 

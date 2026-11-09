@@ -1,5 +1,8 @@
 import { waitForReauth } from './http.js'
-import { endQuiet, getLockAfter, getPrivacy, isNative, isQuiet, nativeIsSetUp, onAppState, quietFor, setPrivacy, thisDeviceId } from './native.js'
+import {
+  appLockConfigure, appLockPending, appLockShown, appLockSupported, endQuiet, getLockAfter, getPrivacy, isNative, isQuiet,
+  nativeIsSetUp, onAppLock, onAppState, quietFor, setPrivacy, thisDeviceId,
+} from './native.js'
 
 // The Android app's lock, like WhatsApp's: with fingerprint unlock set up on
 // this phone, leaving the app and coming back asks for the fingerprint again,
@@ -12,6 +15,12 @@ import { endQuiet, getLockAfter, getPrivacy, isNative, isQuiet, nativeIsSetUp, o
 // Two ways back into the app are covered:
 //  - from the background (another app, the home screen, the phone locked), and
 //  - a fresh start (the app was swiped away, or Android closed it).
+//
+// From APK 1.2 the app itself decides (AppLock.java): Android always runs its
+// code when the app leaves and comes back, while this page may be paused at
+// exactly those moments. The app covers the window natively and asks this page
+// for the lock screen; this page tells it the settings and confirms once the
+// lock screen is up. With an older APK this page decides, as before.
 
 const LAST_SEEN = 'admin:last-seen' // when the app was last on screen, for a fresh start
 
@@ -83,8 +92,31 @@ function lockNow() {
   setTimeout(uncover, 400)
 }
 
+// Tells the app the lock settings (APK 1.2+). Called on start and whenever
+// fingerprint unlock or "Lock the app" changes.
+export async function syncAppLock() {
+  if (!(await appLockSupported())) return
+  const enabled = await lockIsOn()
+  const after = getLockAfter()
+  appLockConfigure({ enabled, lockAfterMs: after === 'now' ? 0 : Number(after) * 60000, background: pageBackground() })
+}
+
+// The admin's background as #rrggbb, for the app's cover.
+function pageBackground() {
+  const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(getComputedStyle(document.body).backgroundColor || '')
+  if (!m) return '#0b1020'
+  return '#' + [m[1], m[2], m[3]].map((n) => Number(n).toString(16).padStart(2, '0')).join('')
+}
+
+// Tells the app its lock screen is up (or nothing needed locking), so its
+// cover can come off. Waits two frames so the lock screen is really drawn.
+export function confirmLockShown() {
+  requestAnimationFrame(() => requestAnimationFrame(() => appLockShown()))
+}
+
 // A fresh start (Admin.jsx asks before anything else is shown).
 export async function lockAtLaunch() {
+  if (await appLockSupported()) return appLockPending() // the app has decided already
   if (!(await lockIsOn())) return false
   const lock = shouldLockAtLaunch({ lastSeen: lastSeen(), now: Date.now(), lockAfter: getLockAfter() })
   if (lock) lockServer()
@@ -109,6 +141,22 @@ export function startNativeLock() {
     true
   )
 
+  // APK 1.2+: the app decides; this page shows the lock screen when asked.
+  appLockSupported().then((native) => {
+    if (!native) return startPageLock()
+    syncAppLock()
+    // The app's cover uses the admin's background: keep it in step with the theme.
+    new MutationObserver(() => syncAppLock()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => syncAppLock())
+    onAppLock(() => {
+      lockNow()
+      confirmLockShown()
+    })
+  })
+}
+
+// Older APK: this page watches the app leaving and coming back itself.
+function startPageLock() {
   // Remember when the app was last on screen, for a fresh start after Android
   // closes it in the background.
   noteSeen()

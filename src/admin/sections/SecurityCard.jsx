@@ -4,6 +4,8 @@ import { useAdmin } from '../AdminContext.jsx'
 import { addPasskey, deviceLabel, listPasskeys, registerNativeOnServer, removePasskey, supportsPasskeys } from '../passkeys.js'
 import { biometricStatus, forgetNative, getLockAfter, getPrivacy, isNative, LOCK_CHOICES, setLockAfter, setPrivacy, setUpNative, thisDeviceId } from '../native.js'
 import { rememberSession } from '../cache.js'
+import { syncAppLock } from '../nativeLock.js'
+import Picker from '../Picker.jsx'
 
 const when = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -37,6 +39,7 @@ export default function SecurityCard() {
       const d = native ? await setUpNative(registerNativeOnServer) : await addPasskey(deviceLabel())
       setState((s) => ({ ...s, list: d.passkeys, error: null }))
       rememberSession({ lock: true }) // from now on the admin waits for the unlock before showing saved data
+      syncAppLock() // the app's own lock follows straight away
       toast(on ? 'This device can now unlock the admin' : 'Fingerprint unlock is on')
     } catch (err) {
       toast(err.message, { tone: 'error' })
@@ -62,6 +65,7 @@ export default function SecurityCard() {
     try {
       const d = await removePasskey(p.id)
       if (native && p.id === thisDeviceId()) await forgetNative()
+      syncAppLock() // the app's own lock follows straight away
       setState((s) => ({ ...s, list: d.passkeys }))
       toast(last ? 'Fingerprint unlock is off' : `Removed ${p.label}`)
     } catch (err) {
@@ -123,18 +127,19 @@ export default function SecurityCard() {
 
       {native && (
         <div className="admin-native-settings">
-          <label className="admin-native-row">
-            <span>Lock the app</span>
-            <select
+          <div className="admin-native-row">
+            <span id="lock-after-label">Lock the app</span>
+            <Picker
+              label="Lock the app"
               value={lockAfter}
-              onChange={(e) => {
-                setLockAfter(e.target.value)
-                setLockAfterState(e.target.value)
+              options={LOCK_CHOICES.map((c) => ({ value: c.value, label: c.label, hint: c.hint }))}
+              onChange={(v) => {
+                setLockAfter(v)
+                setLockAfterState(v)
+                syncAppLock() // the app's own lock follows straight away
               }}
-            >
-              {LOCK_CHOICES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </label>
+            />
+          </div>
           <label className="admin-native-row">
             <span>Hide the app in recent apps and block screenshots</span>
             <input

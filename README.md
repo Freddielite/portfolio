@@ -13,6 +13,23 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## App lock in the app itself, custom pickers (APK 1.2, Nov 2026)
+
+Needs the APK rebuilt once (`bash scripts/build-apk.sh`). Until then the page's own lock (below) keeps working with the older app.
+
+- **The app decides when to lock.** Android always runs the app's own code when it leaves the screen and comes back. The web page's code may be paused at exactly those moments, which made the page-only lock hit and miss. Now `AppLock.java` and `MainActivity.java` handle it:
+  - **Leaving:** note the time, and cover the window with a plain screen (the admin's background colour and the app icon).
+  - **Coming back, or a fresh start:** decide with the settings the page sent ("Lock the app", and whether fingerprint unlock is set up on this phone). If it must lock, the cover stays and the page is asked for its lock screen. The cover comes off only once the page confirms the lock screen is up.
+  - **If the page never confirms**, it is reloaded after 6 seconds. A freshly loaded page asks the app whether a lock is pending before it shows anything, so a failure ends locked, not open.
+  - **Grace periods** (file picker, share sheet, live site, Android settings) are kept by the app too, and end when you come back.
+- **Where the web side is.** `admin/nativeLock.js` sends the settings to the app (`syncAppLock`, also when you change them or the theme) and shows the lock screen when the app asks. With an older APK it decides itself, as before.
+- **Custom pickers.** Nothing in the admin opens Android's or the browser's own controls any more:
+  - Dropdowns ("Lock the app", a project's Type, the post editor's column layout) use `admin/Picker.jsx`.
+  - The post date uses a calendar, `admin/DatePicker.jsx`.
+  - On phones both open as a sheet from the bottom, like More, and the phone's Back closes them. On wider screens they open as a small panel with full keyboard use.
+  - Both share `admin/Popup.jsx`.
+  - Image and file uploads use the admin's own "Choose image" / "Replace image" buttons. The file chooser that opens after that belongs to Android or your computer.
+
 ## Phone alerts, predictive back, links open the app (APK 1.1, Nov 2026)
 
 Needs the APK rebuilt once (`bash scripts/build-apk.sh`). The web half ships with the deploy.

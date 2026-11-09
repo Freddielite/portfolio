@@ -65,7 +65,7 @@ function focusField(target) {
       el.scrollIntoView({ block: 'center', behavior: 'smooth' })
       el.classList.add('is-flash')
       setTimeout(() => el.classList.remove('is-flash'), 1600)
-      el.querySelector('input, textarea, select')?.focus({ preventScroll: true })
+      el.querySelector('input, textarea, select, .admin-picker-btn')?.focus({ preventScroll: true })
       return
     }
     if (Date.now() - started < 4000) setTimeout(look, 120)

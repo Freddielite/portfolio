@@ -9,6 +9,7 @@ import { openInApp } from '../native.js'
 import { wordCount } from '../portableText.js'
 import { portableComponents } from '../../lib/portableComponents.jsx'
 import { postState, todayString } from '../../lib/postStatus.js'
+import DatePicker from '../DatePicker.jsx'
 
 const slugify = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
@@ -44,10 +45,10 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
           <button type="button" className={post.status === 'draft' ? 'on' : ''} onClick={() => set('status', 'draft')}>Draft</button>
           <button type="button" className={post.status !== 'draft' ? 'on' : ''} onClick={() => set('status', 'published')}>Published</button>
         </div>
-        <label className="admin-inline">
-          Date
-          <input type="date" value={day} onChange={(e) => set('publishedAt', e.target.value)} />
-        </label>
+        <div className="admin-inline">
+          <span>Date</span>
+          <DatePicker label="Publish date" value={day} onChange={(v) => set('publishedAt', v)} />
+        </div>
         <span className={`admin-badge is-${state}`}>
           {state === 'draft' && 'Draft, hidden from the site'}
           {state === 'published' && 'Live'}
