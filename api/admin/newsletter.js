@@ -7,6 +7,9 @@ const today = () => new Date().toISOString().slice(0, 10)
 
 // POST /api/admin/newsletter  { slug, force? }
 // Emails one live blog post to everyone subscribed on the Wynmail list.
+// POST /api/admin/newsletter  { slug, retry: true }
+// Tries again for the emails of an already sent post that did not go out (failed, or stuck).
+// Nobody who already got it is emailed twice.
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   if (!requireAuth(req, res)) return
@@ -19,6 +22,17 @@ export default async function handler(req, res) {
   const slug = String((req.body || {}).slug || '')
   if (!/^[a-z0-9][a-z0-9-]{0,120}$/.test(slug)) return res.status(400).json({ error: 'Bad post slug.' })
   const force = (req.body || {}).force === true
+
+  if ((req.body || {}).retry === true) {
+    try {
+      const campaign = ((await wm('/v1/campaigns')).data || []).find((c) => c.name === `post:${slug}`)
+      if (!campaign) return res.status(404).json({ error: 'This post has not been emailed yet, so there is nothing to retry.' })
+      const out = await wm(`/v1/campaigns/${campaign.id}/retry`, { method: 'POST', body: {}, timeout: 20000 })
+      return res.status(200).json({ ok: true, campaignId: campaign.id, requeued: out.requeued || 0 })
+    } catch (err) {
+      return res.status(err.status && err.status < 600 ? err.status : 502).json({ error: err.message })
+    }
+  }
 
   try {
     const [postsFile, settingsFile] = await Promise.all([getFile('content/posts.json'), getFile('content/siteSettings.json')])

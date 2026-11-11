@@ -1,7 +1,7 @@
 import { requireAuth } from '../_lib/auth.js'
 import { getFile } from '../_lib/github.js'
 import { configured, LIST_ID, wm } from '../_lib/wynmail.js'
-import { hashToken, newId, newToken, readAlertDevices, readBearer, sameHash, writeAlertDevices } from '../_lib/alerts.js'
+import { hashToken, newId, newToken, readAlertDevices, readAlertDevicesCached, readBearer, sameHash, writeAlertDevices } from '../_lib/alerts.js'
 
 // Phone alerts for the Android app.
 //
@@ -93,7 +93,8 @@ export default async function handler(req, res) {
   if (bearer && (step === '' || step === 'forget')) {
     let devices
     try {
-      devices = await readAlertDevices()
+      // 'forget' writes, so it needs the current file; a plain check can use the copy that is a minute old.
+      devices = step === 'forget' ? await readAlertDevices() : await readAlertDevicesCached()
     } catch (err) {
       return res.status(502).json({ error: err.message })
     }

@@ -1,5 +1,6 @@
 package xyz.wyntek.admin;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -139,6 +140,16 @@ final class Alerts {
             .setContentIntent(tap)
             .setAutoCancel(true)
             .setPriority(CH_HEALTH.equals(channel) ? NotificationCompat.PRIORITY_HIGH : NotificationCompat.PRIORITY_DEFAULT);
+        if (CH_SUBSCRIBERS.equals(channel)) {
+            // New subscribers' addresses are personal: on a locked screen show only that someone signed up.
+            // The address appears once the phone is unlocked.
+            Notification lockScreen = new NotificationCompat.Builder(c, channel)
+                .setSmallIcon(R.drawable.ic_stat_alert)
+                .setContentTitle(title)
+                .setContentText("Unlock to see who")
+                .build();
+            b.setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setPublicVersion(lockScreen);
+        }
         if (lines != null && lines.size() > 1) {
             NotificationCompat.InboxStyle inbox = new NotificationCompat.InboxStyle();
             for (String l : lines) inbox.addLine(l);

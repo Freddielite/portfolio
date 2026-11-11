@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     for (const c of campaigns.data || []) {
       const m = /^post:(.+)$/.exec(c.name || '')
       if (m && !sent[m[1]]) {
-        sent[m[1]] = { id: c.id, status: c.status, sent: c.sent, opened: c.opened, clicked: c.clicked, unsubscribed: c.unsubscribed, at: c.started_at || c.created_at }
+        sent[m[1]] = { id: c.id, status: c.status, sent: c.sent, failed: c.failed || 0, waiting: c.waiting || 0, opened: c.opened, clicked: c.clicked, unsubscribed: c.unsubscribed, at: c.started_at || c.created_at }
       }
     }
     return res.status(200).json({ configured: true, stats, recent: recent.data, sent })

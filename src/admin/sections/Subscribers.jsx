@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Pager, { paginate } from '../Pager.jsx'
-import { Download, RefreshCw, Send } from 'lucide-react'
+import { Download, RefreshCw, RotateCcw, Send } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { getContent } from '../api.js'
 import { saveFile } from '../native.js'
@@ -8,6 +8,7 @@ import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
 import { postState } from '../../lib/postStatus.js'
+import { sendState, sendLine } from '../sendState.js'
 
 const day = (v) => {
   const d = new Date(v)
@@ -64,6 +65,23 @@ export default function Subscribers() {
   useEffect(() => {
     load()
   }, [load])
+
+  // While a post is on its way, look again every 15 seconds so the numbers (and the end of it) show up
+  // without pulling to refresh. It asks only for the subscribers answer, nothing else.
+  const anySending = Object.values(state.data?.sent || {}).some((s) => sendState(s).kind === 'sending')
+  useEffect(() => {
+    if (!anySending) return undefined
+    const t = setInterval(async () => {
+      if (document.hidden) return
+      try {
+        const { ok, body } = await readJson(await adminFetch('/api/admin/subscribers', { cache: 'no-store' }))
+        if (ok) setState((s) => ({ ...s, data: body, at: Date.now(), fresh: true, error: null }))
+      } catch {
+        /* the next look tries again */
+      }
+    }, 15000)
+    return () => clearInterval(t)
+  }, [anySending])
   useOnRetry(() => {
     if (!state.fresh) load()
   })
@@ -79,6 +97,40 @@ export default function Subscribers() {
       toast(how === 'shared' ? 'Subscribers ready to save' : 'Subscribers exported')
     } catch (err) {
       toast(err.message, { tone: 'error' })
+    }
+  }
+
+  // Tries again for the emails of a post that did not go out. Nobody who already got it is emailed again.
+  async function retryPost(post) {
+    const ok = await confirm({
+      title: 'Try sending again?',
+      body: `Tries again for the emails of "${post.title}" that did not go out. People who already got it are not emailed a second time.`,
+      confirmLabel: 'Retry',
+      secure: true,
+      secureReason: 'Retry emailing this post',
+    })
+    if (!ok) return
+    setSending(post.slug)
+    try {
+      const { ok: good, body } = await readJson(
+        await adminFetch('/api/admin/newsletter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ slug: post.slug, retry: true }),
+        })
+      )
+      if (!good) throw new Error(body.error || 'Could not retry.')
+      toast(
+        body.requeued
+          ? `Trying again for ${body.requeued} ${body.requeued === 1 ? 'person' : 'people'}`
+          : 'Nothing could be retried from here. Open it in Wynmail to look closer.',
+        { tone: body.requeued ? 'ok' : 'error', duration: body.requeued ? undefined : 6000 }
+      )
+      await load()
+    } catch (err) {
+      toast(err.message, { tone: 'error', duration: 6000 })
+    } finally {
+      setSending(null)
     }
   }
 
@@ -202,18 +254,26 @@ export default function Subscribers() {
             <ul className="admin-rows">
               {paginate(posts, postPage, 5).items.map((p) => {
                 const sent = data.sent?.[p.slug]
+                const st = sendState(sent)
                 return (
                   <li key={p.slug}>
                     <span className="admin-row-main">
                       <strong>{p.title}</strong>
                       <span className="admin-hint">
                         {sent
-                          ? `${sent.status === 'sending' ? 'Sending' : 'Emailed'} ${day(sent.at)} · ${sent.sent} sent · ${sent.opened} opened · ${sent.clicked} clicked`
+                          ? sendLine(st, sent, { ago: agoText(new Date(sent.at).getTime()), day: day(sent.at) })
                           : `Published ${String(p.publishedAt).slice(0, 10)}`}
                       </span>
                     </span>
                     {sent ? (
-                      <span className="admin-badge is-published">Sent</span>
+                      <span className="admin-row-actions">
+                        <span className={`admin-badge ${st.badgeClass}`}>{st.badge}</span>
+                        {st.retry && (
+                          <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={() => retryPost(p)} disabled={!!sending || !state.fresh}>
+                            <RotateCcw size={14} aria-hidden="true" /> {sending === p.slug ? 'Retrying…' : 'Retry'}
+                          </button>
+                        )}
+                      </span>
                     ) : (
                       <button type="button" className="admin-btn" onClick={() => sendPost(p)} disabled={!!sending || !state.fresh || stats.subscribed === 0}>
                         <Send size={15} aria-hidden="true" /> {sending === p.slug ? 'Sending…' : 'Send'}

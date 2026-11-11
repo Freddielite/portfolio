@@ -186,6 +186,14 @@ public class AdminBridge extends Plugin {
             call.reject("Missing the site address or this phone's alert token.");
             return;
         }
+        // The checks are only ever sent to this app's own site, whatever the page asks for.
+        String site = getBridge().getServerUrl();
+        String baseHost = Uri.parse(base).getHost();
+        String siteHost = site == null ? null : Uri.parse(site).getHost();
+        if (baseHost == null || siteHost == null || !baseHost.equalsIgnoreCase(siteHost)) {
+            call.reject("Alerts can only be set up for this app's own site.");
+            return;
+        }
         Alerts.enable(getContext(), base, id, token,
             call.getBoolean("health", true), call.getBoolean("subscribers", true), call.getBoolean("deploys", true));
         call.resolve(alertsState());

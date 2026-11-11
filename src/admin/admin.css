@@ -2885,3 +2885,7 @@ button.admin-status:hover { border-color: currentColor; }
 
 /* Upload buttons (the hidden file inputs behind them open the file chooser) */
 .admin-upload-btn { min-height: 38px; }
+
+/* ---------- emailed posts: badge and Retry together ---------- */
+.admin-row-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.admin-row-actions .admin-btn-ghost { min-height: 34px; padding: 0 12px; font-size: 0.82rem; }

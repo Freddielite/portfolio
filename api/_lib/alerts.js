@@ -18,7 +18,33 @@ export async function readAlertDevices() {
   return { list: Array.isArray(list) ? list : [], sha }
 }
 
-export const writeAlertDevices = (list, sha, message) => putFile(PATH, JSON.stringify(list, null, 2) + '\n', sha, message)
+// The phones' checks arrive every 15 minutes each, and anyone can send a request with a made-up
+// token. Reading the list from GitHub for every one of those would let a flood use up the GitHub
+// allowance the admin's saves depend on. So the phones' check path reads a copy that is at most a
+// minute old. Adding or removing a phone clears the copy on the spot (in the server instance that
+// did it; others catch up within the minute).
+const CACHE_MS = 60 * 1000
+let cache = null
+
+export async function readAlertDevicesCached() {
+  if (cache && Date.now() - cache.at < CACHE_MS) return cache.value
+  const value = await readAlertDevices()
+  cache = { at: Date.now(), value }
+  return value
+}
+
+export const forgetAlertCache = () => {
+  cache = null
+}
+
+export async function writeAlertDevices(list, sha, message) {
+  forgetAlertCache()
+  try {
+    return await putFile(PATH, JSON.stringify(list, null, 2) + '\n', sha, message)
+  } finally {
+    forgetAlertCache()
+  }
+}
 
 export const newId = () => randomBytes(12).toString('base64url')
 export const newToken = () => randomBytes(32).toString('base64url')
