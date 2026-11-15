@@ -100,6 +100,9 @@ public class AlertWorker extends Worker {
                 }
             }
             e.putString("monitors", now.toString());
+            int up = 0;
+            for (int i = 0; i < monitors.length(); i++) if ("up".equals(monitors.getJSONObject(i).optString("status"))) up++;
+            e.putInt("wUp", up).putInt("wTotal", monitors.length());
         } else if (json.has("pulseReason") && !"not-set-up".equals(json.optString("pulseReason"))) {
             notes.add("Pulse did not answer");
         }
@@ -129,8 +132,37 @@ public class AlertWorker extends Worker {
                 }
             }
             e.putString("lastSignupAt", newest).putBoolean("signupsSeeded", true);
+            if (json.has("subscribersTotal") && !json.isNull("subscribersTotal")) e.putInt("wSubs", json.optInt("subscribersTotal", 0));
         } else if (json.has("wynmailReason") && !"not-set-up".equals(json.optString("wynmailReason"))) {
             notes.add("Wynmail did not answer");
+        }
+
+        // ---- Emailed posts that did not go out (stuck sending, or some emails failed)
+        JSONArray sends = json.optJSONArray("sends");
+        if (sends != null) {
+            JSONObject told = new JSONObject(p.getString("sendsTold", "{}"));
+            JSONObject stillStuck = new JSONObject();
+            for (int i = 0; i < sends.length(); i++) {
+                JSONObject s = sends.getJSONObject(i);
+                String cid = s.optString("id");
+                // Said once per situation: it comes again only if the numbers change (or it gets stuck again later).
+                String key = cid + ":" + s.optString("kind") + ":" + s.optInt("failed", 0);
+                stillStuck.put(key, true);
+                if (told.has(key) || !p.getBoolean("sends", true)) continue;
+                String title = s.optString("title", "A post");
+                int failed = s.optInt("failed", 0);
+                int waiting = s.optInt("waiting", 0);
+                int nid = Alerts.ID_SENDS + (cid.hashCode() & 0x3ff);
+                if ("stuck".equals(s.optString("kind"))) {
+                    String detail = (waiting > 0 ? waiting + " email" + (waiting == 1 ? "" : "s") + " still waiting" : "It has not finished")
+                        + (failed > 0 ? ", " + failed + " failed" : "") + ". Open Subscribers and press Retry.";
+                    Alerts.notify(c, Alerts.CH_SENDS, nid, "\u201C" + title + "\u201D has not finished sending", detail, null, Alerts.link(c, "#subscribers"));
+                } else {
+                    Alerts.notify(c, Alerts.CH_SENDS, nid, failed + " email" + (failed == 1 ? "" : "s") + " did not go out",
+                        "\u201C" + title + "\u201D reached some people but not everyone. Open Subscribers and press Retry.", null, Alerts.link(c, "#subscribers"));
+                }
+            }
+            e.putString("sendsTold", stillStuck.toString()).putInt("wStuck", sends.length());
         }
 
         // ---- Site rebuilt
@@ -152,6 +184,7 @@ public class AlertWorker extends Worker {
             .putLong("lastTry", now)
             .putString("lastError", notes.isEmpty() ? null : TextUtils.join(", ", notes) + ", checked again next time.")
             .apply();
+        StatusWidget.refresh(c);
     }
 
     // "admin: update posts" -> "Blog posts saved", like Recent activity on the Overview.

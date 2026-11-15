@@ -40,9 +40,11 @@ final class Alerts {
     static final String CH_HEALTH = "health";
     static final String CH_SUBSCRIBERS = "subscribers";
     static final String CH_DEPLOYS = "deploys";
+    static final String CH_SENDS = "sends";
 
     static final int ID_SUBSCRIBERS = 2000;
     static final int ID_DEPLOY = 3000;
+    static final int ID_SENDS = 5000; // plus a number from the post, so each stuck post has its own
     static final int ID_TEST = 4000;
     static final int ID_OFF = 4001;
 
@@ -58,7 +60,7 @@ final class Alerts {
     }
 
     /** Turns alerts on. The first check only notes how things are, so nothing old is announced. */
-    static void enable(Context c, String base, String id, String token, boolean health, boolean subscribers, boolean deploys) {
+    static void enable(Context c, String base, String id, String token, boolean health, boolean subscribers, boolean deploys, boolean sends) {
         prefs(c).edit()
             .clear()
             .putString("base", base)
@@ -67,17 +69,19 @@ final class Alerts {
             .putBoolean("health", health)
             .putBoolean("subscribers", subscribers)
             .putBoolean("deploys", deploys)
+            .putBoolean("sends", sends)
             .apply();
         createChannels(c);
         schedule(c);
         checkNow(c);
     }
 
-    static void setKinds(Context c, Boolean health, Boolean subscribers, Boolean deploys) {
+    static void setKinds(Context c, Boolean health, Boolean subscribers, Boolean deploys, Boolean sends) {
         SharedPreferences.Editor e = prefs(c).edit();
         if (health != null) e.putBoolean("health", health);
         if (subscribers != null) e.putBoolean("subscribers", subscribers);
         if (deploys != null) e.putBoolean("deploys", deploys);
+        if (sends != null) e.putBoolean("sends", sends);
         e.apply();
     }
 
@@ -88,6 +92,7 @@ final class Alerts {
         wm.cancelUniqueWork(WORK);
         wm.cancelUniqueWork(WORK_NOW);
         prefs(c).edit().clear().apply();
+        StatusWidget.refresh(c);
         return id;
     }
 
@@ -112,6 +117,7 @@ final class Alerts {
         nm.createNotificationChannel(channel(c, CH_HEALTH, R.string.channel_health, R.string.channel_health_desc, NotificationManager.IMPORTANCE_HIGH));
         nm.createNotificationChannel(channel(c, CH_SUBSCRIBERS, R.string.channel_subscribers, R.string.channel_subscribers_desc, NotificationManager.IMPORTANCE_DEFAULT));
         nm.createNotificationChannel(channel(c, CH_DEPLOYS, R.string.channel_deploys, R.string.channel_deploys_desc, NotificationManager.IMPORTANCE_LOW));
+        nm.createNotificationChannel(channel(c, CH_SENDS, R.string.channel_sends, R.string.channel_sends_desc, NotificationManager.IMPORTANCE_HIGH));
     }
 
     @RequiresApi(26)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { GripVertical, Eye, EyeOff, Trash2, Plus } from 'lucide-react'
+import { useRowMenu } from '../RowMenu.jsx'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
@@ -13,6 +14,7 @@ export default function SkillsEditor() {
   const [list, setList] = useState(null)
   const [restoredFrom, setRestoredFrom] = useState(null)
   const { handleProps, rowProps, dragging } = useDragReorder(setList)
+  const rowMenu = useRowMenu()
 
   useEffect(() => {
     if (data) {
@@ -63,6 +65,10 @@ export default function SkillsEditor() {
           <li
             key={i}
             {...rowProps(i)}
+            {...rowMenu.bind(skill.name || 'Skill', () => [
+              { label: skill.hidden ? 'Show on the site' : 'Hide from the site', icon: skill.hidden ? Eye : EyeOff, onSelect: () => update(i, 'hidden', !skill.hidden) },
+              { label: 'Delete', icon: Trash2, tone: 'danger', onSelect: () => removeAt(i) },
+            ])}
             className={`admin-skill ${dragging === i ? 'is-dragging' : ''} ${skill.hidden ? 'is-hidden' : ''}`}
           >
             <span {...handleProps(i)}><GripVertical size={18} aria-hidden="true" /></span>
@@ -118,6 +124,7 @@ export default function SkillsEditor() {
       <button type="button" className="admin-btn-add" onClick={add}>
         <Plus size={16} aria-hidden="true" /> Add skill
       </button>
+      {rowMenu.element}
     </div>
   )
 }

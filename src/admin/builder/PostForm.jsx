@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { ExternalLink, Trash2 } from 'lucide-react'
+import { ExternalLink, Link2, Share2, Trash2 } from 'lucide-react'
+import { useAdmin } from '../AdminContext.jsx'
+import { copyText, postUrl, shareLink } from '../linkTools.js'
 import { PortableText } from '@portabletext/react'
 import ImageUploader from '../ImageUploader.jsx'
 import BlockEditor from './BlockEditor.jsx'
@@ -21,6 +23,15 @@ const VIEWS = [
 ]
 
 export default function PostForm({ post, onChange, onDelete, origin, savedLive }) {
+  const { toast } = useAdmin()
+  async function share() {
+    const result = await shareLink({ title: post.title || 'A post', url: postUrl(post, origin) })
+    if (result === 'copied') toast('Link copied. Paste it anywhere.', { tone: 'ok' })
+    else if (result === 'failed') toast('Could not share the link.', { tone: 'error' })
+  }
+  async function copy() {
+    toast((await copyText(postUrl(post, origin))) ? 'Link copied' : 'Could not copy the link', { tone: 'ok' })
+  }
   const [autoSlug, setAutoSlug] = useState(!post.slug)
   const [view, setView] = useState(() => (typeof window !== 'undefined' && window.innerWidth >= 1100 ? 'split' : 'write'))
 
@@ -55,6 +66,12 @@ export default function PostForm({ post, onChange, onDelete, origin, savedLive }
           {state === 'scheduled' && `Goes live ${day}`}
         </span>
         <div className="builder-actions">
+          {savedLive && state === 'published' && post.slug && (
+            <>
+              <button type="button" className="admin-link" onClick={share}><Share2 size={15} aria-hidden="true" /> Share</button>
+              <button type="button" className="admin-link" onClick={copy}><Link2 size={15} aria-hidden="true" /> Copy link</button>
+            </>
+          )}
           {savedLive && state === 'published' && post.slug && (
             <a className="admin-link" href={`/blog/${post.slug}`} target="_blank" rel="noreferrer" onClick={(e) => { if (window.Capacitor?.isNativePlatform?.()) { e.preventDefault(); openInApp(`/blog/${post.slug}`) } }}>
               View on site <ExternalLink size={15} aria-hidden="true" />

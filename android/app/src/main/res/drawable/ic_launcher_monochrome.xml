@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's mark (one node linked to two) as a single shape. Android 13+ can tint it with the
+     phone's colours when "Themed icons" is on. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M53.75,38 L38.25,69.25 M53.75,38 L69.25,69.25" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M49,38a4.75,4.75 0 1,0 9.5,0a4.75,4.75 0 1,0 -9.5,0" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M33.5,69.25a4.75,4.75 0 1,0 9.5,0a4.75,4.75 0 1,0 -9.5,0" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M64.5,69.25a4.75,4.75 0 1,0 9.5,0a4.75,4.75 0 1,0 -9.5,0" />
+</vector>

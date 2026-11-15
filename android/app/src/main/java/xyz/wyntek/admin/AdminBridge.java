@@ -10,6 +10,10 @@ import android.provider.OpenableColumns;
 import android.provider.Settings;
 import android.util.Base64;
 import com.getcapacitor.JSArray;
+import org.json.JSONObject;
+import androidx.core.graphics.drawable.IconCompat;
+import androidx.core.content.pm.ShortcutManagerCompat;
+import androidx.core.content.pm.ShortcutInfoCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
@@ -144,6 +148,7 @@ public class AdminBridge extends Plugin {
         out.put("health", p.getBoolean("health", true));
         out.put("subscribers", p.getBoolean("subscribers", true));
         out.put("deploys", p.getBoolean("deploys", true));
+        out.put("sends", p.getBoolean("sends", true));
         out.put("lastCheck", p.getLong("lastCheck", 0));
         out.put("lastTry", p.getLong("lastTry", 0));
         out.put("lastError", p.getString("lastError", null));
@@ -195,13 +200,13 @@ public class AdminBridge extends Plugin {
             return;
         }
         Alerts.enable(getContext(), base, id, token,
-            call.getBoolean("health", true), call.getBoolean("subscribers", true), call.getBoolean("deploys", true));
+            call.getBoolean("health", true), call.getBoolean("subscribers", true), call.getBoolean("deploys", true), call.getBoolean("sends", true));
         call.resolve(alertsState());
     }
 
     @PluginMethod
     public void alertsSetKinds(PluginCall call) {
-        Alerts.setKinds(getContext(), call.getBoolean("health"), call.getBoolean("subscribers"), call.getBoolean("deploys"));
+        Alerts.setKinds(getContext(), call.getBoolean("health"), call.getBoolean("subscribers"), call.getBoolean("deploys"), call.getBoolean("sends"));
         call.resolve(alertsState());
     }
 
@@ -316,5 +321,41 @@ public class AdminBridge extends Plugin {
             // fall through to a plain name
         }
         return "shared-" + n + ".jpg";
+    }
+
+    /**
+     * The two posts worked on last become "Edit: ..." shortcuts when the app icon is pressed and held.
+     * Each opens https://<site>/admin#post/<address>, which the web admin turns into that post.
+     */
+    @PluginMethod
+    public void setRecentPosts(PluginCall call) {
+        try {
+            JSArray posts = call.getArray("posts");
+            String server = getBridge().getServerUrl();
+            Uri site = server == null ? null : Uri.parse(server);
+            List<ShortcutInfoCompat> shortcuts = new ArrayList<>();
+            if (posts != null && site != null && site.getScheme() != null && site.getAuthority() != null) {
+                for (int i = 0; i < posts.length() && shortcuts.size() < 2; i++) {
+                    JSONObject o = posts.getJSONObject(i);
+                    String slug = o.optString("slug", "");
+                    if (!slug.matches("[A-Za-z0-9_-]{1,120}")) continue; // only addresses this site makes
+                    String title = o.optString("title", slug).trim();
+                    if (title.isEmpty()) title = slug;
+                    Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse(site.getScheme() + "://" + site.getAuthority() + "/admin#post/" + slug))
+                        .setClass(getContext(), MainActivity.class);
+                    shortcuts.add(new ShortcutInfoCompat.Builder(getContext(), "post-" + slug)
+                        .setShortLabel("Edit: " + (title.length() > 22 ? title.substring(0, 21) + "…" : title))
+                        .setLongLabel("Edit: " + (title.length() > 60 ? title.substring(0, 59) + "…" : title))
+                        .setIcon(IconCompat.createWithResource(getContext(), R.drawable.ic_shortcut_new_post))
+                        .setIntent(open)
+                        .setRank(i)
+                        .build());
+                }
+            }
+            ShortcutManagerCompat.setDynamicShortcuts(getContext(), shortcuts);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not set the shortcuts.");
+        }
     }
 }

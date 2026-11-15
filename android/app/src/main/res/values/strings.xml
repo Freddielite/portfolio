@@ -16,4 +16,7 @@
     <string name="channel_subscribers_desc">Someone signs up for your posts</string>
     <string name="channel_deploys">Site rebuilds</string>
     <string name="channel_deploys_desc">Your changes are live on the site</string>
+    <string name="channel_sends">Emails that did not go out</string>
+    <string name="channel_sends_desc">A post you emailed is stuck or some emails failed</string>
+    <string name="widget_description">Your sites\' health, subscribers, and emails that need a retry</string>
 </resources>

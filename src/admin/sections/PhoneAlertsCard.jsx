@@ -18,6 +18,7 @@ const KINDS = [
   { key: 'health', label: 'A site goes down or comes back up' },
   { key: 'subscribers', label: 'Someone subscribes' },
   { key: 'deploys', label: 'The site finished rebuilding' },
+  { key: 'sends', label: 'An emailed post is stuck or did not fully go out' },
 ]
 
 async function api(step, payload) {
@@ -60,7 +61,7 @@ export default function PhoneAlertsCard() {
         return
       }
       registered = await api('register', { label: deviceLabel() })
-      state = await alertsEnable({ base: window.location.origin, id: registered.id, token: registered.token, health: true, subscribers: true, deploys: true })
+      state = await alertsEnable({ base: window.location.origin, id: registered.id, token: registered.token, health: true, subscribers: true, deploys: true, sends: true })
       setPhone(state)
       setDevices(registered.devices)
       toast('Alerts are on for this phone')

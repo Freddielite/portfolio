@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { GripVertical, Eye, EyeOff, Trash2, Plus } from 'lucide-react'
+import { useRowMenu } from '../RowMenu.jsx'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
@@ -17,6 +18,7 @@ export default function TestimonialsEditor({ go }) {
   const [list, setList] = useState(null)
   const [restoredFrom, setRestoredFrom] = useState(null)
   const { handleProps, rowProps, dragging } = useDragReorder(setList)
+  const rowMenu = useRowMenu()
 
   useEffect(() => {
     if (data) {
@@ -66,7 +68,14 @@ export default function TestimonialsEditor({ go }) {
 
       <div className="admin-stack">
         {list.map((t, i) => (
-          <div key={i} {...rowProps(i)} className={`admin-card admin-quote ${dragging === i ? 'is-dragging' : ''} ${t.hidden ? 'is-hidden' : ''}`}>
+          <div
+            key={i}
+            {...rowProps(i)}
+            {...rowMenu.bind(t.author || 'Testimonial', () => [
+              { label: t.hidden ? 'Show on the site' : 'Hide from the site', icon: t.hidden ? Eye : EyeOff, onSelect: () => update(i, 'hidden', !t.hidden) },
+              { label: 'Delete', icon: Trash2, tone: 'danger', onSelect: () => removeAt(i) },
+            ])}
+            className={`admin-card admin-quote ${dragging === i ? 'is-dragging' : ''} ${t.hidden ? 'is-hidden' : ''}`}>
             <div className="admin-quote-head">
               <span {...handleProps(i)}><GripVertical size={18} aria-hidden="true" /></span>
               <strong>{t.author || 'New testimonial'}</strong>
@@ -107,6 +116,7 @@ export default function TestimonialsEditor({ go }) {
       <button type="button" className="admin-btn-add" onClick={add}>
         <Plus size={16} aria-hidden="true" /> Add testimonial
       </button>
+      {rowMenu.element}
     </div>
   )
 }

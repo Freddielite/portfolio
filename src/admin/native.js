@@ -358,3 +358,20 @@ export async function onAppLock(fn) {
     return () => {}
   }
 }
+
+// ---------- sending a link out to other apps ----------
+// Opens Android's share sheet (WhatsApp, Telegram, Mail...). The sheet briefly backgrounds
+// the app, which must not count as leaving it.
+export const shareOut = ({ title, url, dialogTitle = 'Share' }) =>
+  quiet(120000, () => Share.share({ title, text: title, url, dialogTitle }))
+
+// ---------- shortcuts to the posts you worked on last ----------
+// Long-press the app icon to jump straight back into them. Each is { slug, title }.
+export async function setRecentPosts(posts) {
+  if (!isNative()) return
+  try {
+    await AdminBridge.setRecentPosts({ posts })
+  } catch {
+    /* an older app without this: nothing to do */
+  }
+}

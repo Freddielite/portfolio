@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import {
-  LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine,
-  ExternalLink, LogOut, Download, ArrowDown, RefreshCw, Mail,
-} from 'lucide-react'
+import { LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine, ExternalLink, LogOut, Download, ArrowDown, RefreshCw, Mail, Search } from 'lucide-react'
 import Overview from './sections/Overview.jsx'
 import SiteSettingsEditor from './sections/SiteSettingsEditor.jsx'
 import ProjectsEditor from './sections/ProjectsEditor.jsx'
@@ -15,8 +12,11 @@ import { startNativeLock } from './nativeLock.js'
 import { openInApp } from './native.js'
 import { AdminProvider, PanelContext, useAdmin } from './AdminContext.jsx'
 import SaveAllDock, { AdminStatusChip } from './SaveAllDock.jsx'
+import SearchPalette from './SearchPalette.jsx'
 import { followTheme, listenForPhoneIntents } from './native.js'
 import { pushIntent, sharedFromPhone } from './intents.js'
+import { syncRecentPosts } from './recentPosts.js'
+import { leavePopup } from './popupHistory.js'
 import { IS_APP, slide, switchScreen, useKeyboardClass, usePullToRefresh, useTabSwipe, useTuckingHeader } from './app.js'
 import TabBar, { MORE, PRIMARY } from './TabBar.jsx'
 import OfflineBanner from './OfflineBanner.jsx'
@@ -174,6 +174,41 @@ function Shell({ tab, go, visited, onLogout, screenRef }) {
 
   // The status and navigation bar icons follow the theme the admin is showing.
   useEffect(() => followTheme(), [])
+  useEffect(() => { syncRecentPosts() }, [])
+
+  // Search: Ctrl+K (Cmd+K on a Mac), or "/" when you are not typing somewhere.
+  const [searching, setSearching] = useState(false)
+  const isPhone = () => window.matchMedia('(max-width: 860px)').matches
+  const openSearch = useCallback(() => {
+    if (isPhone()) window.history.pushState({ ...(window.history.state || {}), adminPopup: true }, '', window.location.href)
+    setSearching(true)
+  }, [])
+  const closeSearch = useCallback((then) => {
+    const finish = () => {
+      setSearching(false)
+      then?.()
+    }
+    if (isPhone()) leavePopup(finish)
+    else finish()
+  }, [])
+  const searchGone = useCallback(() => setSearching(false), [])
+  useEffect(() => {
+    function onKey(e) {
+      const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setSearching((s) => {
+          if (s) return false
+          return true
+        })
+      } else if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault()
+        setSearching(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // Shortcuts on the app icon and things shared to the app from other apps.
   const goRef = useRef(go)
@@ -206,6 +241,12 @@ function Shell({ tab, go, visited, onLogout, screenRef }) {
         }
         const id = url.hash.replace('#', '')
         const health = url.searchParams.get('focus') === 'health'
+        const post = /^post\/([A-Za-z0-9_-]{1,120})$/.exec(id) // the "Edit: ..." shortcuts on the app icon
+        if (post) {
+          pushIntent({ kind: 'open-post', slug: post[1] })
+          goRef.current('posts')
+          return
+        }
         goRef.current(byId[id] ? id : 'overview')
         if (health) setTimeout(() => document.getElementById('site-health')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 450)
       }
@@ -285,6 +326,9 @@ function Shell({ tab, go, visited, onLogout, screenRef }) {
             {IS_APP && <span className="admin-brand-title" aria-hidden="true">{current.label}</span>}
           </div>
           <AdminStatusChip labels={LABELS} go={go} tab={tab} />
+          <button type="button" className="admin-search-btn" aria-label="Search" title="Search (Ctrl+K)" onClick={openSearch}>
+            <Search size={17} aria-hidden="true" />
+          </button>
         </div>
 
         <nav className="admin-side-nav" ref={navRef} onScroll={updateFade} aria-label="Admin sections">
@@ -358,6 +402,7 @@ function Shell({ tab, go, visited, onLogout, screenRef }) {
       </main>
       <TabBar tabs={TABS} tab={tab} go={go} dirty={dirty} />
       <SaveAllDock labels={LABELS} go={go} />
+      {searching && <SearchPalette sections={TABS} go={go} onClose={closeSearch} onGone={searchGone} />}
     </div>
   )
 }

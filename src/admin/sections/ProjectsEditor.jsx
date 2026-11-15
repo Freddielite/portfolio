@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { GripVertical, ChevronDown, ArrowUp, ArrowDown, Trash2, Plus } from 'lucide-react'
+import { GripVertical, ChevronDown, ArrowUp, ArrowDown, Trash2, Plus, Eye, EyeOff, Link2 } from 'lucide-react'
+import { useRowMenu } from '../RowMenu.jsx'
+import { copyText } from '../linkTools.js'
+import { takeIntent } from '../intents.js'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
 import SaveBar from '../SaveBar.jsx'
@@ -37,7 +40,7 @@ function blankProject() {
   }
 }
 
-function ProjectRow({ project, open, onToggle, onChange, onRemove, onMove, isFirst, isLast, handleProps, rowProps, isDragging, preview }) {
+function ProjectRow({ project, open, onToggle, onChange, onRemove, onMove, isFirst, isLast, handleProps, rowProps, isDragging, preview, menu }) {
   function set(key, value) {
     onChange({ ...project, [key]: value })
   }
@@ -47,7 +50,7 @@ function ProjectRow({ project, open, onToggle, onChange, onRemove, onMove, isFir
   const missing = !project.image ? 'No screenshot' : !project.imageAlt ? 'No alt text' : null
 
   return (
-    <div {...rowProps} className={`admin-card admin-collapse ${open ? 'is-open' : ''} ${isDragging ? 'is-dragging' : ''} ${project.hidden ? 'is-hidden' : ''}`}>
+    <div {...rowProps} {...menu} className={`admin-card admin-collapse ${open ? 'is-open' : ''} ${isDragging ? 'is-dragging' : ''} ${project.hidden ? 'is-hidden' : ''}`}>
       <div className="admin-collapse-head">
         <span {...handleProps}><GripVertical size={18} aria-hidden="true" /></span>
         <button type="button" className="admin-collapse-toggle" onClick={onToggle} aria-expanded={open}>
@@ -172,6 +175,21 @@ export default function ProjectsEditor() {
     setOpen((o) => (o === from ? to : o === null ? null : from < o && to >= o ? o - 1 : from > o && to <= o ? o + 1 : o))
   const { handleProps, rowProps, dragging } = useDragReorder(setList, { onMove: follow })
   const sideBySide = useMedia('(min-width: 1280px)')
+  const rowMenu = useRowMenu()
+  // Opens the project chosen in the search.
+  useEffect(() => {
+    if (!list) return undefined
+    const run = () => {
+      const wanted = takeIntent('open-project')
+      if (wanted && wanted.index >= 0 && wanted.index < list.length) {
+        setOpen(wanted.index)
+        setTimeout(() => document.querySelectorAll('.admin-collapse')[wanted.index]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
+      }
+    }
+    run()
+    window.addEventListener('admin:intent', run)
+    return () => window.removeEventListener('admin:intent', run)
+  }, [list !== null]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (data) {
@@ -246,6 +264,13 @@ export default function ProjectsEditor() {
                 rowProps={rowProps(i)}
                 isDragging={dragging === i}
                 preview={!sideBySide && open === i ? <ProjectPreview project={project} /> : null}
+                menu={rowMenu.bind(project.name || 'Project', () => [
+                  { label: project.hidden ? 'Show on the site' : 'Hide from the site', icon: project.hidden ? Eye : EyeOff, onSelect: () => updateAt(i, { ...project, hidden: !project.hidden }) },
+                  ...(project.live ? [{ label: 'Copy live link', icon: Link2, onSelect: async () => toast((await copyText(project.live)) ? 'Link copied' : 'Could not copy the link', { tone: 'ok' }) }] : []),
+                  ...(i > 0 ? [{ label: 'Move up', icon: ArrowUp, onSelect: () => moveAt(i, -1) }] : []),
+                  ...(i < list.length - 1 ? [{ label: 'Move down', icon: ArrowDown, onSelect: () => moveAt(i, 1) }] : []),
+                  { label: 'Delete', icon: Trash2, tone: 'danger', onSelect: () => removeAt(i) },
+                ])}
               />
             ))}
           </div>
@@ -255,6 +280,7 @@ export default function ProjectsEditor() {
           </button>
         </div>
 
+        {rowMenu.element}
         {sideBySide && (
           <div className="admin-split-side">
             <ProjectPreview project={openProject} />

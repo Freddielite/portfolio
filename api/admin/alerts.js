@@ -1,6 +1,7 @@
 import { requireAuth } from '../_lib/auth.js'
 import { getFile } from '../_lib/github.js'
 import { configured, LIST_ID, wm } from '../_lib/wynmail.js'
+import { sendState } from '../_lib/sendState.js'
 import { hashToken, newId, newToken, readAlertDevices, readAlertDevicesCached, readBearer, sameHash, writeAlertDevices } from '../_lib/alerts.js'
 
 // Phone alerts for the Android app.
@@ -8,7 +9,8 @@ import { hashToken, newId, newToken, readAlertDevices, readAlertDevicesCached, r
 // Called by the phone in the background (with its own read-only token):
 //   GET  /api/admin/alerts            Authorization: Bearer <id>.<token>
 //        -> what the phone compares with its last check: monitors from Pulse,
-//           the newest signups from Wynmail, and the commit the live site runs.
+//           the newest signups and the number of subscribers from Wynmail, emailed posts that
+//           are stuck or did not fully go out, and the commit the live site runs.
 //   POST /api/admin/alerts?step=forget  (same header) this phone turned alerts off
 //
 // Called from the admin (signed in):
@@ -68,12 +70,47 @@ async function pulse(s) {
 async function signups() {
   if (!configured()) return { signups: null, reason: 'not-set-up' }
   try {
-    const page = await wm(`/v1/lists/${LIST_ID}/contacts?limit=10`, { timeout: 20000 })
+    const [page, stats] = await Promise.all([
+      wm(`/v1/lists/${LIST_ID}/contacts?limit=10`, { timeout: 20000 }),
+      wm(`/v1/lists/${LIST_ID}/stats`, { timeout: 20000 }).catch(() => null),
+    ])
     return {
       signups: (page.data || []).map((c) => ({ email: c.email, name: [c.first_name, c.last_name].filter(Boolean).join(' '), at: c.created_at, status: c.status })),
+      subscribersTotal: stats && Number.isFinite(Number(stats.subscribed)) ? Number(stats.subscribed) : null,
     }
   } catch {
     return { signups: null, reason: 'wynmail-unreachable' }
+  }
+}
+
+// Emailed posts that need a retry: still "sending" after ten minutes, or with emails that failed.
+// Titles are looked up only when there is something to say, so a normal check costs nothing extra.
+async function stuckSends() {
+  if (!configured()) return { sends: null, reason: 'not-set-up' }
+  try {
+    const campaigns = (await wm('/v1/campaigns', { timeout: 20000 })).data || []
+    const seen = new Set()
+    const stuck = []
+    for (const c of campaigns) {
+      const m = /^post:(.+)$/.exec(c.name || '')
+      if (!m || seen.has(m[1])) continue // the newest campaign for a post is the one that counts
+      seen.add(m[1])
+      const at = c.started_at || c.created_at
+      const st = sendState({ status: c.status, failed: c.failed, waiting: c.waiting, at })
+      if (st.retry) stuck.push({ id: c.id, slug: m[1], kind: st.kind, sent: c.sent || 0, failed: st.failed, waiting: st.waiting, at })
+    }
+    if (stuck.length) {
+      try {
+        const { content } = await getFile('content/posts.json')
+        const titles = Object.fromEntries((content ? JSON.parse(content) : []).map((p) => [p.slug, p.title]))
+        for (const s of stuck) s.title = titles[s.slug] || s.slug
+      } catch {
+        for (const s of stuck) s.title = s.slug
+      }
+    }
+    return { sends: stuck }
+  } catch {
+    return { sends: null, reason: 'wynmail-unreachable' }
   }
 }
 
@@ -109,8 +146,8 @@ export default async function handler(req, res) {
     }
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
     const s = await settings().catch(() => ({}))
-    const [p, w] = await Promise.all([pulse(s), signups()])
-    return res.status(200).json({ at: new Date().toISOString(), ...p, pulseReason: p.reason, ...w, wynmailReason: w.reason, build: build() })
+    const [p, w, sn] = await Promise.all([pulse(s), signups(), stuckSends()])
+    return res.status(200).json({ at: new Date().toISOString(), ...p, pulseReason: p.reason, ...w, wynmailReason: w.reason, sends: sn.sends, sendsReason: sn.reason, build: build() })
   }
 
   // ---- the admin, signed in

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { ArrowLeft, Plus, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Link2, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
+import { useRowMenu } from '../RowMenu.jsx'
+import { copyText, postUrl, shareLink } from '../linkTools.js'
+import { forgetRecentPost, noteRecentPost } from '../recentPosts.js'
 import usePostBackup, { applyBackup } from '../usePostBackup.js'
 import useAdminContent from '../useAdminContent.js'
 import useUnsavedChangesWarning from '../useUnsavedChangesWarning.js'
@@ -46,6 +49,7 @@ export default function PostsEditor() {
   const [activeId, setActiveId] = useState(null)
   const [tab, setTab] = useState('all')
   const [page, setPage] = useState(1)
+  const rowMenu = useRowMenu()
   const [restoredFrom, setRestoredFrom] = useState(null)
   // On phones the list and the editor are two screens; this says which one.
   const [editing, setEditing] = useState(false)
@@ -165,18 +169,27 @@ export default function PostsEditor() {
   // "New post" from the app icon, and things shared to the app from another app.
   // The latest functions are kept in a ref so the listener never uses stale state.
   const phoneActions = useRef(null)
-  phoneActions.current = { addPost, startFromShare }
+  phoneActions.current = { addPost, startFromShare, openBySlug }
   useEffect(() => {
     if (!list) return
     const run = () => {
       if (takeIntent('new-post')) phoneActions.current.addPost()
       const shared = takeIntent('share')
       if (shared) phoneActions.current.startFromShare(shared.shared)
+      const wanted = takeIntent('open-post')
+      if (wanted) phoneActions.current.openBySlug(wanted.slug)
     }
     run()
     window.addEventListener('admin:intent', run)
     return () => window.removeEventListener('admin:intent', run)
   }, [list !== null]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const opened = list?.find((x) => x._id === activeId)
+  useEffect(() => {
+    if (!opened?.slug) return undefined
+    const t = setTimeout(() => noteRecentPost({ slug: opened.slug, title: opened.title }), 800)
+    return () => clearTimeout(t)
+  }, [opened?.slug, opened?.title]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!list) return <p className="admin-hint admin-loading">Loading posts…</p>
   const loadError = (!pub.data && pub.error) || (!drafts.data && drafts.error)
@@ -255,18 +268,54 @@ export default function PostsEditor() {
     setEditing(true)
     if (isPhone()) window.scrollTo(0, 0)
   }
-  async function remove(id) {
-    const p = list.find((x) => x._id === id)
-    const ok = await confirm({
-      title: `Delete “${p?.title || 'Untitled post'}”?`,
-      body: 'It leaves the list now and your site when you save. History can bring it back.',
-      confirmLabel: 'Delete post',
-      tone: 'danger',
-    })
-    if (!ok) return
+  // Deleting leaves the list at once and shows Undo; nothing is final until you save.
+  function remove(id) {
+    const at = list.findIndex((x) => x._id === id)
+    const gone = list[at]
+    if (!gone) return
     setList((l) => l.filter((x) => x._id !== id))
     setActiveId(null)
     closeEditor()
+    if (gone.slug) forgetRecentPost(gone.slug)
+    toast(`Deleted “${gone.title || 'Untitled post'}”`, {
+      action: { label: 'Undo', onClick: () => setList((l) => (l.some((x) => x._id === id) ? l : [...l.slice(0, at), gone, ...l.slice(at)])) },
+      duration: 7000,
+    })
+  }
+
+  function setPostStatus(id, status) {
+    setList((l) => l.map((x) => (x._id === id ? { ...x, status } : x)))
+  }
+
+  async function shareOut(post) {
+    const result = await shareLink({ title: post.title || 'A post', url: postUrl(post) })
+    if (result === 'copied') toast('Link copied. Paste it anywhere.', { tone: 'ok' })
+    else if (result === 'failed') toast('Could not share the link.', { tone: 'error' })
+  }
+
+  // Opens the post with this address (from a shortcut on the app icon, or the search).
+  function openBySlug(slug) {
+    const found = list?.find((x) => x.slug === slug)
+    if (found) openPost(found._id)
+    else toast('That post is not in the list any more.', { tone: 'error' })
+  }
+
+  // What the press-and-hold (or right-click) menu offers for one post.
+  function postActions(post) {
+    const live = postState(post) === 'published' && post.slug
+    return [
+      { label: 'Open', icon: Pencil, onSelect: () => openPost(post._id) },
+      ...(live
+        ? [
+            { label: 'Share', icon: Share2, onSelect: () => shareOut(post) },
+            { label: 'Copy link', icon: Link2, onSelect: async () => toast((await copyText(postUrl(post))) ? 'Link copied' : 'Could not copy the link', { tone: 'ok' }) },
+          ]
+        : []),
+      post.status === 'draft'
+        ? { label: 'Publish', icon: Eye, onSelect: () => setPostStatus(post._id, 'published') }
+        : { label: 'Make a draft', icon: EyeOff, onSelect: () => setPostStatus(post._id, 'draft') },
+      { label: 'Delete', icon: Trash2, tone: 'danger', onSelect: () => remove(post._id) },
+    ]
   }
 
   async function saveAll() {
@@ -352,7 +401,7 @@ export default function PostsEditor() {
           </div>
           <ul>
             {paged.items.map((p) => (
-              <li key={p._id}>
+              <li key={p._id} {...rowMenu.bind(p.title || 'Untitled post', () => postActions(p))}>
                 <button type="button" className={p._id === activeId ? 'on' : ''} onClick={() => openPost(p._id)}>
                   <strong>{p.title || 'Untitled post'}</strong>
                   <span><i className={`admin-dot is-${postState(p)}`} />{label[postState(p)]} · {String(p.publishedAt).slice(0, 10)}</span>
@@ -362,6 +411,7 @@ export default function PostsEditor() {
             {shown.length === 0 && <li className="admin-hint">Nothing here yet.</li>}
           </ul>
           <Pager p={paged} onPage={setPage} compact label="posts" />
+          {rowMenu.element}
         </aside>
 
         <div className="builder-main" ref={mainRef}>
