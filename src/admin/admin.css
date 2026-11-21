@@ -2979,3 +2979,54 @@ button.admin-status:hover { border-color: currentColor; }
 .admin-log { margin: 0 0 6px; padding: 10px 12px; max-height: 260px; overflow: auto; border-radius: var(--a-r); background: rgba(0, 0, 0, 0.35); color: var(--text); font: 0.78rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; tab-size: 4; }
 .admin-run-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .admin-run-link { text-decoration: none; }
+
+/* ---- Fit on phones ----
+   .admin-activity is a grid. Its one automatic column is as wide as its widest content,
+   so a long log line or a one-line hint made the whole list (and the runs panel in it)
+   wider than the screen, and the page clips what sticks out. minmax(0, 1fr) pins the
+   column to the card's width; everything below can then shrink, wrap or scroll inside. */
+.admin-repo-list { grid-template-columns: minmax(0, 1fr); }
+.admin-repo-items > li,
+.admin-repo-head,
+.admin-repo-panel,
+.admin-run-detail,
+.admin-run-list,
+.admin-run-list > li { min-width: 0; max-width: 100%; }
+.admin-repo-panel-tools { display: flex; align-items: center; gap: 2px; }
+
+/* Long commit titles wrap onto two lines instead of running off the edge. */
+.admin-repo-items .admin-activity-text strong,
+.admin-run-list .admin-activity-text strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.admin-log { max-width: 100%; box-sizing: border-box; overscroll-behavior-x: contain; }
+.admin-card-header:has(.admin-diag-actions) { flex-wrap: wrap; row-gap: 10px; }
+
+@media (max-width: 860px) {
+  /* Wrap the log on a phone so it reads without sideways scrolling. */
+  .admin-log { white-space: pre-wrap; overflow-wrap: anywhere; }
+}
+
+@media (max-width: 520px) {
+  /* A run: the state and time sit under the title instead of squeezing beside it. */
+  .admin-run-row { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: start; column-gap: 10px; row-gap: 6px; }
+  .admin-run-row > svg { margin-top: 2px; }
+  .admin-run-row .admin-activity-meta { grid-column: 2; flex-direction: row; align-items: center; justify-content: flex-start; gap: 8px; }
+  .admin-repo-panel { padding: 8px 10px; }
+  .admin-run-detail { padding-left: 0; }
+  .admin-run-actions > * { flex: 1 1 auto; justify-content: center; }
+  /* Diagnostics: the detail line gets the full width and the figure goes under it. */
+  .admin-diag-list li { grid-template-columns: 10px minmax(0, 1fr); }
+  .admin-diag-list .admin-monitor-stats { grid-column: 2; justify-items: start; }
+}
+.admin-run-actions .admin-btn-ghost { border-color: color-mix(in srgb, var(--text-muted) 45%, transparent); }
+@media (max-width: 400px) {
+  /* Very small phones: the repo row keeps its state badge and drops the time, so the name has room. */
+  .admin-repo-head .admin-activity-meta time { display: none; }
+}

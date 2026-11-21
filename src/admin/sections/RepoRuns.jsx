@@ -172,7 +172,7 @@ function RunDetail({ repo, run, onRerun }) {
   )
 }
 
-export default function RepoRuns({ repo, now, onChanged }) {
+export default function RepoRuns({ repo, url, now, onChanged }) {
   const [state, setState] = useState({ loading: true, runs: null, error: null })
   const [selected, setSelected] = useState(null)
   const timer = useRef(null)
@@ -211,9 +211,16 @@ export default function RepoRuns({ repo, now, onChanged }) {
     <div className="admin-repo-panel">
       <div className="admin-repo-panel-head">
         <span className="admin-hint">Latest runs</span>
-        <button type="button" className="admin-icon-btn" onClick={() => load()} disabled={state.loading} aria-label="Refresh runs">
-          <RefreshCw size={14} className={state.loading ? 'admin-spin' : ''} aria-hidden="true" />
-        </button>
+        <span className="admin-repo-panel-tools">
+          {url && (
+            <a className="admin-icon-btn" href={url} target="_blank" rel="noreferrer" onClick={openLink(url)} aria-label={`Open ${repo} on GitHub`}>
+              <ExternalLink size={14} aria-hidden="true" />
+            </a>
+          )}
+          <button type="button" className="admin-icon-btn" onClick={() => load()} disabled={state.loading} aria-label="Refresh runs">
+            <RefreshCw size={14} className={state.loading ? 'admin-spin' : ''} aria-hidden="true" />
+          </button>
+        </span>
       </div>
       {state.error && <p className="admin-error">{state.error}</p>}
       {!runs && state.loading && <p className="admin-hint">Asking GitHub…</p>}

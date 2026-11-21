@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle2, ChevronDown, CircleDashed, CircleSlash, ExternalLink, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CircleDashed, CircleSlash, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
@@ -49,7 +49,7 @@ function Badge({ ci }) {
 }
 
 // One repo. Tap it to open its latest workflow runs underneath (read the error,
-// re-run, copy the failure); the small arrow icon opens it on GitHub instead.
+// re-run, copy the failure); its GitHub link is in the panel header.
 function RepoRow({ r, now, reload }) {
   const [open, setOpen] = useState(false)
   const Icon = ICON[r.ci] || CircleDashed
@@ -74,11 +74,8 @@ function RepoRow({ r, now, reload }) {
           </span>
           <ChevronDown size={16} className="admin-repo-chevron" aria-hidden="true" />
         </button>
-        <a className="admin-icon-btn" href={r.url} target="_blank" rel="noreferrer" onClick={openLink(r.url)} aria-label={`Open ${r.fullName} on GitHub`}>
-          <ExternalLink size={15} aria-hidden="true" />
-        </a>
       </div>
-      {open && <RepoRuns repo={r.fullName} now={now} onChanged={reload} />}
+      {open && <RepoRuns repo={r.fullName} url={r.url} now={now} onChanged={reload} />}
     </li>
   )
 }
