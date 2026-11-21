@@ -257,7 +257,13 @@ async function writeHomeHtml(template, siteUrl, settings = {}, projects = []) {
 // commit it just made shows up here. On Vercel the commit comes from the system
 // env var VERCEL_GIT_COMMIT_SHA.
 async function writeBuildInfo() {
-  const info = { commit: process.env.VERCEL_GIT_COMMIT_SHA || null, builtAt: new Date().toISOString() }
+  let version = null
+  try {
+    version = JSON.parse(await readFile(path.resolve('package.json'), 'utf-8')).version || null
+  } catch {
+    /* the Diagnostics screen just says the version is unknown */
+  }
+  const info = { commit: process.env.VERCEL_GIT_COMMIT_SHA || null, version, builtAt: new Date().toISOString() }
   await writeFile(path.join(DIST, 'build.json'), JSON.stringify(info))
 }
 

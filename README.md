@@ -13,6 +13,15 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Repos and Diagnostics (Nov 2026)
+
+Web-only change: deploy as usual, no APK rebuild needed. Both sit under **More** on phones and in the sidebar on wider screens.
+
+- **Repos.** Every GitHub repo you can see, newest push first, with whether the latest push passed its checks (Passing, Failing, Running, No checks). Failing repos are listed first, and tapping a row opens GitHub on the failed run. "Recent pushes" lists the latest commits across all repos. It refreshes every minute while open, and shows the last answer straight away from the device.
+- **Diagnostics.** Whether GitHub (saving and the Repos view), Wynmail (including its email queue) and Pulse are answering, how much GitHub allowance is left, token expiry warnings, and the admin's version and commit. "Copy report" puts it all in one block of text with no secrets in it.
+- **Setup.** In Vercel add `GITHUB_MONITOR_TOKEN`, then redeploy. A fine-grained token can only see one owner (you, or one organisation), so for repos under more than one owner create one token per owner and put them in the same variable, separated by commas. Each token needs read-only access to Metadata, Contents, Actions, Checks and Commit statuses. Without it, Repos only sees the portfolio repo (it falls back to `GITHUB_TOKEN`).
+- **Where the code is.** Server: `api/admin/monitor.js` (one function, `?step=repos` and `?step=diagnostics`), `api/_lib/githubMonitor.js`, `api/_lib/health.js`. Screens: `admin/sections/Repos.jsx`, `admin/sections/Diagnostics.jsx`. The repo list costs two GitHub requests per token and is kept for 45 seconds on the server. Vercel's free plan allows 12 serverless functions; the admin now uses 11.
+
 ## App lock in the app itself, custom pickers (APK 1.2, Nov 2026)
 
 Needs the APK rebuilt once (`bash scripts/build-apk.sh`). Until then the page's own lock (below) keeps working with the older app.

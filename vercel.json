@@ -11,6 +11,9 @@
     },
     "api/admin/alerts.js": {
       "maxDuration": 30
+    },
+    "api/admin/monitor.js": {
+      "maxDuration": 30
     }
   }
 }
