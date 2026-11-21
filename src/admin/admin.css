@@ -2952,3 +2952,30 @@ button.admin-status:hover { border-color: currentColor; }
 .admin-diag-list .admin-status-dot { margin-top: 6px; flex-shrink: 0; }
 .admin-diag-detail { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.4; }
 .admin-diag-list .admin-monitor-name { flex: 1; }
+
+/* ---- Repos: runs, jobs and logs under a repo ---- */
+.admin-repo-items li { display: block; }
+.admin-repo-head { display: flex; align-items: center; gap: 4px; }
+.admin-repo-toggle { background: none; border: 0; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+.admin-repo-chevron { flex-shrink: 0; color: var(--text-muted); transition: transform .18s ease; }
+.admin-repo-items li.is-open .admin-repo-chevron { transform: rotate(180deg); }
+.admin-repo-panel { margin: 2px 0 12px; padding: 10px 12px; border-radius: var(--a-r); background: var(--a-tint); }
+.admin-repo-panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.admin-run-list { list-style: none; margin: 0; padding: 0; }
+.admin-run-list > li { border-top: 1px solid var(--border); }
+.admin-run-list > li:first-child { border-top: 0; }
+.admin-run-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.admin-run-list li.is-failing > .admin-run-row > svg { color: var(--a-danger); }
+.admin-run-list li.is-passing > .admin-run-row > svg { color: var(--a-ok); }
+.admin-run-list li.is-running > .admin-run-row > svg { color: var(--accent); }
+.admin-run-detail { padding: 2px 0 12px 26px; }
+.admin-job-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.admin-job-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.92rem; }
+.admin-job-list li.is-failing svg { color: var(--a-danger); }
+.admin-job-list li.is-passing svg { color: var(--a-ok); }
+.admin-job-name { flex: 1; min-width: 0; }
+.admin-run-small { padding: 4px 10px; font-size: 0.8rem; }
+.admin-log-errors { margin: 0 0 8px; padding: 8px 12px 8px 28px; border-radius: var(--a-r); background: color-mix(in srgb, var(--a-danger) 12%, transparent); color: var(--a-danger); font-size: 0.88rem; }
+.admin-log { margin: 0 0 6px; padding: 10px 12px; max-height: 260px; overflow: auto; border-radius: var(--a-r); background: rgba(0, 0, 0, 0.35); color: var(--text); font: 0.78rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; tab-size: 4; }
+.admin-run-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.admin-run-link { text-decoration: none; }

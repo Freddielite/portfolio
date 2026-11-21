@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle2, CircleDashed, CircleSlash, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronDown, CircleDashed, CircleSlash, ExternalLink, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
 import { usePanel, useRefresh } from '../AdminContext.jsx'
 import { openInApp } from '../native.js'
 import Pager, { paginate } from '../Pager.jsx'
+import RepoRuns from './RepoRuns.jsx'
 
 // Every GitHub repo you can see, newest push first, with whether the latest push
 // passed its checks. Read-only (see api/admin/monitor.js). Shown from the device
@@ -45,6 +46,41 @@ function Badge({ ci }) {
   if (ci === 'running') return <span className="admin-badge is-accent admin-badge-building">Running</span>
   if (ci === 'passing') return <span className="admin-badge is-published">Passing</span>
   return <span className="admin-badge">{WORD[ci] || 'Unknown'}</span>
+}
+
+// One repo. Tap it to open its latest workflow runs underneath (read the error,
+// re-run, copy the failure); the small arrow icon opens it on GitHub instead.
+function RepoRow({ r, now, reload }) {
+  const [open, setOpen] = useState(false)
+  const Icon = ICON[r.ci] || CircleDashed
+  const top = r.commits[0]
+  return (
+    <li className={`is-${r.ci} ${open ? 'is-open' : ''}`}>
+      <div className="admin-repo-head">
+        <button type="button" className="admin-repo-link admin-repo-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <span className="admin-activity-icon" aria-hidden="true">
+            <Icon size={17} className={r.ci === 'running' ? 'admin-spin' : ''} />
+          </span>
+          <span className="admin-activity-text">
+            <strong>
+              {r.fullName}
+              {r.private && <Lock size={12} aria-label="Private" className="admin-repo-lock" />}
+            </strong>
+            <span className="admin-hint">{top ? `${r.branch} · ${top.message}` : r.branch || 'No commits yet'}</span>
+          </span>
+          <span className="admin-activity-meta">
+            {r.pushedAt && <time dateTime={r.pushedAt} className="admin-hint">{agoText(Date.parse(r.pushedAt), now)}</time>}
+            <Badge ci={r.ci} />
+          </span>
+          <ChevronDown size={16} className="admin-repo-chevron" aria-hidden="true" />
+        </button>
+        <a className="admin-icon-btn" href={r.url} target="_blank" rel="noreferrer" onClick={openLink(r.url)} aria-label={`Open ${r.fullName} on GitHub`}>
+          <ExternalLink size={15} aria-hidden="true" />
+        </a>
+      </div>
+      {open && <RepoRuns repo={r.fullName} now={now} onChanged={reload} />}
+    </li>
+  )
 }
 
 export default function Repos() {
@@ -149,32 +185,10 @@ export default function Repos() {
 
         {repos.length > 0 && (
           <>
-            <ul className={`admin-activity admin-repo-list ${state.loading ? '' : ''}`}>
-              {reposPaged.items.map((r) => {
-                const Icon = ICON[r.ci] || CircleDashed
-                const top = r.commits[0]
-                const href = (r.ci === 'failing' || r.ci === 'running') && top?.url ? `${top.url}/checks` : r.url
-                return (
-                  <li key={r.fullName} className={`is-${r.ci}`}>
-                    <a className="admin-repo-link" href={href} target="_blank" rel="noreferrer" onClick={openLink(href)}>
-                      <span className="admin-activity-icon" aria-hidden="true">
-                        <Icon size={17} className={r.ci === 'running' ? 'admin-spin' : ''} />
-                      </span>
-                      <span className="admin-activity-text">
-                        <strong>
-                          {r.fullName}
-                          {r.private && <Lock size={12} aria-label="Private" className="admin-repo-lock" />}
-                        </strong>
-                        <span className="admin-hint">{top ? `${r.branch} · ${top.message}` : r.branch || 'No commits yet'}</span>
-                      </span>
-                      <span className="admin-activity-meta">
-                        {r.pushedAt && <time dateTime={r.pushedAt} className="admin-hint">{agoText(Date.parse(r.pushedAt), now)}</time>}
-                        <Badge ci={r.ci} />
-                      </span>
-                    </a>
-                  </li>
-                )
-              })}
+            <ul className="admin-activity admin-repo-list admin-repo-items">
+              {reposPaged.items.map((r) => (
+                <RepoRow key={r.fullName} r={r} now={now} reload={() => load(true)} />
+              ))}
             </ul>
             <Pager p={reposPaged} onPage={setRepoPage} label="repos" />
           </>

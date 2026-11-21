@@ -219,3 +219,144 @@ export async function checkToken(token) {
     return { ok: false, message: err.message }
   }
 }
+
+// ---- Workflow runs: list them, read why one failed, run it again ----------------
+// A repo can sit under any of the tokens (one per owner), so each call tries the
+// tokens in turn and keeps the most useful error if none works.
+
+export class HttpError extends Error {
+  constructor(status, message) {
+    super(message)
+    this.status = status
+  }
+}
+
+export function validRepo(repo) {
+  const parts = String(repo || '').split('/')
+  return parts.length === 2 && parts.every((p) => /^[A-Za-z0-9_.-]{1,100}$/.test(p) && p !== '.' && p !== '..')
+}
+export const validId = (id) => /^\d{1,18}$/.test(String(id || ''))
+
+// 403 (a permission is missing) is more useful to report than 404 (this token cannot see it).
+const worse = (a, b) => (b.res.status === 403 && a.res.status !== 403) || (a.res.status === 404 && b.res.status !== 404)
+
+async function tryTokens(call, { forbidden } = {}) {
+  const { tokens } = monitorTokens()
+  if (!tokens.length) throw new HttpError(400, 'GITHUB_MONITOR_TOKEN is not set in Vercel.')
+  let best = null
+  for (const token of tokens) {
+    const got = await call(token)
+    if (got.res.ok) return got
+    if (!best || worse(best, got)) best = got
+  }
+  const status = best.res.status
+  if (status === 403 && forbidden) throw new HttpError(403, forbidden)
+  if (status === 404) throw new HttpError(404, 'GitHub could not find that (or no token you added can see it, or it was deleted).')
+  throw new HttpError(status >= 500 ? 502 : 400, explain(best.res, best.data))
+}
+
+// One run or job -> one plain word.
+export function runState(x) {
+  if (!x) return 'none'
+  if (x.status && x.status !== 'completed') return 'running' // queued, waiting, in progress
+  switch (x.conclusion) {
+    case 'success':
+      return 'passing'
+    case 'failure':
+    case 'timed_out':
+    case 'startup_failure':
+      return 'failing'
+    case 'cancelled':
+      return 'cancelled'
+    case 'skipped':
+    case 'neutral':
+      return 'skipped'
+    case 'action_required':
+      return 'attention'
+    default:
+      return 'none'
+  }
+}
+
+export async function listRuns(repo) {
+  const { data } = await tryTokens((t) => gh(t, `/repos/${repo}/actions/runs?per_page=8`))
+  return (data?.workflow_runs || []).map((r) => ({
+    id: r.id,
+    workflow: r.name || 'Workflow',
+    title: shortMessage(r.display_title || r.head_commit?.message || r.name),
+    event: r.event,
+    branch: r.head_branch,
+    sha: r.head_sha,
+    attempt: r.run_attempt || 1,
+    state: runState(r),
+    at: r.run_started_at || r.created_at,
+    url: r.html_url,
+  }))
+}
+
+export async function getJobs(repo, runId) {
+  const { data } = await tryTokens((t) => gh(t, `/repos/${repo}/actions/runs/${runId}/jobs?filter=latest&per_page=50`))
+  return (data?.jobs || []).map((j) => {
+    const steps = (j.steps || []).map((s) => ({ number: s.number, name: s.name, state: runState(s) }))
+    return { id: j.id, name: j.name, state: runState(j), url: j.html_url, steps, failedStep: steps.find((s) => s.state === 'failing')?.name || null }
+  })
+}
+
+const ANSI = /\u001b\[[0-9;]*[A-Za-z]/g
+const STAMP = /^\ufeff?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z ?/
+const TAIL_LINES = 70
+const TAIL_BYTES = 12000
+
+// A job log is long and noisy. Keep what explains a failure: the lines GitHub marked
+// as errors, and the last stretch of the log (where the failing command usually is).
+export function summariseLog(text) {
+  const raw = String(text || '').slice(-400000).split(/\r?\n/)
+  const lines = []
+  const errors = []
+  for (let line of raw) {
+    line = line.replace(ANSI, '').replace(STAMP, '')
+    if (!line.trim()) continue
+    if (/^##\[endgroup\]/.test(line)) continue
+    let m
+    if ((m = /^##\[group\](.*)$/.exec(line))) line = `> ${m[1]}`
+    else if ((m = /^##\[error\](.*)$/.exec(line))) {
+      const msg = m[1].trim()
+      if (msg && !errors.includes(msg) && errors.length < 10) errors.push(msg.slice(0, 400))
+      line = `ERROR: ${msg}`
+    } else if ((m = /^##\[warning\](.*)$/.exec(line))) line = `warning: ${m[1]}`
+    lines.push(line.length > 400 ? `${line.slice(0, 400)}...` : line)
+  }
+  let tail = lines.slice(-TAIL_LINES)
+  while (tail.length > 1 && tail.join('\n').length > TAIL_BYTES) tail = tail.slice(1)
+  return { errors, tail, truncated: lines.length > tail.length }
+}
+
+export async function getJobLog(repo, jobId) {
+  const { tokens } = monitorTokens()
+  if (!tokens.length) throw new HttpError(400, 'GITHUB_MONITOR_TOKEN is not set in Vercel.')
+  let last = null
+  for (const token of tokens) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 20000)
+    try {
+      // GitHub answers with a redirect to a short-lived download link; fetch follows it.
+      const res = await fetch(`${API}/repos/${repo}/actions/jobs/${jobId}/logs`, { headers: headers(token), signal: ctrl.signal, cache: 'no-store' })
+      if (res.ok) return summariseLog(await res.text())
+      last = res
+    } catch (err) {
+      throw new HttpError(504, err.name === 'AbortError' ? 'GitHub took too long to send the log.' : 'Could not reach GitHub.')
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  if (last?.status === 403) throw new HttpError(403, 'This token cannot read logs. It needs Actions: Read-only (or Read and write).')
+  throw new HttpError(404, 'The log is not available (it may still be running, or older than 90 days).')
+}
+
+export async function rerunRun(repo, runId, { failedOnly = true } = {}) {
+  await tryTokens((t) => gh(t, `/repos/${repo}/actions/runs/${runId}/${failedOnly ? 'rerun-failed-jobs' : 'rerun'}`, { method: 'POST' }), {
+    forbidden: 'This token can only read. To re-run, change its Actions permission to "Read and write" in GitHub (Settings > Developer settings > your token), then try again.',
+  })
+  cache = null // the repo list is about to change
+  return { ok: true }
+}

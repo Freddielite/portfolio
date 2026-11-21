@@ -5,6 +5,7 @@ import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
 import { useAdmin, useRefresh } from '../AdminContext.jsx'
 import { IS_APP } from '../app.js'
+import { copyText } from '../copyText.js'
 
 // One place that says whether GitHub, Wynmail and Pulse are answering, how much
 // GitHub allowance is left, and whether the email queue is healthy, with a Copy
@@ -141,28 +142,6 @@ export function reportText(d, rows, now = Date.now()) {
   return lines.join('\n')
 }
 
-async function copy(text) {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.setAttribute('readonly', '')
-    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0'
-    document.body.appendChild(ta)
-    ta.select()
-    let ok = false
-    try {
-      ok = document.execCommand('copy')
-    } catch {
-      /* fall through */
-    }
-    ta.remove()
-    return ok
-  }
-}
-
 function useNow(every = 30000) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
@@ -208,7 +187,7 @@ export default function Diagnostics() {
 
   async function onCopy() {
     if (!data) return
-    const ok = await copy(reportText(data, rows))
+    const ok = await copyText(reportText(data, rows))
     toast(ok ? 'Report copied' : 'Could not copy. Select the text and copy it yourself.', ok ? undefined : { tone: 'error' })
   }
 
