@@ -157,9 +157,10 @@ export function combineCi(commitCi, v) {
   return commitCi
 }
 
-async function recentRuns(token, repo, branch) {
+// force: skip the 5-minute copy and ask GitHub now (a conditional request, so free when nothing changed).
+async function recentRuns(token, repo, branch, force = false) {
   const hit = runsCache.get(repo)
-  if (hit && Date.now() - hit.at < RUNS_TTL_MS) return hit.runs
+  if (!force && hit && Date.now() - hit.at < RUNS_TTL_MS) return hit.runs
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 10000)
   try {
@@ -199,7 +200,7 @@ async function mapLimit(items, limit, fn) {
 }
 
 // The repos one token can see, newest push first, each with its latest commits.
-async function reposForToken(token, limit) {
+async function reposForToken(token, limit, fresh = false) {
   const list = await gh(token, `/user/repos?sort=pushed&direction=desc&per_page=${limit}&affiliation=owner,collaborator,organization_member`)
   if (!list.res.ok) throw new Error(explain(list.res, list.data))
   const repos = (Array.isArray(list.data) ? list.data : []).filter((r) => !r.archived && !r.disabled)
@@ -243,7 +244,7 @@ async function reposForToken(token, limit) {
   })
 
   // Also read each repo's workflows (see above) and let a failing one turn the repo red.
-  const verdicts = await mapLimit(built, 6, (r) => recentRuns(token, r.fullName, r.branch).then((runs) => (runs ? workflowVerdict(runs) : null)))
+  const verdicts = await mapLimit(built, 6, (r) => recentRuns(token, r.fullName, r.branch, fresh).then((runs) => (runs ? workflowVerdict(runs) : null)))
   built.forEach((r, i) => {
     const v = verdicts[i]
     if (!v) return
@@ -267,7 +268,7 @@ export async function loadRepos({ fresh = false, limit = DEFAULT_REPOS } = {}) {
     const { tokens, fallback } = monitorTokens()
     if (!tokens.length) return { setup: false, repos: [], feed: [], summary: counts([]), problems: [], fallback, at: new Date().toISOString() }
 
-    const settled = await Promise.allSettled(tokens.map((t) => reposForToken(t, limit)))
+    const settled = await Promise.allSettled(tokens.map((t) => reposForToken(t, limit, fresh)))
     const problems = []
     const seen = new Map()
     settled.forEach((s, i) => {
@@ -466,6 +467,7 @@ export async function rerunRun(repo, runId, { failedOnly = true } = {}) {
     forbidden: 'This token can only read. To re-run, change its Actions permission to "Read and write" in GitHub (Settings > Developer settings > your token), then try again.',
   })
   cache = null // the repo list is about to change
+  runsCache.delete(repo) // and so are its workflow runs
   return { ok: true }
 }
 
