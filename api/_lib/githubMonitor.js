@@ -105,6 +105,96 @@ const NODES_QUERY = `query($ids:[ID!]!){
 
 const shortMessage = (m) => String(m || '').split('\n')[0].slice(0, 140)
 
+// ---- A repo is also judged by its workflows, not only by its latest commit --------
+// A commit's check rollup only covers the checks attached to that commit. A scheduled
+// workflow (a cron job such as "Reminders") can fail every day while the latest commit
+// still shows green. So each repo's recent runs on its default branch are read too, and
+// the repo is failing when the latest run of ANY workflow failed.
+//
+// Cost: one request per repo, kept for 5 minutes, and after that a conditional request
+// (GitHub does not count a "nothing changed" answer against the allowance).
+
+const RUNS_TTL_MS = 5 * 60 * 1000
+const RUN_WINDOW_MS = 14 * 24 * 60 * 60 * 1000 // a workflow that last ran longer ago than this is not "current"
+const runsCache = new Map() // repo -> { at, etag, runs }
+
+const trimRun = (r) => ({
+  id: r.id,
+  workflow_id: r.workflow_id,
+  name: r.name || 'Workflow',
+  status: r.status,
+  conclusion: r.conclusion,
+  run_attempt: r.run_attempt || 1,
+  updated_at: r.updated_at,
+  created_at: r.created_at,
+})
+
+// runs: newest first. Looks at the latest run of each workflow.
+export function workflowVerdict(runs, now = Date.now()) {
+  const latest = new Map()
+  for (const r of runs) if (!latest.has(r.workflow_id)) latest.set(r.workflow_id, r)
+  let failing = null
+  let running = null
+  let passing = false
+  for (const r of latest.values()) {
+    if (now - Date.parse(r.updated_at || r.created_at) > RUN_WINDOW_MS) continue
+    const st = runState(r)
+    if (st === 'failing') failing = failing || r
+    else if (st === 'running') running = running || r
+    else if (st === 'passing') passing = true
+  }
+  return { failing, running, passing }
+}
+
+// The commit's own verdict and the workflows' verdict -> one word.
+export function combineCi(commitCi, v) {
+  if (v?.failing || commitCi === 'failing') return 'failing'
+  if (v?.running || commitCi === 'running') return 'running'
+  if (commitCi === 'passing' || v?.passing) return 'passing'
+  return commitCi
+}
+
+async function recentRuns(token, repo, branch) {
+  const hit = runsCache.get(repo)
+  if (hit && Date.now() - hit.at < RUNS_TTL_MS) return hit.runs
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 10000)
+  try {
+    const res = await fetch(`${API}/repos/${repo}/actions/runs?per_page=30${branch ? `&branch=${encodeURIComponent(branch)}` : ''}`, {
+      headers: hit?.etag ? { ...headers(token), 'If-None-Match': hit.etag } : headers(token),
+      signal: ctrl.signal,
+      cache: 'no-store',
+    })
+    if (res.status === 304 && hit) {
+      hit.at = Date.now()
+      return hit.runs
+    }
+    if (!res.ok) return null // cannot tell (no Actions here, or no permission): keep the commit's answer
+    const data = await res.json()
+    const runs = (data?.workflow_runs || []).map(trimRun)
+    runsCache.set(repo, { at: Date.now(), etag: res.headers.get('etag'), runs })
+    return runs
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length)
+  let next = 0
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++
+        out[i] = await fn(items[i])
+      }
+    }),
+  )
+  return out
+}
+
 // The repos one token can see, newest push first, each with its latest commits.
 async function reposForToken(token, limit) {
   const list = await gh(token, `/user/repos?sort=pushed&direction=desc&per_page=${limit}&affiliation=owner,collaborator,organization_member`)
@@ -124,7 +214,7 @@ async function reposForToken(token, limit) {
     ciProblem = err.message
   }
 
-  return repos.map((r) => {
+  const built = repos.map((r) => {
     const node = byId.get(r.node_id)
     const commits = (node?.defaultBranchRef?.target?.history?.nodes || []).map((c) => ({
       sha: c.oid,
@@ -148,6 +238,20 @@ async function reposForToken(token, limit) {
       ciProblem,
     }
   })
+
+  // Also read each repo's workflows (see above) and let a failing one turn the repo red.
+  const verdicts = await mapLimit(built, 6, (r) => recentRuns(token, r.fullName, r.branch).then((runs) => (runs ? workflowVerdict(runs) : null)))
+  built.forEach((r, i) => {
+    const v = verdicts[i]
+    if (!v) return
+    const commitCi = r.ci
+    r.ci = combineCi(commitCi, v)
+    // When the commit itself is fine but a workflow failed, say which one.
+    if (v.failing && commitCi !== 'failing') {
+      r.reason = { kind: 'workflow', name: v.failing.name, runId: v.failing.id, attempt: v.failing.run_attempt, at: v.failing.updated_at || v.failing.created_at }
+    }
+  })
+  return built
 }
 
 let cache = null
@@ -370,6 +474,12 @@ export function phoneCi(result) {
   return {
     ci: result.repos
       .filter((r) => r.ci === 'failing' || r.ci === 'passing')
-      .map((r) => ({ repo: r.fullName, state: r.ci, sha: r.commits[0]?.sha || '', message: r.commits[0]?.message || '' })),
+      .map((r) => ({
+        repo: r.fullName,
+        state: r.ci,
+        // A failing workflow is told apart by its run (and attempt), a failing commit by its sha.
+        sha: r.reason?.runId ? `run${r.reason.runId}-${r.reason.attempt}` : r.commits[0]?.sha || '',
+        message: r.reason ? `${r.reason.name} failed` : r.commits[0]?.message || '',
+      })),
   }
 }

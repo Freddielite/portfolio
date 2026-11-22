@@ -66,7 +66,9 @@ function RepoRow({ r, now, reload }) {
               {r.fullName}
               {r.private && <Lock size={12} aria-label="Private" className="admin-repo-lock" />}
             </strong>
-            <span className="admin-hint">{top ? `${r.branch} · ${top.message}` : r.branch || 'No commits yet'}</span>
+            <span className="admin-hint">
+              {r.reason ? `${r.branch} · ${r.reason.name} failed ${agoText(Date.parse(r.reason.at), now)}` : top ? `${r.branch} · ${top.message}` : r.branch || 'No commits yet'}
+            </span>
           </span>
           <span className="admin-activity-meta">
             {r.pushedAt && <time dateTime={r.pushedAt} className="admin-hint">{agoText(Date.parse(r.pushedAt), now)}</time>}
@@ -75,7 +77,7 @@ function RepoRow({ r, now, reload }) {
           <ChevronDown size={16} className="admin-repo-chevron" aria-hidden="true" />
         </button>
       </div>
-      {open && <RepoRuns repo={r.fullName} url={r.url} now={now} onChanged={reload} />}
+      {open && <RepoRuns repo={r.fullName} url={r.url} focusRun={r.reason?.runId} now={now} onChanged={reload} />}
     </li>
   )
 }

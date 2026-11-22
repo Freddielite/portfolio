@@ -172,7 +172,7 @@ function RunDetail({ repo, run, onRerun }) {
   )
 }
 
-export default function RepoRuns({ repo, url, now, onChanged }) {
+export default function RepoRuns({ repo, url, focusRun, now, onChanged }) {
   const [state, setState] = useState({ loading: true, runs: null, error: null })
   const [selected, setSelected] = useState(null)
   const timer = useRef(null)
@@ -183,13 +183,14 @@ export default function RepoRuns({ repo, url, now, onChanged }) {
       try {
         const { runs } = await api(`/api/admin/monitor?step=runs&repo=${encodeURIComponent(repo)}`)
         setState({ loading: false, runs, error: null })
-        // Open the newest run straight away when it failed: that is what you came to see.
-        if (first && runs[0]?.state === 'failing') setSelected(runs[0].id)
+        // Open the run that made the repo red when it is in the list, otherwise the newest run if that failed.
+        const wanted = runs.find((r) => r.id === focusRun) || (runs[0]?.state === 'failing' ? runs[0] : null)
+        if (first && wanted) setSelected(wanted.id)
       } catch (e) {
         setState((s) => ({ ...s, loading: false, error: e.message }))
       }
     },
-    [repo],
+    [repo, focusRun],
   )
 
   useEffect(() => {
