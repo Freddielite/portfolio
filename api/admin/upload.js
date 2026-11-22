@@ -1,5 +1,6 @@
 import { requireAuth } from '../_lib/auth.js'
-import { getFile, putFile } from '../_lib/github.js'
+import { getFile, putFile, listTree, getBlobText, deleteFiles } from '../_lib/github.js'
+import { CONTENT_FILES, loadLibrary, deleteImages } from '../_lib/imageLibrary.js'
 
 // Vercel's default body parser limit is 4mb, bump it a bit for image
 // (and CV/resume) uploads, which still shouldn't be sent much bigger than
@@ -57,10 +58,36 @@ const FIXED_PATHS = {
   resume: 'public/cv.pdf',
 }
 
+// What the Image library needs from GitHub. One request lists every image and content
+// file; the content files are then read by their blob ids (see api/_lib/imageLibrary.js).
+const library = {
+  listFiles: () => listTree(['public/images/', 'content/']),
+  async readContents(files) {
+    return Promise.all(
+      CONTENT_FILES.map(async ([path, label]) => {
+        const f = files.find((x) => x.path === path)
+        return { label, text: f ? await getBlobText(f.sha) : '' }
+      })
+    )
+  },
+  remove: deleteFiles,
+}
+
+// GET  /api/admin/upload              the Image library (add ?light=1 to skip the "used by" check)
+// POST /api/admin/upload { delete: ["/images/..."] }   delete unused images in one commit
+// POST /api/admin/upload { filename, dataUrl, folder } upload (below)
 export default async function handler(req, res) {
   if (!requireAuth(req, res)) return
+  if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store')
+    try {
+      return res.status(200).json(await loadLibrary(library, { light: req.query.light === '1' }))
+    } catch (err) {
+      return res.status(500).json({ error: err.message })
+    }
+  }
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
+    res.setHeader('Allow', 'GET, POST')
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
@@ -70,6 +97,14 @@ export default async function handler(req, res) {
       body = JSON.parse(body)
     } catch {
       body = {}
+    }
+  }
+
+  if (Array.isArray(body?.delete)) {
+    try {
+      return res.status(200).json(await deleteImages(body.delete, library))
+    } catch (err) {
+      return res.status(err.status || 500).json({ error: err.message })
     }
   }
 

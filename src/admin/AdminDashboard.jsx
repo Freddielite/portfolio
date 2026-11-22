@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine, GitBranch, Stethoscope, ExternalLink, LogOut, Download, ArrowDown, RefreshCw, Mail, Search } from 'lucide-react'
+import { LayoutGrid, SlidersHorizontal, FolderKanban, BarChart3, MessageSquareQuote, PenLine, GitBranch, Stethoscope, Images, ExternalLink, LogOut, Download, ArrowDown, RefreshCw, Mail, Search } from 'lucide-react'
 import Overview from './sections/Overview.jsx'
 import SiteSettingsEditor from './sections/SiteSettingsEditor.jsx'
 import ProjectsEditor from './sections/ProjectsEditor.jsx'
@@ -9,6 +9,7 @@ import TestimonialsEditor from './sections/TestimonialsEditor.jsx'
 import PostsEditor from './sections/PostsEditor.jsx'
 import Subscribers from './sections/Subscribers.jsx'
 import Repos from './sections/Repos.jsx'
+import ImagesSection from './sections/Images.jsx'
 import Diagnostics from './sections/Diagnostics.jsx'
 import { startNativeLock } from './nativeLock.js'
 import { openInApp } from './native.js'
@@ -33,6 +34,7 @@ const TABS = [
   { id: 'settings', label: 'Site settings', short: 'Settings', Icon: SlidersHorizontal, Component: SiteSettingsEditor, blurb: 'Your details, contact links and SEO.' },
   { id: 'skills', label: 'Skills', short: 'Skills', Icon: BarChart3, Component: SkillsEditor, blurb: 'The skill bars in your About section.' },
   { id: 'testimonials', label: 'Testimonials', short: 'Testimonials', Icon: MessageSquareQuote, Component: TestimonialsEditor, blurb: 'Quotes from people you have worked with.' },
+  { id: 'images', label: 'Images', short: 'Images', Icon: Images, Component: ImagesSection, blurb: 'Every image you uploaded, which ones are used, and a safe way to delete the rest.' },
   { id: 'repos', label: 'Repos', short: 'Repos', Icon: GitBranch, Component: Repos, blurb: 'Your GitHub repos, latest pushes and whether they passed.' },
   { id: 'diagnostics', label: 'Diagnostics', short: 'Diagnostics', Icon: Stethoscope, Component: Diagnostics, blurb: 'Whether GitHub, Wynmail and Pulse are answering.' },
 ]

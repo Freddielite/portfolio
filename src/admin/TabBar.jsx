@@ -7,7 +7,7 @@ import { haptic } from './native.js'
 // in thumb reach, like a native app. Everything else is one tap away under
 // More, which opens a sheet. Wider screens keep the sidebar (CSS hides this).
 export const PRIMARY = ['overview', 'posts', 'projects', 'subscribers']
-export const MORE = ['settings', 'skills', 'testimonials', 'repos', 'diagnostics']
+export const MORE = ['settings', 'skills', 'testimonials', 'images', 'repos', 'diagnostics']
 
 export default function TabBar({ tabs, tab, go, dirty }) {
   const byId = Object.fromEntries(tabs.map((t) => [t.id, t]))

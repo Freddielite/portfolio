@@ -13,6 +13,17 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Image library (Nov 2026)
+
+Web-only change: deploy as usual, no APK rebuild needed. It sits under **More, Images**.
+
+- **Browse.** Every image in the repo with a thumbnail, size, age and where it is used ("Used in Projects: Wynmail"). Filter by All, Unused or In use.
+- **Reuse.** Every image picker (project screenshot, profile photo, post cover) has a **From library** button next to Choose image, so you can pick a picture that is already uploaded. The library only shows the picture list, so it opens quickly. Pictures inserted inside a post body (the post editor's image button) still upload new ones for now.
+- **Clean up.** Tick unused images (or **Select all unused**) and press Delete. They are removed in a single commit, so the site rebuilds once. Git keeps the old copies, so one can still be restored from GitHub's history.
+- **Safety rules, enforced on the server.** Only images this admin uploaded (public/images/<folder>/<time>-<name>) can be deleted. Images that came with the site (avatar.jpg, the original project shots) are never offered, because the site's code may use them directly. An image counts as used if its path appears anywhere in your content (projects, posts, drafts, site settings, testimonials, skills), including pictures inside a post. Images uploaded in the last 24 hours are kept, because they may belong to something you have not saved yet. Usage is checked again at the moment of deleting, and if your content cannot be read, nothing is deleted.
+- **GitHub requests.** Opening the library costs about 8 requests (one for the branch, one for the file list, one per content file), the picker 2. A delete costs 4 more. It uses the admin's normal saving token.
+- **Where the code is.** `api/_lib/imageLibrary.js` (the rules), `api/_lib/github.js` (`listTree`, `deleteFiles`), the `GET` and `delete` parts of `api/admin/upload.js` (no new serverless function), `admin/sections/Images.jsx`, `admin/ImageLibraryPicker.jsx`.
+
 ## Repo alerts and a failing-repos note (APK 1.3, Nov 2026)
 
 **Needs the APK rebuilt** (the phone decides what to announce, so a new kind of alert is new Android code). No new token permissions: it reads the same data as the Repos screen.

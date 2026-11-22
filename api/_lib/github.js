@@ -119,3 +119,63 @@ export async function getFileAt(path, ref) {
   const data = await res.json()
   return Buffer.from(data.content, 'base64').toString('utf-8')
 }
+
+// ---- Listing and deleting many files at once (used by the Image library) --------
+// The Contents API deletes one file per commit, and every commit makes Vercel rebuild
+// the site. The Git Data API can remove many files in a single commit, so cleaning up
+// twenty images costs one rebuild.
+
+async function gh(path, { method = 'GET', body } = {}) {
+  const { GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO } = env()
+  const res = await fetch(`${API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}${path}`, {
+    method,
+    headers: body ? { ...headers(GITHUB_TOKEN), 'Content-Type': 'application/json' } : headers(GITHUB_TOKEN),
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    const err = new Error(`GitHub ${method} ${path} failed (${res.status}): ${text.slice(0, 300)}`)
+    err.status = res.status
+    throw err
+  }
+  return res.json()
+}
+
+// Every file under the given folders, in one request: [{ path, size, sha }].
+export async function listTree(prefixes) {
+  const { GITHUB_BRANCH } = env()
+  const ref = (await headSha()) || GITHUB_BRANCH
+  const data = await gh(`/git/trees/${encodeURIComponent(ref)}?recursive=1`)
+  if (data.truncated) throw new Error('The repository is too large to list in one go.')
+  return (data.tree || [])
+    .filter((e) => e.type === 'blob' && prefixes.some((p) => e.path.startsWith(p)))
+    .map((e) => ({ path: e.path, size: e.size || 0, sha: e.sha }))
+}
+
+// A file's text by its blob sha (no branch lookup needed, and always exact).
+export async function getBlobText(sha) {
+  const data = await gh(`/git/blobs/${sha}`)
+  return Buffer.from(data.content || '', 'base64').toString('utf-8')
+}
+
+// Removes every path in ONE commit. If someone else committed in the meantime nothing
+// is changed and an error says so.
+export async function deleteFiles(paths, message) {
+  const { GITHUB_BRANCH } = env()
+  const head = await headSha()
+  if (!head) throw new Error('Could not read the branch from GitHub.')
+  const commit = await gh(`/git/commits/${head}`)
+  const tree = await gh('/git/trees', {
+    method: 'POST',
+    body: { base_tree: commit.tree.sha, tree: paths.map((path) => ({ path, mode: '100644', type: 'blob', sha: null })) },
+  })
+  const made = await gh('/git/commits', { method: 'POST', body: { message, tree: tree.sha, parents: [head] } })
+  try {
+    await gh(`/git/refs/heads/${encodeURIComponent(GITHUB_BRANCH)}`, { method: 'PATCH', body: { sha: made.sha, force: false } })
+  } catch (err) {
+    if (err.status === 422 || err.status === 409) throw new Error('The repo changed while deleting, so nothing was deleted. Try again.')
+    throw err
+  }
+  return { commit: made.sha }
+}
