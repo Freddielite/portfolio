@@ -50,6 +50,7 @@ function RunDetail({ repo, run, onRerun }) {
   const [jobId, setJobId] = useState(null)
   const [log, setLog] = useState({ loading: false, data: null, error: null })
   const [busy, setBusy] = useState(false)
+  const logRef = useRef(null)
 
   useEffect(() => {
     let live = true
@@ -77,6 +78,11 @@ function RunDetail({ repo, run, onRerun }) {
       live = false
     }
   }, [repo, jobId])
+
+  // The answer is at the bottom of a log, so open it there.
+  useEffect(() => {
+    if (log.data && logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+  }, [log.data])
 
   const items = jobs.items || []
   const failedJobs = items.filter((j) => j.state === 'failing')
@@ -143,7 +149,7 @@ function RunDetail({ repo, run, onRerun }) {
               {log.data.errors.map((e) => <li key={e}>{e}</li>)}
             </ul>
           )}
-          <pre className="admin-log" tabIndex={0} aria-label="End of the job log">{log.data.tail.join('\n')}</pre>
+          <pre ref={logRef} className="admin-log" tabIndex={0} aria-label="End of the job log">{log.data.tail.join('\n')}</pre>
           {log.data.truncated && <p className="admin-hint">Showing the last lines. Open the run on GitHub for the whole log.</p>}
         </>
       )}

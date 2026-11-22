@@ -435,9 +435,13 @@ export function summariseLog(text) {
     } else if ((m = /^##\[warning\](.*)$/.exec(line))) line = `warning: ${m[1]}`
     lines.push(line.length > 400 ? `${line.slice(0, 400)}...` : line)
   }
-  let tail = lines.slice(-TAIL_LINES)
+  // Every job log opens with the runner's own set-up (versions, image, permissions) and
+  // "Complete job name:" marks where the workflow's real steps begin. The set-up is noise.
+  const begin = lines.findIndex((l) => /^Complete job name:/.test(l))
+  const body = begin >= 0 && begin < lines.length - 1 ? lines.slice(begin + 1) : lines
+  let tail = body.slice(-TAIL_LINES)
   while (tail.length > 1 && tail.join('\n').length > TAIL_BYTES) tail = tail.slice(1)
-  return { errors, tail, truncated: lines.length > tail.length }
+  return { errors, tail, truncated: body.length > tail.length }
 }
 
 export async function getJobLog(repo, jobId) {
