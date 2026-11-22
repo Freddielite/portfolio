@@ -51,6 +51,14 @@ function RunDetail({ repo, run, onRerun }) {
   const [log, setLog] = useState({ loading: false, data: null, error: null })
   const [busy, setBusy] = useState(false)
   const logRef = useRef(null)
+  const [tick, setTick] = useState(0)
+
+  // A run in progress: look at its jobs again every 15 seconds, until it has finished.
+  useEffect(() => {
+    if (run.state !== 'running') return
+    const t = setInterval(() => document.visibilityState === 'visible' && setTick((n) => n + 1), 15000)
+    return () => clearInterval(t)
+  }, [run.state])
 
   useEffect(() => {
     let live = true
@@ -59,13 +67,13 @@ function RunDetail({ repo, run, onRerun }) {
         if (!live) return
         setJobs({ loading: false, items: b.jobs, error: null })
         const failed = b.jobs.find((j) => j.state === 'failing')
-        if (failed) setJobId(failed.id)
+        if (failed) setJobId((cur) => cur ?? failed.id)
       })
       .catch((e) => live && setJobs({ loading: false, items: null, error: e.message }))
     return () => {
       live = false
     }
-  }, [repo, run.id])
+  }, [repo, run.id, run.state, tick])
 
   useEffect(() => {
     if (!jobId) return
@@ -203,6 +211,14 @@ export default function RepoRuns({ repo, url, focusRun, now, onChanged }) {
     load(true)
     return () => clearTimeout(timer.current)
   }, [load])
+
+  // While any run is in progress, refresh the list every 15 seconds until it has finished.
+  const hasRunning = !!state.runs?.some((r) => r.state === 'running')
+  useEffect(() => {
+    if (!hasRunning) return
+    const t = setInterval(() => document.visibilityState === 'visible' && load(), 15000)
+    return () => clearInterval(t)
+  }, [hasRunning, load])
 
   // GitHub needs a moment to start the re-run before it shows up as Running.
   function afterRerun() {

@@ -16,6 +16,7 @@ const RANK = { failing: 0, attention: 1, running: 2, unknown: 3, passing: 4, non
 const ICON = { failing: XCircle, attention: AlertTriangle, running: Loader2, passing: CheckCircle2, none: CircleDashed, unknown: CircleSlash }
 const WORD = { failing: 'Failing', attention: 'Needs attention', running: 'Running', passing: 'Passing', none: 'No checks', unknown: 'Unknown' }
 const REFRESH_MS = 60 * 1000
+const REFRESH_BUSY_MS = 20 * 1000 // while something is running
 
 async function fetchRepos(fresh) {
   const res = await adminFetch(`/api/admin/monitor?step=repos${fresh ? '&fresh=1' : ''}`, { cache: 'no-store' })
@@ -115,17 +116,18 @@ export default function Repos() {
     await load(true)
   })
 
-  // Quietly keep it fresh while this section is the one on screen.
+  // Quietly keep it fresh while this section is the one on screen, and faster while something is running.
+  const anyRunning = !!state.data?.repos?.some((r) => r.ci === 'running')
   useEffect(() => {
     if (!active) return
     const tick = () => document.visibilityState === 'visible' && load()
-    const t = setInterval(tick, REFRESH_MS)
+    const t = setInterval(tick, anyRunning ? REFRESH_BUSY_MS : REFRESH_MS)
     document.addEventListener('visibilitychange', tick)
     return () => {
       clearInterval(t)
       document.removeEventListener('visibilitychange', tick)
     }
-  }, [active, load])
+  }, [active, load, anyRunning])
 
   const { data } = state
   const repos = data ? [...data.repos].sort((a, b) => (RANK[a.ci] ?? 9) - (RANK[b.ci] ?? 9) || new Date(b.pushedAt || 0) - new Date(a.pushedAt || 0)) : []

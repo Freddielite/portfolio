@@ -14,6 +14,7 @@
 
 const API = 'https://api.github.com'
 const CACHE_MS = 45 * 1000
+const CACHE_BUSY_MS = 15 * 1000 // while a repo is running something, look again sooner
 const DEFAULT_REPOS = 30
 
 export function monitorTokens() {
@@ -115,6 +116,8 @@ const shortMessage = (m) => String(m || '').split('\n')[0].slice(0, 140)
 // (GitHub does not count a "nothing changed" answer against the allowance).
 
 const RUNS_TTL_MS = 5 * 60 * 1000
+const RUNS_BUSY_TTL_MS = 15 * 1000 // a repo with a run in progress is looked at again after this
+const BUSY_WINDOW_MS = 30 * 60 * 1000 // a run "in progress" for longer than this is stuck, not busy
 const RUN_WINDOW_MS = 14 * 24 * 60 * 60 * 1000 // a workflow that last ran longer ago than this is not "current"
 const runsCache = new Map() // repo -> { at, etag, runs }
 
@@ -146,6 +149,11 @@ export function workflowVerdict(runs, now = Date.now()) {
   return { failing, running, passing }
 }
 
+// Is any workflow run in progress right now? (Not one that has been "queued" for days.)
+export function isBusy(runs, now = Date.now()) {
+  return runs.some((r) => runState(r) === 'running' && now - Date.parse(r.updated_at || r.created_at) < BUSY_WINDOW_MS)
+}
+
 // The commit's own verdict and the workflows' verdict -> one word.
 //   failing    the latest commit's checks failed (red)
 //   attention  the commit is fine, but a workflow's latest run failed, e.g. a scheduled job (amber)
@@ -160,7 +168,7 @@ export function combineCi(commitCi, v) {
 // force: skip the 5-minute copy and ask GitHub now (a conditional request, so free when nothing changed).
 async function recentRuns(token, repo, branch, force = false) {
   const hit = runsCache.get(repo)
-  if (!force && hit && Date.now() - hit.at < RUNS_TTL_MS) return hit.runs
+  if (!force && hit && Date.now() - hit.at < (isBusy(hit.runs) ? RUNS_BUSY_TTL_MS : RUNS_TTL_MS)) return hit.runs
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 10000)
   try {
@@ -262,7 +270,8 @@ let cache = null
 let inflight = null
 
 export async function loadRepos({ fresh = false, limit = DEFAULT_REPOS } = {}) {
-  if (!fresh && cache && Date.now() - cache.at < CACHE_MS) return cache.value
+  const busy = cache?.value.repos.some((r) => r.ci === 'running')
+  if (!fresh && cache && Date.now() - cache.at < (busy ? CACHE_BUSY_MS : CACHE_MS)) return cache.value
   if (inflight) return inflight
   inflight = (async () => {
     const { tokens, fallback } = monitorTokens()
