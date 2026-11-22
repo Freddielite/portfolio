@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { ArrowLeft, Eye, EyeOff, Link2, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, Eye, EyeOff, Link2, ListChecks, Pencil, Plus, RotateCcw, Share2, Trash2 } from 'lucide-react'
 import { useRowMenu } from '../RowMenu.jsx'
+import { adminFetch } from '../http.js'
+import { applyRename, restoreTags, tagsBefore } from '../tagTools.js'
+import { publishSummary, removeMany, restoreMany, restoreStatuses, setStatus, statusesOf } from '../bulkTools.js'
+import TagsManager from '../builder/TagsManager.jsx'
 import { copyText, postUrl, shareLink } from '../linkTools.js'
 import { forgetRecentPost, noteRecentPost } from '../recentPosts.js'
 import usePostBackup, { applyBackup } from '../usePostBackup.js'
@@ -59,6 +63,10 @@ export default function PostsEditor() {
   const skipSlide = useRef(false)
   const started = useRef(false)
   const autoRestored = useRef(false)
+  // Bulk actions: tick several posts, then publish, make drafts or delete them together.
+  const [selecting, setSelecting] = useState(false)
+  const [picked, setPicked] = useState(() => new Set())
+  const [batchSaving, setBatchSaving] = useState(false)
 
   const isPhone = () => window.matchMedia('(max-width: 899px)').matches
   // In the app, an open post is a real step in the back history, so Android's
@@ -287,6 +295,64 @@ export default function PostsEditor() {
     setList((l) => l.map((x) => (x._id === id ? { ...x, status } : x)))
   }
 
+  // ---- Bulk actions and tag renaming. They change the list on screen only (Undo is offered);
+  // nothing is on the site until the usual Save.
+  const pickedIds = [...picked].filter((id) => list.some((p) => p._id === id))
+  const togglePick = (id) =>
+    setPicked((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  function toggleSelecting() {
+    setSelecting((on) => !on)
+    setPicked(new Set())
+  }
+  const many = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+  function bulkStatus(status) {
+    const prev = statusesOf(list, pickedIds)
+    const ids = pickedIds.filter((id) => prev.get(id) !== status)
+    setPicked(new Set())
+    if (!ids.length) return toast(status === 'draft' ? 'They are all drafts already.' : 'They are all published already.')
+    const next = setStatus(list, ids, status)
+    setList(next)
+    const what = status === 'draft' ? `Moved ${many(ids.length, 'post')} to drafts` : publishSummary(next, ids)
+    toast(`${what}. Save to put it on your site.`, { action: { label: 'Undo', onClick: () => setList((l) => restoreStatuses(l, prev)) }, duration: 8000 })
+  }
+
+  async function bulkDelete() {
+    const ids = pickedIds
+    if (!ids.length) return
+    const ok = await confirm({
+      title: `Delete ${many(ids.length, 'post')}?`,
+      body: 'They leave the list now and are removed from your site when you save. You can undo it until then.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    })
+    if (!ok) return
+    const { list: rest, removed } = removeMany(list, ids)
+    setList(rest)
+    setPicked(new Set())
+    if (ids.includes(activeId)) {
+      setActiveId(null)
+      closeEditor()
+    }
+    removed.forEach(({ post }) => post.slug && forgetRecentPost(post.slug))
+    toast(`Deleted ${many(removed.length, 'post')}`, { action: { label: 'Undo', onClick: () => setList((l) => restoreMany(l, removed)) }, duration: 8000 })
+  }
+
+  function renameTag(from, to) {
+    const next = applyRename(list, from, to)
+    const prev = tagsBefore(list, next)
+    setList(next)
+    toast(`Renamed “${from}” to “${to}” in ${many(prev.size, 'post')}. Save to put it on your site.`, {
+      action: { label: 'Undo', onClick: () => setList((l) => restoreTags(l, prev)) },
+      duration: 8000,
+    })
+  }
+
   async function shareOut(post) {
     const result = await shareLink({ title: post.title || 'A post', url: postUrl(post) })
     if (result === 'copied') toast('Link copied. Paste it anywhere.', { tone: 'ok' })
@@ -318,16 +384,47 @@ export default function PostsEditor() {
     ]
   }
 
+  // When posts and drafts both changed (a post was published or made a draft), they are
+  // saved in ONE commit: all or nothing, so a failure cannot leave a post in both files or
+  // in neither, and the site rebuilds once. A change to just one file is saved as before.
   async function saveAll() {
+    const pubChanged = JSON.stringify(parts.published) !== JSON.stringify(pub.data)
+    const draftsChanged = JSON.stringify(parts.drafts) !== JSON.stringify(drafts.data)
+    if (pubChanged && draftsChanged) {
+      setBatchSaving(true)
+      try {
+        const res = await adminFetch('/api/admin/content?batch=1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            files: [
+              { type: 'posts', data: parts.published, sha: pub.sha },
+              { type: 'drafts', data: parts.drafts, sha: drafts.sha },
+            ],
+          }),
+        })
+        const body = await res.json().catch(() => ({}))
+        if (!res.ok) throw Object.assign(new Error(body.error || 'Failed to save.'), { status: res.status })
+        pub.applySaved(parts.published, body.shas?.posts, body.commit)
+        drafts.applySaved(parts.drafts, body.shas?.drafts, body.commit)
+        return true
+      } catch (err) {
+        const conflict = err.status === 409 || /\b409\b|does not match/i.test(err.message)
+        pub.fail(conflict ? 'This content was changed somewhere else (another tab, or a push from your computer) since you opened it.' : err.message, conflict)
+        return false
+      } finally {
+        setBatchSaving(false)
+      }
+    }
     let ok = true
-    if (JSON.stringify(parts.published) !== JSON.stringify(pub.data)) ok = await pub.save(parts.published)
-    if (ok && JSON.stringify(parts.drafts) !== JSON.stringify(drafts.data)) ok = await drafts.save(parts.drafts)
+    if (pubChanged) ok = await pub.save(parts.published)
+    if (ok && draftsChanged) ok = await drafts.save(parts.drafts)
     return ok
   }
 
   const latest = (drafts.savedAt || 0) > (pub.savedAt || 0) ? drafts : pub
   const bar = {
-    saving: pub.saving || drafts.saving,
+    saving: pub.saving || drafts.saving || batchSaving,
     error: pub.error || drafts.error,
     conflict: pub.conflict || drafts.conflict,
     savedAt: latest.savedAt,
@@ -392,6 +489,34 @@ export default function PostsEditor() {
       <div className="builder-layout">
         <aside className="builder-list">
           <button type="button" className="admin-btn admin-btn-icon-text" onClick={addPost}><Plus size={16} aria-hidden="true" /> New post</button>
+          <div className="admin-list-tools">
+            <button type="button" className="admin-btn-ghost admin-btn-icon-text" aria-pressed={selecting} onClick={toggleSelecting}>
+              <ListChecks size={15} aria-hidden="true" /> {selecting ? 'Done' : 'Select'}
+            </button>
+            <TagsManager list={list} onRename={renameTag} />
+          </div>
+          {selecting && (
+            <div className="admin-select-bar" role="toolbar" aria-label="Actions for the selected posts">
+              <span className="admin-select-count">{pickedIds.length === 0 ? 'Tap posts to select them' : `${pickedIds.length} selected`}</span>
+              <span className="admin-select-links">
+                {pickedIds.length < shown.length && (
+                  <button type="button" className="admin-link-btn" onClick={() => setPicked(new Set(shown.map((p) => p._id)))}>All {shown.length}</button>
+                )}
+                {pickedIds.length > 0 && <button type="button" className="admin-link-btn" onClick={() => setPicked(new Set())}>Clear</button>}
+              </span>
+              <span className="admin-select-actions">
+                <button type="button" className="admin-btn admin-btn-icon-text" onClick={() => bulkStatus('published')} disabled={!pickedIds.length}>
+                  <Eye size={15} aria-hidden="true" /> Publish
+                </button>
+                <button type="button" className="admin-btn-ghost admin-btn-icon-text" onClick={() => bulkStatus('draft')} disabled={!pickedIds.length}>
+                  <EyeOff size={15} aria-hidden="true" /> Make drafts
+                </button>
+                <button type="button" className="admin-btn-danger admin-btn-icon-text" onClick={bulkDelete} disabled={!pickedIds.length}>
+                  <Trash2 size={15} aria-hidden="true" /> Delete
+                </button>
+              </span>
+            </div>
+          )}
           <div className="admin-viewtabs" role="tablist" aria-label="Filter posts">
             {TABS.map(([id, name]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setPage(1) }}>
@@ -402,7 +527,14 @@ export default function PostsEditor() {
           <ul>
             {paged.items.map((p) => (
               <li key={p._id} {...rowMenu.bind(p.title || 'Untitled post', () => postActions(p))}>
-                <button type="button" className={p._id === activeId ? 'on' : ''} onClick={() => openPost(p._id)}>
+                <button
+                  type="button"
+                  className={`${p._id === activeId && !selecting ? 'on' : ''} ${selecting ? 'is-picking' : ''} ${picked.has(p._id) ? 'is-picked' : ''}`}
+                  role={selecting ? 'checkbox' : undefined}
+                  aria-checked={selecting ? picked.has(p._id) : undefined}
+                  onClick={() => (selecting ? togglePick(p._id) : openPost(p._id))}
+                >
+                  {selecting && <i className="admin-pick" aria-hidden="true">{picked.has(p._id) && <Check size={14} />}</i>}
                   <strong>{p.title || 'Untitled post'}</strong>
                   <span><i className={`admin-dot is-${postState(p)}`} />{label[postState(p)]} · {String(p.publishedAt).slice(0, 10)}</span>
                 </button>

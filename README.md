@@ -13,6 +13,15 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Tags manager and bulk actions (Nov 2026)
+
+Web-only change: deploy as usual, no APK rebuild needed. Both live in **Blog posts**, above the post list.
+
+- **Select.** Press Select, tap posts to tick them (or **All** to tick every post in the current filter), then **Publish**, **Make drafts** or **Delete**. Like every other edit these only change the list on screen: an Undo is offered at once, and nothing is on the site until you press Save. Publishing a post dated in the future makes it Scheduled, as it does one at a time. Deleting asks first.
+- **Tags.** The Tags button lists every tag across published posts and drafts with how many posts use it. **Rename** changes it on every post at once. Type the name of a tag that already exists (capitals do not matter) and the two are **merged**; a post that had both ends up with one. A post with no tags of its own gets tags chosen from its title and summary, so renaming one of those gives those posts their own tags (the screen says how many). Undo restores every post's tags exactly. Removing a tag from every post is not offered: a post left with no tags falls back to the automatic ones, so the tag would come back. Tags on projects are separate and are not touched.
+- **One commit.** When a save changes both posts and drafts (a post was published or made a draft), the two files are now saved in a single commit: all or nothing, so a failure cannot leave a post in both files or in neither, and the site rebuilds once instead of twice. If either file changed elsewhere since you opened it, nothing is saved and you are asked to reload, as before. A change to only one file is saved as before.
+- **Where the code is.** `admin/tagTools.js` and `admin/bulkTools.js` (the rules), `admin/builder/TagsManager.jsx`, the select mode in `admin/sections/PostsEditor.jsx`, `commitFiles` in `api/_lib/github.js` and the `?batch=1` save in `api/admin/content.js` (no new serverless function).
+
 ## Image library (Nov 2026)
 
 Web-only change: deploy as usual, no APK rebuild needed. It sits under **More, Images**.

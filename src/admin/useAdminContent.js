@@ -88,5 +88,25 @@ export default function useAdminContent(type, { optional = false } = {}) {
     [type, sha]
   )
 
-  return { data, setData, loading, saving, error, conflict, savedAt, commit, save, reload: load }
+  // For a save made together with another file (see api/admin/content.js, ?batch=1): the
+  // caller sends both files in one request and then tells each file what was saved.
+  const applySaved = useCallback(
+    (newData, newSha, newCommit) => {
+      setData(newData)
+      setSha(newSha || null)
+      publishContent(type, newData)
+      setCommit(newCommit || null)
+      setSavedAt(Date.now())
+      setError(null)
+      setConflict(false)
+      window.dispatchEvent(new CustomEvent('admin:saved', { detail: { type, commit: newCommit || null } }))
+    },
+    [type]
+  )
+  const fail = useCallback((message, isConflict = false) => {
+    setError(message)
+    setConflict(!!isConflict)
+  }, [])
+
+  return { data, setData, sha, loading, saving, error, conflict, savedAt, commit, save, applySaved, fail, reload: load }
 }

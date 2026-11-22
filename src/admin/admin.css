@@ -3089,3 +3089,34 @@ button.admin-status:hover { border-color: currentColor; }
 }
 .admin-repo-strip.is-attn:hover { background: color-mix(in srgb, var(--a-warn) 18%, transparent); }
 .admin-repo-items .admin-activity-text .admin-hint.admin-hint-wrap { overflow: visible; text-overflow: clip; white-space: normal; }
+
+/* ---- Posts: bulk select and the tags manager ---- */
+.admin-list-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-list-tools > * { flex: 1 1 auto; justify-content: center; }
+.admin-list-tools .admin-btn-ghost[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
+.admin-select-bar { display: grid; gap: 8px; padding: 10px 12px; border-radius: var(--a-r); background: var(--a-tint); }
+.admin-select-bar > .admin-select-count { font-size: 0.88rem; font-weight: 600; }
+.admin-select-links { display: flex; gap: 14px; }
+.admin-link-btn { padding: 4px 0; border: 0; background: none; color: var(--accent); font: 600 0.82rem var(--font-body); cursor: pointer; }
+.admin-select-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-select-actions > * { flex: 1 1 auto; justify-content: center; min-height: 40px; }
+.builder-list li button.is-picking { grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.builder-list li button.is-picking > .admin-pick { grid-row: 1 / span 2; }
+.builder-list li button.is-picking > strong,
+.builder-list li button.is-picking > span { grid-column: 2; }
+.builder-list li button.is-picked { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.admin-pick { display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 7px; color: #fff; }
+.is-picked > .admin-pick { border-color: var(--accent); background: var(--accent); }
+.admin-tagsman { padding: 0 6px; }
+.admin-tagsman-note { margin: 2px 4px 12px; }
+.admin-tagsman-list { display: grid; grid-template-columns: minmax(0, 1fr); margin: 0; padding: 0; list-style: none; }
+.admin-tagsman-list > li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 10px 4px; border-top: 1px solid var(--border); }
+.admin-tagsman-list > li:first-child { border-top: 0; }
+.admin-tagsman-name { display: grid; gap: 1px; min-width: 0; }
+.admin-tagsman-name strong { overflow-wrap: anywhere; font-size: 0.95rem; }
+.admin-tagsman-rename { flex-shrink: 0; }
+.admin-tagsman-list > li.is-editing { display: block; }
+.admin-tagsman-edit { display: grid; gap: 8px; min-width: 0; }
+.admin-tagsman-plan { margin: 0; overflow-wrap: anywhere; }
+.admin-tagsman-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 520px) { .admin-tagsman-buttons > * { flex: 1 1 auto; } }

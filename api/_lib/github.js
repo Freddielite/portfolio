@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 // Thin wrapper around the GitHub Contents API. This is the entire "database"
 // for the admin panel: every save is a real git commit to the repo, which is
 // what triggers Vercel's normal auto-deploy, no separate CMS, no separate
@@ -178,4 +180,69 @@ export async function deleteFiles(paths, message) {
     throw err
   }
   return { commit: made.sha }
+}
+
+// ---- Several content files in ONE commit (posts and drafts together) -------------
+// Publishing or un-publishing a post moves it between content/posts.json and
+// content/drafts.json. Saved as two commits, a failure in the middle could leave a post
+// in both files (or lose it from both). One commit means all or nothing, and the site
+// rebuilds once.
+
+// Git's own id for a file's content, so the new sha is known without asking GitHub.
+export function blobSha(text) {
+  const body = Buffer.from(text, 'utf-8')
+  return createHash('sha1').update(`blob ${body.length}\0`).update(body).digest('hex')
+}
+
+// changes: [{ path, content, expectSha }]. expectSha is the file's sha as the caller last
+// saw it (null = the file did not exist). If any file is different now, nothing is changed
+// and the error has status 409.
+export async function commitFiles(changes, message) {
+  const { GITHUB_BRANCH } = env()
+  const head = await headSha()
+  if (!head) throw new Error('Could not read the branch from GitHub.')
+  const commit = await gh(`/git/commits/${head}`)
+
+  // What each file is right now, read from the same commit this one is built on.
+  const trees = new Map()
+  const treeAt = async (sha) => {
+    if (!trees.has(sha)) trees.set(sha, (await gh(`/git/trees/${sha}`)).tree || [])
+    return trees.get(sha)
+  }
+  async function shaAt(path) {
+    let sha = commit.tree.sha
+    const parts = path.split('/')
+    for (let i = 0; i < parts.length; i++) {
+      const entry = (await treeAt(sha)).find((e) => e.path === parts[i])
+      if (!entry) return null
+      if (i === parts.length - 1) return entry.type === 'blob' ? entry.sha : null
+      if (entry.type !== 'tree') return null
+      sha = entry.sha
+    }
+    return null
+  }
+  for (const c of changes) {
+    if ((c.expectSha || null) !== (await shaAt(c.path))) {
+      const err = new Error(`${c.path} does not match what is saved (409): it changed since you opened it.`)
+      err.status = 409
+      throw err
+    }
+  }
+
+  const tree = await gh('/git/trees', {
+    method: 'POST',
+    body: { base_tree: commit.tree.sha, tree: changes.map((c) => ({ path: c.path, mode: '100644', type: 'blob', content: c.content })) },
+  })
+  const made = await gh('/git/commits', { method: 'POST', body: { message, tree: tree.sha, parents: [head] } })
+  try {
+    await gh(`/git/refs/heads/${encodeURIComponent(GITHUB_BRANCH)}`, { method: 'PATCH', body: { sha: made.sha, force: false } })
+  } catch (err) {
+    if (err.status === 422 || err.status === 409) {
+      const conflict = new Error('The repo changed while saving, so nothing was saved (409). Reload and try again.')
+      conflict.status = 409
+      throw conflict
+    }
+    throw err
+  }
+  return { commit: made.sha, shas: Object.fromEntries(changes.map((c) => [c.path, blobSha(c.content)])) }
 }
