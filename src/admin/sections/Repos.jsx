@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CheckCircle2, ChevronDown, CircleDashed, CircleSlash, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, ChevronDown, CircleDashed, CircleSlash, GitCommit, Loader2, Lock, RefreshCw, XCircle } from 'lucide-react'
 import { adminFetch } from '../http.js'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useOnRetry } from '../network.js'
@@ -12,9 +12,9 @@ import RepoRuns from './RepoRuns.jsx'
 // passed its checks. Read-only (see api/admin/monitor.js). Shown from the device
 // cache at once and refreshed behind the scenes, once a minute while it is on screen.
 
-const RANK = { failing: 0, running: 1, unknown: 2, passing: 3, none: 4 }
-const ICON = { failing: XCircle, running: Loader2, passing: CheckCircle2, none: CircleDashed, unknown: CircleSlash }
-const WORD = { failing: 'Failing', running: 'Running', passing: 'Passing', none: 'No checks', unknown: 'Unknown' }
+const RANK = { failing: 0, attention: 1, running: 2, unknown: 3, passing: 4, none: 5 }
+const ICON = { failing: XCircle, attention: AlertTriangle, running: Loader2, passing: CheckCircle2, none: CircleDashed, unknown: CircleSlash }
+const WORD = { failing: 'Failing', attention: 'Needs attention', running: 'Running', passing: 'Passing', none: 'No checks', unknown: 'Unknown' }
 const REFRESH_MS = 60 * 1000
 
 async function fetchRepos(fresh) {
@@ -43,6 +43,7 @@ const openLink = (url) => (e) => {
 
 function Badge({ ci }) {
   if (ci === 'failing') return <span className="admin-badge is-warn">Failing</span>
+  if (ci === 'attention') return <span className="admin-badge is-attn">Needs attention</span>
   if (ci === 'running') return <span className="admin-badge is-accent admin-badge-building">Running</span>
   if (ci === 'passing') return <span className="admin-badge is-published">Passing</span>
   return <span className="admin-badge">{WORD[ci] || 'Unknown'}</span>
@@ -66,7 +67,7 @@ function RepoRow({ r, now, reload }) {
               {r.fullName}
               {r.private && <Lock size={12} aria-label="Private" className="admin-repo-lock" />}
             </strong>
-            <span className="admin-hint">
+            <span className={`admin-hint ${r.reason ? 'admin-hint-wrap' : ''}`}>
               {r.reason ? `${r.branch} · ${r.reason.name} failed ${agoText(Date.parse(r.reason.at), now)}` : top ? `${r.branch} · ${top.message}` : r.branch || 'No commits yet'}
             </span>
           </span>
@@ -138,7 +139,7 @@ export default function Repos() {
     : state.error && data
       ? `Could not update, showing ${agoText(state.at, now)}`
       : s
-        ? `${s.total} repo${s.total === 1 ? '' : 's'}${s.failing ? ` · ${s.failing} failing` : ''}${s.running ? ` · ${s.running} running` : ''}`
+        ? `${s.total} repo${s.total === 1 ? '' : 's'}${s.failing ? ` · ${s.failing} failing` : ''}${s.attention ? ` · ${s.attention} need${s.attention === 1 ? 's' : ''} attention` : ''}${s.running ? ` · ${s.running} running` : ''}`
         : 'From GitHub'
 
   return (

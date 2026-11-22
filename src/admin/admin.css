@@ -3078,3 +3078,14 @@ button.admin-status:hover { border-color: currentColor; }
 .admin-lib-picker-foot { position: sticky; bottom: calc(-14px - var(--a-safe-bottom)); display: flex; justify-content: flex-end; padding: 8px 0 4px; background: var(--surface); }
 .admin-lib-picker-foot .admin-btn-ghost { min-height: 44px; }
 @media (max-width: 520px) { .admin-lib-picker-foot .admin-btn-ghost { flex: 1; } }
+
+/* ---- Needs attention (amber): not the push that failed, but something on the repo did ---- */
+.admin-badge.is-attn { background: color-mix(in srgb, var(--a-warn) 16%, transparent); color: var(--a-warn); }
+.admin-repo-list li.is-attention .admin-activity-icon { background: color-mix(in srgb, var(--a-warn) 16%, transparent); color: var(--a-warn); }
+.admin-repo-strip.is-attn {
+  border-color: color-mix(in srgb, var(--a-warn) 40%, transparent);
+  background: color-mix(in srgb, var(--a-warn) 12%, transparent);
+  color: var(--a-warn);
+}
+.admin-repo-strip.is-attn:hover { background: color-mix(in srgb, var(--a-warn) 18%, transparent); }
+.admin-repo-items .admin-activity-text .admin-hint.admin-hint-wrap { overflow: visible; text-overflow: clip; white-space: normal; }

@@ -109,7 +109,7 @@ const shortMessage = (m) => String(m || '').split('\n')[0].slice(0, 140)
 // A commit's check rollup only covers the checks attached to that commit. A scheduled
 // workflow (a cron job such as "Reminders") can fail every day while the latest commit
 // still shows green. So each repo's recent runs on its default branch are read too, and
-// the repo is failing when the latest run of ANY workflow failed.
+// the repo needs attention (amber) when the latest run of ANY workflow failed.
 //
 // Cost: one request per repo, kept for 5 minutes, and after that a conditional request
 // (GitHub does not count a "nothing changed" answer against the allowance).
@@ -147,8 +147,11 @@ export function workflowVerdict(runs, now = Date.now()) {
 }
 
 // The commit's own verdict and the workflows' verdict -> one word.
+//   failing    the latest commit's checks failed (red)
+//   attention  the commit is fine, but a workflow's latest run failed, e.g. a scheduled job (amber)
 export function combineCi(commitCi, v) {
-  if (v?.failing || commitCi === 'failing') return 'failing'
+  if (commitCi === 'failing') return 'failing'
+  if (v?.failing) return 'attention'
   if (v?.running || commitCi === 'running') return 'running'
   if (commitCi === 'passing' || v?.passing) return 'passing'
   return commitCi
@@ -292,9 +295,10 @@ export async function loadRepos({ fresh = false, limit = DEFAULT_REPOS } = {}) {
 }
 
 export function counts(repos) {
-  const out = { total: repos.length, failing: 0, running: 0, passing: 0, none: 0 }
+  const out = { total: repos.length, failing: 0, attention: 0, running: 0, passing: 0, none: 0 }
   for (const r of repos) {
     if (r.ci === 'failing') out.failing++
+    else if (r.ci === 'attention') out.attention++
     else if (r.ci === 'running') out.running++
     else if (r.ci === 'passing') out.passing++
     else out.none++
@@ -473,10 +477,11 @@ export function phoneCi(result) {
   if (!result.repos.length && result.problems?.length) return { ci: null, reason: 'github-unreachable' }
   return {
     ci: result.repos
-      .filter((r) => r.ci === 'failing' || r.ci === 'passing')
+      .filter((r) => r.ci === 'failing' || r.ci === 'attention' || r.ci === 'passing')
       .map((r) => ({
         repo: r.fullName,
-        state: r.ci,
+        // The phone only knows failing and passing; something that needs attention is a failure to it.
+        state: r.ci === 'attention' ? 'failing' : r.ci,
         // A failing workflow is told apart by its run (and attempt), a failing commit by its sha.
         sha: r.reason?.runId ? `run${r.reason.runId}-${r.reason.attempt}` : r.commits[0]?.sha || '',
         message: r.reason ? `${r.reason.name} failed` : r.commits[0]?.message || '',
