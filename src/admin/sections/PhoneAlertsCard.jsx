@@ -19,6 +19,7 @@ const KINDS = [
   { key: 'subscribers', label: 'Someone subscribes' },
   { key: 'deploys', label: 'The site finished rebuilding' },
   { key: 'sends', label: 'An emailed post is stuck or did not fully go out' },
+  { key: 'runs', label: 'A repo’s checks fail, or pass again' },
 ]
 
 async function api(step, payload) {
@@ -61,7 +62,7 @@ export default function PhoneAlertsCard() {
         return
       }
       registered = await api('register', { label: deviceLabel() })
-      state = await alertsEnable({ base: window.location.origin, id: registered.id, token: registered.token, health: true, subscribers: true, deploys: true, sends: true })
+      state = await alertsEnable({ base: window.location.origin, id: registered.id, token: registered.token, health: true, subscribers: true, deploys: true, sends: true, runs: true })
       setPhone(state)
       setDevices(registered.devices)
       toast('Alerts are on for this phone')
@@ -179,7 +180,7 @@ export default function PhoneAlertsCard() {
             </div>
           )}
           <div className="admin-native-settings">
-            {KINDS.map((k) => (
+            {KINDS.filter((k) => phone[k.key] !== undefined).map((k) => (
               <label key={k.key} className="admin-native-row">
                 <span>{k.label}</span>
                 <input type="checkbox" checked={!!phone[k.key]} onChange={(e) => setKind(k.key, e.target.checked)} />

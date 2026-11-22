@@ -2,6 +2,7 @@ import { requireAuth } from '../_lib/auth.js'
 import { getFile } from '../_lib/github.js'
 import { configured, LIST_ID, wm } from '../_lib/wynmail.js'
 import { sendState } from '../_lib/sendState.js'
+import { loadRepos, phoneCi } from '../_lib/githubMonitor.js'
 import { hashToken, newId, newToken, readAlertDevices, readAlertDevicesCached, readBearer, sameHash, writeAlertDevices } from '../_lib/alerts.js'
 
 // Phone alerts for the Android app.
@@ -10,7 +11,8 @@ import { hashToken, newId, newToken, readAlertDevices, readAlertDevicesCached, r
 //   GET  /api/admin/alerts            Authorization: Bearer <id>.<token>
 //        -> what the phone compares with its last check: monitors from Pulse,
 //           the newest signups and the number of subscribers from Wynmail, emailed posts that
-//           are stuck or did not fully go out, and the commit the live site runs.
+//           are stuck or did not fully go out, the commit the live site runs, and which repos
+//           have a passing or failing latest push (`ci`, the same data as the Repos screen).
 //   POST /api/admin/alerts?step=forget  (same header) this phone turned alerts off
 //
 // Called from the admin (signed in):
@@ -114,6 +116,17 @@ async function stuckSends() {
   }
 }
 
+// Repos whose latest push passes or fails its checks. The phone remembers the last state
+// it saw for each repo and announces changes only. It uses the answer the Repos screen
+// already keeps for 45 seconds, so a phone checking costs GitHub almost nothing.
+async function repoChecks() {
+  try {
+    return phoneCi(await loadRepos())
+  } catch {
+    return { ci: null, reason: 'github-unreachable' }
+  }
+}
+
 // The commit this deployment was built from: the request reached the live
 // site, so this is what the live site runs.
 const build = () => ({
@@ -146,8 +159,8 @@ export default async function handler(req, res) {
     }
     if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
     const s = await settings().catch(() => ({}))
-    const [p, w, sn] = await Promise.all([pulse(s), signups(), stuckSends()])
-    return res.status(200).json({ at: new Date().toISOString(), ...p, pulseReason: p.reason, ...w, wynmailReason: w.reason, sends: sn.sends, sendsReason: sn.reason, build: build() })
+    const [p, w, sn, rc] = await Promise.all([pulse(s), signups(), stuckSends(), repoChecks()])
+    return res.status(200).json({ at: new Date().toISOString(), ...p, pulseReason: p.reason, ...w, wynmailReason: w.reason, sends: sn.sends, sendsReason: sn.reason, ci: rc.ci, ciReason: rc.reason, build: build() })
   }
 
   // ---- the admin, signed in

@@ -22,6 +22,7 @@ import org.json.JSONObject;
  *   - a site goes down, or comes back up (from Pulse)
  *   - new subscribers (from Wynmail)
  *   - the live site was rebuilt from a new commit
+ *   - a repo's latest push fails its checks, or is passing again (RunAlerts decides)
  * What was seen is always saved, also for changes you turned off, so turning
  * one on later never announces old news. If Pulse or Wynmail did not answer,
  * that part is skipped and checked again next time.
@@ -163,6 +164,39 @@ public class AlertWorker extends Worker {
                 }
             }
             e.putString("sendsTold", stillStuck.toString()).putInt("wStuck", sends.length());
+        }
+
+        // ---- Repo checks (a repo's latest push fails its checks, or is passing again)
+        JSONArray ci = json.optJSONArray("ci");
+        if (ci != null) {
+            // The first answer only notes how every repo is, so repos that have been failing for weeks are not announced.
+            boolean ciFirst = !p.getBoolean("ciSeeded", false);
+            boolean wantRuns = p.getBoolean("runs", true);
+            JSONObject known = new JSONObject(p.getString("ciState", "{}"));
+            for (int i = 0; i < ci.length(); i++) {
+                JSONObject r = ci.getJSONObject(i);
+                String repo = r.optString("repo", "");
+                String state = r.optString("state", "");
+                String sha = r.optString("sha", "");
+                if (repo.isEmpty()) continue;
+                String what = (ciFirst || !wantRuns) ? null : RunAlerts.decide(known.optString(repo, null), state, sha);
+                String message = r.optString("message", "");
+                boolean hasMessage = !message.isEmpty() && !"null".equals(message);
+                int nid = Alerts.ID_RUNS + (repo.hashCode() & 0x3ff);
+                String name = RunAlerts.shortName(repo);
+                if (RunAlerts.FAILED.equals(what)) {
+                    Alerts.notify(c, Alerts.CH_RUNS, nid, name + ": checks failed",
+                        (hasMessage ? describe(message) + ". " : "") + "Tap to see why in Repos.", null, Alerts.link(c, "#repos"));
+                } else if (RunAlerts.FIXED.equals(what)) {
+                    Alerts.notify(c, Alerts.CH_RUNS, nid, name + " is passing again",
+                        hasMessage ? describe(message) : "Its latest push passes its checks.", null, Alerts.link(c, "#repos"));
+                }
+                // Always remembered, also when the switch is off, so turning it on later announces nothing old.
+                known.put(repo, RunAlerts.key(state, sha));
+            }
+            e.putString("ciState", known.toString()).putBoolean("ciSeeded", true);
+        } else if (json.has("ciReason") && "github-unreachable".equals(json.optString("ciReason"))) {
+            notes.add("GitHub did not answer");
         }
 
         // ---- Site rebuilt

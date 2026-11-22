@@ -13,6 +13,16 @@ git add . && git commit -m "your message" && git push
 
 It pulls your latest edits first, copies only the code from the zip, and only adds content files that do not exist yet. If an update needs a content change (for example a new setting), the notes will tell you to make it in `/admin`.
 
+## Repo alerts and a failing-repos note (APK 1.3, Nov 2026)
+
+**Needs the APK rebuilt** (the phone decides what to announce, so a new kind of alert is new Android code). No new token permissions: it reads the same data as the Repos screen.
+
+- **Phone alerts.** A new switch under Overview, Phone alerts: "A repo's checks fail, or pass again". The phone tells you when a repo's latest push on its default branch fails its checks, again if it is still failing after a newer push, and when it is passing again (for example after you press Re-run). Tapping the notification opens Repos. Failures on pull-request or feature branches do not count.
+- **Quiet by design.** The first check only notes how every repo is, so repos that have been failing for weeks are not announced. A failure is announced once per commit. Repos that are only running, or have no checks, are left out, so the phone keeps the last clear state it saw. What it saw is remembered even with the switch off, so turning it on later announces nothing old. Like the other alerts it can arrive several minutes late while the phone is idle.
+- **Overview.** When any repo is failing, a red line at the top says so and opens Repos. When nothing is failing it is not there.
+- **GitHub allowance.** The alerts check adds one repo-list request per token and phone check (about 4 an hour) and the answer is shared with the Repos screen's 45-second copy; the GraphQL call has its own allowance. Diagnostics shows what is left.
+- **Where the code is.** Server: `repoChecks` in `api/admin/alerts.js` and `phoneCi` in `api/_lib/githubMonitor.js`. App: `RunAlerts.java` (the decision, pure logic), `AlertWorker.java`, `Alerts.java` (channel and switch), `AdminBridge.java`. Web: `admin/sections/RepoStrip.jsx`, `PhoneAlertsCard.jsx`.
+
 ## Repos and Diagnostics (Nov 2026)
 
 Web-only change: deploy as usual, no APK rebuild needed. Both sit under **More** on phones and in the sidebar on wider screens.

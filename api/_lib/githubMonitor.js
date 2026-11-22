@@ -360,3 +360,16 @@ export async function rerunRun(repo, runId, { failedOnly = true } = {}) {
   cache = null // the repo list is about to change
   return { ok: true }
 }
+
+// What the phone needs for repo alerts: only repos whose latest push has a clear pass or
+// fail. Running, "no checks" and unknown are left out on purpose, so the phone keeps the
+// last state it saw instead of announcing a repo that is merely busy.
+export function phoneCi(result) {
+  if (!result?.setup) return { ci: null, reason: 'not-set-up' }
+  if (!result.repos.length && result.problems?.length) return { ci: null, reason: 'github-unreachable' }
+  return {
+    ci: result.repos
+      .filter((r) => r.ci === 'failing' || r.ci === 'passing')
+      .map((r) => ({ repo: r.fullName, state: r.ci, sha: r.commits[0]?.sha || '', message: r.commits[0]?.message || '' })),
+  }
+}

@@ -3030,3 +3030,25 @@ button.admin-status:hover { border-color: currentColor; }
   /* Very small phones: the repo row keeps its state badge and drops the time, so the name has room. */
   .admin-repo-head .admin-activity-meta time { display: none; }
 }
+
+/* ---- Overview: heads-up when a repo is failing ---- */
+.admin-repo-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--a-danger) 35%, transparent);
+  border-radius: var(--a-r-lg);
+  background: color-mix(in srgb, var(--a-danger) 10%, transparent);
+  color: var(--a-danger);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-repo-strip:hover { background: color-mix(in srgb, var(--a-danger) 15%, transparent); }
+.admin-repo-strip-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.admin-repo-strip-text strong { font-size: 0.92rem; font-weight: 600; }
+.admin-repo-strip-text .admin-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-repo-strip > svg { flex-shrink: 0; }

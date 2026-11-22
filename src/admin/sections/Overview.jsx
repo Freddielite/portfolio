@@ -9,6 +9,7 @@ import { saveFile } from '../native.js'
 import SecurityCard from './SecurityCard.jsx'
 import RecentActivity from './RecentActivity.jsx'
 import PhoneAlertsCard from './PhoneAlertsCard.jsx'
+import RepoStrip from './RepoStrip.jsx'
 import { agoText, readCache, writeCache } from '../cache.js'
 import { useNetwork, useOnRetry } from '../network.js'
 import { postState } from '../../lib/postStatus.js'
@@ -516,6 +517,7 @@ export default function Overview({ go }) {
 
   return (
     <div className="admin-section admin-overview">
+      <RepoStrip go={go} />
       <div className="admin-stats">
         {stat(live, live === 1 ? 'Live post' : 'Live posts', postSub || 'No drafts waiting', 'posts', PenLine)}
         {stat(data.projects.length - hiddenProjects, 'Projects shown', hiddenProjects ? `${hiddenProjects} hidden` : 'None hidden', 'projects', FolderKanban)}

@@ -149,6 +149,7 @@ public class AdminBridge extends Plugin {
         out.put("subscribers", p.getBoolean("subscribers", true));
         out.put("deploys", p.getBoolean("deploys", true));
         out.put("sends", p.getBoolean("sends", true));
+        out.put("runs", p.getBoolean("runs", true));
         out.put("lastCheck", p.getLong("lastCheck", 0));
         out.put("lastTry", p.getLong("lastTry", 0));
         out.put("lastError", p.getString("lastError", null));
@@ -200,13 +201,13 @@ public class AdminBridge extends Plugin {
             return;
         }
         Alerts.enable(getContext(), base, id, token,
-            call.getBoolean("health", true), call.getBoolean("subscribers", true), call.getBoolean("deploys", true), call.getBoolean("sends", true));
+            call.getBoolean("health", true), call.getBoolean("subscribers", true), call.getBoolean("deploys", true), call.getBoolean("sends", true), call.getBoolean("runs", true));
         call.resolve(alertsState());
     }
 
     @PluginMethod
     public void alertsSetKinds(PluginCall call) {
-        Alerts.setKinds(getContext(), call.getBoolean("health"), call.getBoolean("subscribers"), call.getBoolean("deploys"), call.getBoolean("sends"));
+        Alerts.setKinds(getContext(), call.getBoolean("health"), call.getBoolean("subscribers"), call.getBoolean("deploys"), call.getBoolean("sends"), call.getBoolean("runs"));
         call.resolve(alertsState());
     }
 
